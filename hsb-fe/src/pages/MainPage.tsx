@@ -5,8 +5,8 @@ import Layout from '../components/Layout/Layout';
 const MainPage = () => {
   return (
     <Layout>
-      <h1>HSB CMS 메인 페이지</h1>
-      <p>이곳은 메인 소개 페이지입니다.</p>
+      <h2 className="text-3xl font-semibold mb-4">HSB CMS 메인 페이지</h2>
+      <p className="text-gray-700">이곳은 HSB 콘텐츠 관리 시스템의 시작점입니다.</p>
     </Layout>
   );
 };
