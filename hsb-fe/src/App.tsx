@@ -7,6 +7,7 @@ import MediaPage from './pages/MediaPage';
 import NewsPage from './pages/NewsPage';
 import MainPage from './pages/MainPage';
 import PromPage from './pages/PromPage';
+import HbsCardList from './components/Hbs/HbsCardList';
 
 
 function App() {
@@ -21,6 +22,10 @@ function App() {
       <Route path="/media" element={<MediaPage />} />
       <Route path="/admin/event-form" element={<EventForm />} />
       <Route path="/admin/content-manager" element={<ContentManager />} />
+
+      <Route path="/test/hbs-list" element={<HbsCardList />} />
+
+
     </Routes>
   </Router>
 
