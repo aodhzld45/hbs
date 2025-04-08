@@ -1,25 +1,27 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ContentManager from './pages/Admin/ContentManager';
+import EventForm from './pages/Admin/EventForm';
+import EventPage from './pages/EventPage';
+import MediaPage from './pages/MediaPage';
+import NewsPage from './pages/NewsPage';
+import MainPage from './pages/MainPage';
+
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    
+  <Router>
+    <Routes>
+      <Route path="/" element={<MainPage />} />
+      <Route path="/news" element={<NewsPage />} />
+      <Route path="/event" element={<EventPage />} />
+      <Route path="/media" element={<MediaPage />} />
+      <Route path="/admin/event-form" element={<EventForm />} />
+      <Route path="/admin/content-manager" element={<ContentManager />} />
+    </Routes>
+  </Router>
+
   );
 }
 
