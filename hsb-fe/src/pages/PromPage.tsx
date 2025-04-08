@@ -1,12 +1,12 @@
 import React from 'react';
 import Layout from '../components/Layout/Layout';
 
-const NewsPage = () => {
+function PromPage() {
     return (
         <Layout>
-            <p>NewsPage</p>
+            <p>PromPage</p>
         </Layout>
     );
-};
+}
 
-export default NewsPage;
+export default PromPage;

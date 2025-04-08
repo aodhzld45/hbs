@@ -6,6 +6,7 @@ import EventPage from './pages/EventPage';
 import MediaPage from './pages/MediaPage';
 import NewsPage from './pages/NewsPage';
 import MainPage from './pages/MainPage';
+import PromPage from './pages/PromPage';
 
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
     <Routes>
       <Route path="/" element={<MainPage />} />
       <Route path="/news" element={<NewsPage />} />
+      <Route path="/prom" element={<PromPage />} />
       <Route path="/event" element={<EventPage />} />
       <Route path="/media" element={<MediaPage />} />
       <Route path="/admin/event-form" element={<EventForm />} />
