@@ -5,15 +5,17 @@ spring:
     password: ucp87411!
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.MySQL8Dialect
+        physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true
   servlet:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
-  file:
-    upload-path: C:/upload/hsb
+
+file:
+  upload-path: C:/upload/hsb

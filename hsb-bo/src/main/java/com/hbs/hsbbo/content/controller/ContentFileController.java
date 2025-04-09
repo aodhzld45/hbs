@@ -27,21 +27,25 @@ public class ContentFileController {
             @RequestPart("description") String description,
             @RequestPart("fileType") String fileType,
             @RequestPart("contentType") String contentType
-            ) {
+    ) {
+        if (file == null || file.isEmpty()) {
+            return ResponseEntity.badRequest().body("파일이 없습니다.");
+        }
 
-        // DTO 구성 수동 변환
-        ContentFileRequest request = new ContentFileRequest();
+        try {
+            ContentFileRequest request = new ContentFileRequest();
+            request.setTitle(title);
+            request.setDescription(description);
+            request.setFileType(FileType.valueOf(fileType.toUpperCase()));
+            request.setContentType(ContentType.valueOf(contentType.toUpperCase()));
 
-        request.setTitle(title);
-        request.setDescription(description);
-        request.setFileType(FileType.valueOf(fileType));
-        request.setContentType(ContentType.valueOf(contentType));
-
-        //서비스 로직 구현
-        contentFileService.saveContentFile(request, file, thumbnail);
-
-        //응답 주로 메세지를 줌 아마? 쩝...
-        return ResponseEntity.ok("콘텐츠 등록완료");
+            contentFileService.saveContentFile(request, file, thumbnail);
+            return ResponseEntity.ok("콘텐츠 등록 완료");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("파일 타입 또는 콘텐츠 타입이 잘못되었습니다.");
+        } catch (Exception e) {
+            e.printStackTrace(); // 콘솔 로그로 확인
+            return ResponseEntity.internalServerError().body("서버 오류 발생: " + e.getMessage());
+        }
     }
-
 }

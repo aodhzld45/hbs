@@ -38,6 +38,9 @@ public class ContentFileService {
         entity.setThumbnailUrl(thumbnailUrl);
         entity.setExtension(fileUtil.getExtension(file.getOriginalFilename()));
 
+        int nextDispSeq = repository.findMaxDispSeqByContentType(request.getContentType()) + 1;
+        entity.setDispSeq(nextDispSeq);
+
         repository.save(entity);
 
     }
