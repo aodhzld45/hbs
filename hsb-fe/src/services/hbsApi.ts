@@ -2,7 +2,7 @@ import api from './api';
 import { HbsContent } from '../types/HbsContent';
 
 export const fetchHbsList = async (): Promise<HbsContent[]> => {
-  const res = await api.get('/hbs');
+  const res = await api.get('/content-files');
   return res.data;
 };
 

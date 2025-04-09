@@ -27,9 +27,15 @@ public class FileUtil {
             Files.createDirectories(fullPath.getParent());
             Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
 
-            // 반환 경로 예: /files/video/hbs/uuid.mp4
-            String relativePath = baseDir.toString().replace(fileStorageProperties.getUploadPath(), "").replace("\\", "/");
-            return "/files" + (relativePath.isEmpty() ? "" : "/" + relativePath) + "/" + fileName;
+            // baseDir = C:/upload/hsb/video/hbs
+            // uploadPath = C:/upload/hsb
+            String relativePath = baseDir.toAbsolutePath().toString()
+                    .replace(Paths.get(fileStorageProperties.getUploadPath()).toAbsolutePath().toString(), "")
+                    .replace("\\", "/")
+                    .replaceAll("^/+", ""); // 앞에 붙은 슬래시 제거
+
+            return "/files/" + relativePath + "/" + fileName;
+
         } catch (IOException e) {
             throw new RuntimeException("파일 저장 실패", e);
         }

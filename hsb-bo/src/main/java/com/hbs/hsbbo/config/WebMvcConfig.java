@@ -1,18 +1,32 @@
 package com.hbs.hsbbo.config;
 
+import com.hbs.hsbbo.common.util.FileStorageProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
+    private final FileStorageProperties fileStorageProperties;
+
+    // CORS 설정
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**") // ← 필요한 API 경로만 허용
+        registry.addMapping("/api/**")
                 .allowedOrigins("http://localhost:3000") // React 개발 서버
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .allowCredentials(true); // ← withCredentials: true 쓰는 경우 필요
+                .allowCredentials(true);
     }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/files/**")
+                .addResourceLocations("file:C:/upload/hsb/");
+    }
+
 }

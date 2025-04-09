@@ -1,10 +1,10 @@
 package com.hbs.hsbbo.content.controller;
 
 
-import com.hbs.hsbbo.content.dto.ContentFileRequest;
+import com.hbs.hsbbo.content.dto.request.ContentFileRequest;
+import com.hbs.hsbbo.content.dto.response.ContentFileResponse;
 import com.hbs.hsbbo.content.entity.ContentType;
 import com.hbs.hsbbo.content.entity.FileType;
-import com.hbs.hsbbo.content.repository.ContentFileRepository;
 import com.hbs.hsbbo.content.service.ContentFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -12,12 +12,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RequiredArgsConstructor
 @RequestMapping("/api")
 @RestController
 public class ContentFileController {
 
     private final ContentFileService contentFileService;
+
+    @GetMapping("/content-files")
+    public ResponseEntity<List<ContentFileResponse>> getContentFiles() {
+        List<ContentFileResponse> contents = contentFileService.getContentFiles();
+        return ResponseEntity.ok(contents);
+    }
+
 
     @PostMapping(value = "/content-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadContents(

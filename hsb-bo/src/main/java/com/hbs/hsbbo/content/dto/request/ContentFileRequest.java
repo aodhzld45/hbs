@@ -1,4 +1,4 @@
-package com.hbs.hsbbo.content.dto;
+package com.hbs.hsbbo.content.dto.request;
 
 
 /*

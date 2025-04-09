@@ -9,6 +9,10 @@ interface Props {
 const HbsCard = ({ content }: Props) => {
   const navigate = useNavigate();
 
+  console.log(content);
+
+  //const thumbnailFilePath = `/files/${content.thumbnailUrl.replace('C:/upload/hsb/', '')}`;
+  
   return (
     <div
       onClick={() => navigate(`/hbs/${content.fileId}`)}
@@ -27,6 +31,7 @@ const HbsCard = ({ content }: Props) => {
       <div className="p-4">
         <h3 className="text-lg font-bold">{content.title}</h3>
         <p className="text-sm text-gray-500">{content.regDate}</p>
+        
       </div>
     </div>
   );
