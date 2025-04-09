@@ -1,14 +1,14 @@
+// com.hbs.hsbbo.common.util.FileUtil.java
 package com.hbs.hsbbo.common.util;
 
-
+import com.hbs.hsbbo.content.entity.ContentType;
+import com.hbs.hsbbo.content.entity.FileType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.UUID;
 
 @Component
@@ -35,5 +35,21 @@ public class FileUtil {
         }
     }
 
+    /**
+     * 경로 계산
+     */
+    public Path resolvePathByType(FileType fileType, ContentType contentType) {
+        String subDir = switch (fileType) {
+            case VIDEO -> contentType == ContentType.HBS ? "video/hbs" : "video/etc";
+            case IMAGE -> "image";
+            case DOCUMENT -> "document/" + contentType.name().toLowerCase();
+        };
+        return Paths.get(fileStorageProperties.getUploadPath(), subDir);
+    }
 
+    public String getExtension(String name) {
+        return name != null && name.contains(".")
+                ? name.substring(name.lastIndexOf('.') + 1)
+                : "";
+    }
 }
