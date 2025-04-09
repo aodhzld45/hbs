@@ -1,4 +1,4 @@
-package com.hbs.hsbbo.content;
+package com.hbs.hsbbo.content.entity;
 
 // ContentFile
 /*
@@ -24,10 +24,13 @@ package com.hbs.hsbbo.content;
 * */
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 public class ContentFile {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
