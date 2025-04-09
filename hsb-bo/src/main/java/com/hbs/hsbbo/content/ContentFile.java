@@ -63,4 +63,13 @@ public class ContentFile {
     private Long delAdm; // 삭제 관리자 일련번호
     private LocalDateTime delDate; // 삭제날짜
 
+    @PrePersist
+    protected void onCreate() {
+        this.regDate = LocalDateTime.now(); // 등록시 현재날짜
+    }
+
+    @PrePersist
+    protected void onUpdate() {
+        this.modifyDate = LocalDateTime.now(); // 수정시 현재날짜
+    }
 }
