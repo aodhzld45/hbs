@@ -21,13 +21,22 @@ public class ContentFileController {
 
     private final ContentFileService contentFileService;
 
+    // 콘텐츠 목록
     @GetMapping("/content-files")
     public ResponseEntity<List<ContentFileResponse>> getContentFiles() {
         List<ContentFileResponse> contents = contentFileService.getContentFiles();
         return ResponseEntity.ok(contents);
     }
+    
+    // 콘텐츠 상세
+    @GetMapping("/content-files/{id}")
+    public ResponseEntity<ContentFileResponse> getContentsDetail(@PathVariable Long id) {
+        return ResponseEntity.ok(contentFileService.getContentsDetail(id));
+    }
 
 
+
+    // 콘텐츠 등록
     @PostMapping(value = "/content-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadContents(
             @RequestPart("file") MultipartFile file,

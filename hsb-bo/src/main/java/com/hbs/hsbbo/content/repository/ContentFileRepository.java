@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ContentFileRepository extends JpaRepository<ContentFile, Long> {
 
@@ -14,7 +15,10 @@ public interface ContentFileRepository extends JpaRepository<ContentFile, Long> 
     @Query("SELECT COALESCE(MAX(cf.dispSeq), 0) FROM ContentFile cf WHERE cf.contentType = :contentType")
     int findMaxDispSeqByContentType(@Param("contentType") ContentType contentType);
 
-    // 콘텐츠 가져오기
-    List<ContentFile> findByDelTF(char delTF);
+    // 콘텐츠 목록
+    List<ContentFile> findByDelTFOrderByFileIdDesc(char delTF);
+
+    // 콘텐츠 상세
+    Optional<ContentFile> findByFileIdAndDelTF(Long id, char delTF);
 
 }

@@ -22,14 +22,21 @@ public class ContentFileService {
     private final FileUtil fileUtil;
 
 
-    // 콘텐츠 불러오기
+    // 콘텐츠 목록
     public List<ContentFileResponse> getContentFiles() {
-        List<ContentFile> files = repository.findByDelTF('N');
+        List<ContentFile> files = repository.findByDelTFOrderByFileIdDesc('N');
 
         return files.stream()
                 .map(ContentFileResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
 
+    // 콘텐츠 상세
+    public ContentFileResponse getContentsDetail(Long id) {
+        ContentFile detailContent = repository.findByFileIdAndDelTF(id, 'N')
+                .orElseThrow(() -> new IllegalArgumentException("콘텐츠를 찾을 수 없습니다. ID = " + id));
+
+        return ContentFileResponse.fromEntity(detailContent);
     }
 
     // 통합 콘텐츠 등록
