@@ -4,6 +4,7 @@ import Layout from '../Layout/Layout';
 import { fetchHbsList } from '../../services/hbsApi';
 import { HbsContent } from '../../types/HbsContent';
 
+
 const HbsCardList = () => {
   const [contents, setContents] = useState<HbsContent[]>([]);
 

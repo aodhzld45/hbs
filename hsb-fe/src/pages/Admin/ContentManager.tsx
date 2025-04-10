@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout/Layout';
 import api from '../../services/api';
 import { FileType, ContentType, HbsContent } from '../../types/HbsContent';
+import { FILE_BASE_URL } from '../../config/config';
+
 
 function ContentManager() {
 
@@ -153,6 +155,7 @@ function ContentManager() {
       <div className="max-w-7xl mx-auto">
         <h3 className="text-xl font-bold mb-4">등록된 콘텐츠</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+
           {contents.map((item) => (
             <div
               key={item.fileId}
@@ -160,7 +163,7 @@ function ContentManager() {
             >
               {item.thumbnailUrl ? (
                 <img
-                  src={item.thumbnailUrl}
+                  src={`${FILE_BASE_URL}${item.thumbnailUrl}`}
                   alt={item.title}
                   className="w-full h-40 object-cover"
                 />

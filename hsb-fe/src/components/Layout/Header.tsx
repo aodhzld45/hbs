@@ -21,7 +21,7 @@ const Header = () => {
         {/* 가운데 메뉴 */}
         <nav className="flex-1 text-center space-x-4 text-sm sm:text-lg mb-2 sm:mb-0">
           <Link to="/" className="hover:text-yellow-300">홈</Link>
-          <Link to="/news" className="hover:text-yellow-300">뉴스</Link>
+          <Link to="/hbs-list" className="hover:text-yellow-300">뉴스</Link>
           <Link to="/prom" className="hover:text-yellow-300">홍보자료</Link>
           <Link to="/event" className="hover:text-yellow-300">이벤트</Link>
           <Link to="/media" className="hover:text-yellow-300">미디어</Link>

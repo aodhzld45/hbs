@@ -4,7 +4,6 @@ import ContentManager from './pages/Admin/ContentManager';
 import EventForm from './pages/Admin/EventForm';
 import EventPage from './pages/EventPage';
 import MediaPage from './pages/MediaPage';
-import NewsPage from './pages/NewsPage';
 import MainPage from './pages/MainPage';
 import PromPage from './pages/PromPage';
 import HbsCardList from './components/Hbs/HbsCardList';
@@ -16,14 +15,14 @@ function App() {
   <Router>
     <Routes>
       <Route path="/" element={<MainPage />} />
-      <Route path="/news" element={<NewsPage />} />
+      <Route path="/hbs-list" element={<HbsCardList />} />
       <Route path="/prom" element={<PromPage />} />
       <Route path="/event" element={<EventPage />} />
       <Route path="/media" element={<MediaPage />} />
       <Route path="/admin/event-form" element={<EventForm />} />
       <Route path="/admin/content-manager" element={<ContentManager />} />
 
-      <Route path="/test/hbs-list" element={<HbsCardList />} />
+      <Route path="/hbs-list" element={<HbsCardList />} />
 
 
     </Routes>
