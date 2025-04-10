@@ -27,15 +27,11 @@ public class FileUtil {
             Files.createDirectories(fullPath.getParent());
             Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
 
-            // baseDir = C:/upload/hsb/video/hbs
-            // uploadPath = C:/upload/hsb
-            String relativePath = baseDir.toAbsolutePath().toString()
-                    .replace(Paths.get(fileStorageProperties.getUploadPath()).toAbsolutePath().toString(), "")
-                    .replace("\\", "/")
-                    .replaceAll("^/+", ""); // 앞에 붙은 슬래시 제거
+            // uploadPath 기준 상대 경로만 잘라냄
+            Path relativePath = Paths.get(fileStorageProperties.getUploadPath()).relativize(fullPath);
 
-            return "/files/" + relativePath + "/" + fileName;
-
+            // /files 경로 붙여서 리턴
+            return "/files/" + relativePath.toString().replace("\\", "/");
         } catch (IOException e) {
             throw new RuntimeException("파일 저장 실패", e);
         }
