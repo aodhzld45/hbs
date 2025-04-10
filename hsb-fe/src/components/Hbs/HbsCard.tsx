@@ -13,7 +13,7 @@ const HbsCard = ({ content }: Props) => {
   
   return (
     <div
-      onClick={() => navigate(`/hbs/${content.fileId}`)}
+      onClick={() => navigate(`/content-files/${content.fileId}`)}
       className="cursor-pointer shadow-md rounded overflow-hidden hover:scale-105 transition-transform bg-white"
     >
       <div className="relative">
@@ -28,8 +28,7 @@ const HbsCard = ({ content }: Props) => {
       </div>
       <div className="p-4">
         <h3 className="text-lg font-bold">{content.title}</h3>
-        <p className="text-sm text-gray-500">{content.regDate}</p>
-        
+        <p className="text-sm text-gray-500">{content.regDate?.slice(0,10)}</p>
       </div>
     </div>
   );

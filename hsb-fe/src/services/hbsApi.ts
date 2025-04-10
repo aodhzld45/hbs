@@ -6,7 +6,7 @@ export const fetchHbsList = async (): Promise<HbsContent[]> => {
   return res.data;
 };
 
-export const fetchHbsDetail = async (id: number): Promise<HbsContent> => {
-  const res = await api.get(`/hbs/${id}`);
-  return res.data;
+export const fetchHbsDetail = async (fileId: number): Promise<HbsContent> => {
+  const response = await api.get(`/content-files/${fileId}`);
+  return response.data;
 };
