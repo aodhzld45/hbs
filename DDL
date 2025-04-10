@@ -1,0 +1,24 @@
+MYSQL 기준이다이
+
+-- hbs.contentfile definition
+
+CREATE TABLE `contentfile` (
+  `fileId` int unsigned NOT NULL AUTO_INCREMENT,
+  `fileType` enum('VIDEO','IMAGE','DOCUMENT') COLLATE utf8mb4_general_ci NOT NULL COMMENT '파일 종류: 영상, 이미지, 문서',
+  `contentType` enum('HBS','PROMO','MEDIA','CI_BI') COLLATE utf8mb4_general_ci NOT NULL COMMENT '소속 콘텐츠 유형',
+  `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `fileUrl` varchar(500) COLLATE utf8mb4_general_ci NOT NULL,
+  `thumbnailUrl` varchar(500) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `extension` varchar(10) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `dispSeq` int DEFAULT NULL,
+  `useTF` char(1) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Y',
+  `delTF` char(1) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'N',
+  `regAdm` int unsigned DEFAULT NULL,
+  `regDate` datetime DEFAULT NULL,
+  `modifyAdm` int unsigned DEFAULT NULL,
+  `modifyDate` datetime DEFAULT NULL,
+  `delAdm` int unsigned DEFAULT NULL,
+  `delDate` datetime DEFAULT NULL,
+  PRIMARY KEY (`fileId`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
