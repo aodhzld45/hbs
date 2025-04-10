@@ -1,6 +1,8 @@
 import React from 'react';
 import { HbsContent } from '../../types/HbsContent';
 import { useNavigate } from 'react-router-dom';
+import { FILE_BASE_URL } from '../../config/config';
+
 
 interface Props {
   content: HbsContent;
@@ -8,10 +10,6 @@ interface Props {
 
 const HbsCard = ({ content }: Props) => {
   const navigate = useNavigate();
-
-  console.log(content);
-
-  //const thumbnailFilePath = `/files/${content.thumbnailUrl.replace('C:/upload/hsb/', '')}`;
   
   return (
     <div
@@ -20,12 +18,12 @@ const HbsCard = ({ content }: Props) => {
     >
       <div className="relative">
         <img
-          src={content.thumbnailUrl}
+          src={`${FILE_BASE_URL}${content.thumbnailUrl}`}
           alt={content.title}
           className="w-full h-48 object-cover"
         />
         <div className="absolute inset-0 flex justify-center items-center">
-          <img src="/play-btn.png" alt="Play" className="w-12 opacity-75" />
+          <img src="/play.png" alt="Play" className="w-12 opacity-75" />
         </div>
       </div>
       <div className="p-4">
