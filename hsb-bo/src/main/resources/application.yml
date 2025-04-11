@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mysql://192.168.0.67:3306/hbs?serverTimezone=Asia/Seoul
-    username: HBS
-    password: ucp87411!
+    url: jdbc:mysql://158.179.168.106:3306/hbs
+    username: admin
+    password: 2134
   jpa:
     hibernate:
       ddl-auto: none
