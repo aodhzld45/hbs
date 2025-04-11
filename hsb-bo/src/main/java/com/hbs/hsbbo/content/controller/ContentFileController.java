@@ -65,7 +65,7 @@ public class ContentFileController {
             return ResponseEntity.internalServerError().body("서버 오류 발생: " + e.getMessage());
         }
     }
-
+    
     // 콘텐츠 수정
     @PutMapping(value = "/content-files/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateContent(
@@ -96,20 +96,9 @@ public class ContentFileController {
             e.printStackTrace(); // 콘솔 로그로 확인
             return ResponseEntity.internalServerError().body("서버 오류 발생: " + e.getMessage());
         }
-    }
 
-    // 콘텐츠 삭제 (delTf = Y) - 실제 물리적 삭제가 아닌 논리적 삭제
-    @PutMapping("/content-files/{id}/delete")
-    public ResponseEntity<?> softDeleteContent(@PathVariable Long id) {
-        try {
-            contentFileService.softDeleteContent(id);
-            return ResponseEntity.ok("삭제 처리 완료");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("삭제 실패: " + e.getMessage());
-        }
-    }
 
+    }
 
 
 
