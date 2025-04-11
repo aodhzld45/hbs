@@ -3,6 +3,7 @@ package com.hbs.hsbbo.content.controller;
 
 import com.hbs.hsbbo.content.dto.request.ContentFileRequest;
 import com.hbs.hsbbo.content.dto.response.ContentFileResponse;
+import com.hbs.hsbbo.content.entity.ContentFile;
 import com.hbs.hsbbo.content.entity.ContentType;
 import com.hbs.hsbbo.content.entity.FileType;
 import com.hbs.hsbbo.content.service.ContentFileService;
@@ -33,9 +34,7 @@ public class ContentFileController {
     public ResponseEntity<ContentFileResponse> getContentsDetail(@PathVariable Long id) {
         return ResponseEntity.ok(contentFileService.getContentsDetail(id));
     }
-
-
-
+    
     // 콘텐츠 등록
     @PostMapping(value = "/content-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadContents(
@@ -66,4 +65,42 @@ public class ContentFileController {
             return ResponseEntity.internalServerError().body("서버 오류 발생: " + e.getMessage());
         }
     }
+    
+    // 콘텐츠 수정
+    @PutMapping(value = "/content-files/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateContent(
+            @PathVariable Long id,
+            @RequestPart("title") String title,
+            @RequestPart("description") String description,
+            @RequestPart("fileType") String fileType,
+            @RequestPart("contentType") String contentType,
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail
+    ) {
+
+        try {
+            ContentFileRequest request = new ContentFileRequest();
+            request.setTitle(title);
+            request.setDescription(description);
+            request.setFileType(FileType.valueOf(fileType.toUpperCase()));
+            request.setContentType(ContentType.valueOf(contentType.toUpperCase()));
+
+            // 서비스 로직
+            ContentFile updateContent = contentFileService.updateContent(id, request, file, thumbnail);
+
+            return ResponseEntity.ok(ContentFileResponse.fromEntity(updateContent));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("파일 타입 또는 콘텐츠 타입이 잘못되었습니다.");
+        } catch (Exception e) {
+            e.printStackTrace(); // 콘솔 로그로 확인
+            return ResponseEntity.internalServerError().body("서버 오류 발생: " + e.getMessage());
+        }
+
+
+    }
+
+
+
+
 }
