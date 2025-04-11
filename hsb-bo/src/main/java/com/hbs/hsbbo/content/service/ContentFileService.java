@@ -6,11 +6,13 @@ import com.hbs.hsbbo.content.dto.response.ContentFileResponse;
 import com.hbs.hsbbo.content.entity.ContentFile;
 import com.hbs.hsbbo.content.entity.FileType;
 import com.hbs.hsbbo.content.repository.ContentFileRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -72,7 +74,7 @@ public class ContentFileService {
 
         ContentFile entity = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 콘텐츠가 존재하지 않습니다."));
-        
+
         // 1. 기본 정보 수정
         entity.setTitle(request.getTitle());
         entity.setDescription(request.getDescription());
@@ -96,7 +98,20 @@ public class ContentFileService {
         }
 
         return repository.save(entity);
-
     }
+
+    // 콘텐츠 삭제 (delTf = Y) - 실제 물리적 삭제가 아닌 논리적 삭제
+    @Transactional
+    public void softDeleteContent(Long id) {
+
+        ContentFile content = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 콘텐츠가 없습니다."));
+
+        content.setDelTF('Y');
+        content.setDelDate(LocalDateTime.now());
+
+        repository.save(content);
+    }
+
 
 }
