@@ -67,5 +67,36 @@ public class ContentFileService {
 
     }
 
+    // 톱합 콘텐츠  수정
+    public ContentFile updateContent(Long id, ContentFileRequest request, MultipartFile file, MultipartFile thumbnail) {
+
+        ContentFile entity = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 콘텐츠가 존재하지 않습니다."));
+        
+        // 1. 기본 정보 수정
+        entity.setTitle(request.getTitle());
+        entity.setDescription(request.getDescription());
+        entity.setFileType(request.getFileType());
+        entity.setContentType(request.getContentType());
+
+        // 2. 메인 파일 수정 시 저장 후 경로 재설정
+        if (file != null && !file.isEmpty()) {
+            Path filePath = fileUtil.resolvePathByType(request.getFileType(), request.getContentType());
+            String fileUrl = fileUtil.saveFile(filePath, file);
+
+            entity.setFileUrl(fileUrl);
+            entity.setExtension(fileUtil.getExtension(file.getOriginalFilename()));
+        }
+
+        // 3. 썸네일 수정 시 저장 후 경로 재설정
+        if (request.getFileType() == FileType.VIDEO && thumbnail != null && !thumbnail.isEmpty()) {
+            Path thumbPath = fileUtil.resolvePathByType(FileType.IMAGE, request.getContentType());
+            String thumbnailUrl = fileUtil.saveFile(thumbPath, thumbnail);
+            entity.setThumbnailUrl(thumbnailUrl);
+        }
+
+        return repository.save(entity);
+
+    }
 
 }
