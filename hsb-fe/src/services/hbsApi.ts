@@ -13,6 +13,15 @@ export const fetchHbsDetail = async (fileId: number): Promise<HbsContent> => {
   return response.data;
 };
 
+// hbs 등록 api 요청
+export const fetchHbsCreate = async (formData: FormData) => {
+  const res = await api.post('/content-files', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+};
+
+
 // hbs 수정 api 요청
 export const fetchHbsUpdate = async (formData: FormData) => {
   const fileId = formData.get('fileId');

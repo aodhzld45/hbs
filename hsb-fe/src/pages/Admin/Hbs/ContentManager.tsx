@@ -4,7 +4,7 @@ import api from '../../../services/api';
 import { FileType, ContentType, HbsContent } from '../../../types/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
 import { useNavigate } from 'react-router-dom';
-
+import { fetchHbsCreate } from '../../../services/hbsApi';
 
 
 function ContentManager() {
@@ -52,9 +52,7 @@ function ContentManager() {
     }
 
     try {
-      await api.post('/content-files', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      await fetchHbsCreate(formData);
       alert('콘텐츠가 등록 되었습니다.');
       setTitle('');
       setDescription('');
