@@ -21,7 +21,6 @@ export const fetchHbsCreate = async (formData: FormData) => {
   return res.data;
 };
 
-
 // hbs 수정 api 요청
 export const fetchHbsUpdate = async (formData: FormData) => {
   const fileId = formData.get('fileId');
@@ -29,6 +28,12 @@ export const fetchHbsUpdate = async (formData: FormData) => {
   const res = await api.put(`/content-files/${fileId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  return res.data;
+};
+
+// hbs 삭제 api 요청
+export const fetchHbsDelete = async (fileId: number) => {
+  const res = await api.put(`/content-files/${fileId}/delete`);
   return res.data;
 };
 

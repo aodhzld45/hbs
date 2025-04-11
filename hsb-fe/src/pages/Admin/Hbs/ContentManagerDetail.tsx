@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 
 import { fetchHbsDetail } from '../../../services/hbsApi';
 import { fetchHbsUpdate } from '../../../services/hbsApi';
+import { fetchHbsDelete } from '../../../services/hbsApi';
 
 import { HbsContent } from '../../../types/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
@@ -65,7 +66,27 @@ const ContentManagerDetail = () => {
             수정
           </button>
 
-          <button className="px-4 py-2 bg-red-600 text-white rounded">삭제</button>
+          <button
+            className="px-4 py-2 bg-red-600 text-white rounded"
+            onClick={async () => {
+                if (window.confirm('정말 삭제하시겠습니까?')) {
+                try {
+                    await fetchHbsDelete(content.fileId);
+                    alert('콘텐츠가 삭제 되었습니다.');
+                    navigate('/admin/content-manager'); // 목록으로 이동
+                } catch (err) {
+                    console.error(err);
+                    alert('삭제 실패');
+                }
+                }
+            }}
+            >
+            삭제
+            </button>
+
+
+
+
           <button
             className="ml-auto px-4 py-2 bg-gray-500 text-white rounded"
             onClick={() => navigate('/admin/content-manager')}
