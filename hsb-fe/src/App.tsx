@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import ContentManager from './pages/Admin/ContentManager';
+import ContentManager from './pages/Admin/Hbs/ContentManager';
 import EventForm from './pages/Admin/EventForm';
 import EventPage from './pages/EventPage';
 import MediaPage from './pages/MediaPage';
@@ -8,6 +8,7 @@ import MainPage from './pages/MainPage';
 import PromPage from './pages/PromPage';
 import HbsCardList from './components/Hbs/HbsCardList';
 import HbsDetailPage from './pages/hbs/HbsDetailPage';
+import ContentManagerDetail from "./pages/Admin/Hbs/ContentManagerDetail";
 
 
 function App() {
@@ -20,9 +21,13 @@ function App() {
       <Route path="/prom" element={<PromPage />} />
       <Route path="/event" element={<EventPage />} />
       <Route path="/media" element={<MediaPage />} />
+
       <Route path="/admin/event-form" element={<EventForm />} />
       <Route path="/admin/content-manager" element={<ContentManager />} />
+      <Route path="/admin/hbs/:fileId" element={<ContentManagerDetail />} />
+      
       <Route path="/content-files/:fileId" element={<HbsDetailPage />} />
+      
 
 
     </Routes>

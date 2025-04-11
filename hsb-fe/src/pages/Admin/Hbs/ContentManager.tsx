@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../../components/Layout/Layout';
-import api from '../../services/api';
-import { FileType, ContentType, HbsContent } from '../../types/HbsContent';
-import { FILE_BASE_URL } from '../../config/config';
+import Layout from '../../../components/Layout/Layout';
+import api from '../../../services/api';
+import { FileType, ContentType, HbsContent } from '../../../types/HbsContent';
+import { FILE_BASE_URL } from '../../../config/config';
+import { useNavigate } from 'react-router-dom';
+
 
 
 function ContentManager() {
 
+  const navigate  = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [fileType, setFileType] = useState<FileType>('VIDEO');
@@ -38,6 +41,7 @@ function ContentManager() {
     }
 
     const formData = new FormData();
+
     formData.append('title', title);
     formData.append('description', description);
     formData.append('fileType', fileType);
@@ -63,6 +67,7 @@ function ContentManager() {
     }
   };
 
+  
   return (
     <Layout>
       <div className="max-w-xl mx-auto mb-10">
@@ -155,23 +160,27 @@ function ContentManager() {
       <div className="max-w-7xl mx-auto">
         <h3 className="text-xl font-bold mb-4">등록된 콘텐츠</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-
           {contents.map((item) => (
             <div
               key={item.fileId}
-              className="border rounded overflow-hidden shadow hover:shadow-lg transition"
+              onClick={() => navigate(`/admin/hbs/${item.fileId}`)}
+              className="cursor-pointer border rounded overflow-hidden shadow hover:shadow-lg transition"
             >
-              {item.thumbnailUrl ? (
+              {/* 썸네일 or 파일명 표시 */}
+              {item.contentType === 'HBS' && item.thumbnailUrl ? (
                 <img
                   src={`${FILE_BASE_URL}${item.thumbnailUrl}`}
                   alt={item.title}
                   className="w-full h-40 object-cover"
                 />
               ) : (
-                <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-sm text-gray-500">
-                  No Thumbnail
+                <div className="w-full h-40 bg-gray-100 flex items-center justify-center px-2 text-sm text-gray-700 text-center">
+                  등록된 파일명:<br />
+                  <strong>{item.fileUrl.split('/').pop()}</strong>
                 </div>
               )}
+
+              {/* 제목 및 날짜 */}
               <div className="p-4">
                 <p className="font-semibold">{item.title}</p>
                 <p className="text-sm text-gray-500">{item.regDate?.slice(0, 10)}</p>

@@ -16,8 +16,9 @@ export interface HbsContent {
     useTF: 'Y' | 'N';           // 사용여부
     delTF: 'Y' | 'N';           // 삭제여부
     regDate: string;            // 등록날짜
-    modifyDate?: string          // 수정날짜 - 선택
-    delDate?: string             // 삭제날짜 - 선택
-
+    modifyDate?: string;          // 수정날짜 - 선택
+    delDate?: string;             // 삭제날짜 - 선택
+    fileType: FileType;
+    contentType : ContentType
   }
   
