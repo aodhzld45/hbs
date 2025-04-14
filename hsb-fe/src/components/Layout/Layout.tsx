@@ -2,12 +2,16 @@
 import React from 'react';
 import Header from './Header';
 import Footer from './Footer';
+import { usePageLogger } from '../../hooks/usePageLogger';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout = ({ children }: LayoutProps) => {
+
+  usePageLogger(); 
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />

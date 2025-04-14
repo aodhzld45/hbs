@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,6 +19,7 @@ public class UserLogController {
 
     private final UserLogService userLogService;
 
+    @PostMapping
     public ResponseEntity<UserLogResponse> saveLog(
             @RequestBody UserLogRequest request,
             HttpServletRequest httpRequest
@@ -25,6 +27,7 @@ public class UserLogController {
 
         // ip를 얻어오는 부분
         String clientIp = httpRequest.getRemoteAddr();
+
         UserLogResponse savedLog = userLogService.saveLog(request, clientIp);
         return ResponseEntity.ok(savedLog);
     }
