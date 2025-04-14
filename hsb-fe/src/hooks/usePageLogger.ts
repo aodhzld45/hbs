@@ -1,21 +1,26 @@
 // src/hooks/usePageLogger.ts
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { getSessionId } from './useSession';
-import { sendUserLog } from "../services/logApi";
+import { sendUserLog } from '../services/logApi';
+import type { UserLogPayload } from '../services/logApi';
 
 export const usePageLogger = () => {
   const location = useLocation();
+  const hasLoggedRef = useRef<string | null>(null); // 이전 URL 저장
 
   const deviceType: 'MOBILE' | 'PC' | 'TABLET' =
-  /Mobi|Android/i.test(navigator.userAgent) ? 'MOBILE' : 'PC';
+    /Mobi|Android/i.test(navigator.userAgent) ? 'MOBILE' : 'PC';
 
   useEffect(() => {
+    const currentPath = location.pathname;
+
+    if (hasLoggedRef.current === currentPath) return;
+
     const sid = getSessionId();
-  
-    const logData = {
+    const logData: UserLogPayload = {
       sid,
-      url: location.pathname,
+      url: currentPath,
       referer: document.referrer,
       diviceType: deviceType,
       pageType: null,
@@ -26,11 +31,14 @@ export const usePageLogger = () => {
       param02: null,
       param03: null,
     };
-  
-    console.log('📢 [Page Logger] 로그 전송', logData);
-  
+
     sendUserLog(logData)
-      .then(() => console.log('로그 전송 성공'))
-      .catch((err) => console.error('로그 전송 실패:', err));
-  }, [location, deviceType]);
+      .then(() => {
+        console.log('로그 전송 성공:', logData);
+        hasLoggedRef.current = currentPath; // 경로 저장
+      })
+      .catch((err) => {
+        console.error('🚨 로그 전송 실패:', err);
+      });
+  }, [location.pathname, deviceType]);
 };
