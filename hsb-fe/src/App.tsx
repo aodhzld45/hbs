@@ -9,6 +9,7 @@ import PromPage from './pages/PromPage';
 import HbsCardList from './components/Hbs/HbsCardList';
 import HbsDetailPage from './pages/hbs/HbsDetailPage';
 import ContentManagerDetail from "./pages/Admin/Hbs/ContentManagerDetail";
+import AdminLogin from "./pages/Admin/Login";
 
 
 function App() {
@@ -21,7 +22,9 @@ function App() {
       <Route path="/prom" element={<PromPage />} />
       <Route path="/event" element={<EventPage />} />
       <Route path="/media" element={<MediaPage />} />
-
+    
+      
+      <Route path="/admin/Login" element={<AdminLogin />} />
       <Route path="/admin/event-form" element={<EventForm />} />
       <Route path="/admin/content-manager" element={<ContentManager />} />
       <Route path="/admin/hbs/:fileId" element={<ContentManagerDetail />} />
