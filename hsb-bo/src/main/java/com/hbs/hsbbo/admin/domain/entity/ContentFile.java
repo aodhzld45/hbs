@@ -1,5 +1,7 @@
-package com.hbs.hsbbo.content.entity;
+package com.hbs.hsbbo.admin.domain.entity;
 
+import com.hbs.hsbbo.admin.domain.type.ContentType;
+import com.hbs.hsbbo.admin.domain.type.FileType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

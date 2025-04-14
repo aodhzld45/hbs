@@ -22,3 +22,47 @@ CREATE TABLE `contentfile` (
   `delDate` datetime DEFAULT NULL,
   PRIMARY KEY (`fileId`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+-- hbs.userlog definition
+
+CREATE TABLE userlog (
+  logId INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '로그 ID',
+  
+  sid VARCHAR(150) COMMENT '세션 ID',
+  ymd VARCHAR(10) COMMENT '년월일',
+  yyyy VARCHAR(4) COMMENT '년',
+  mm VARCHAR(2) COMMENT '월',
+  dd VARCHAR(2) COMMENT '일',
+  hh VARCHAR(2) COMMENT '시',
+  mi VARCHAR(2) COMMENT '분',
+  wk VARCHAR(2) COMMENT '요일 또는 주차',
+
+  depth01 VARCHAR(30) COMMENT '1차 메뉴',
+  depth02 VARCHAR(30) COMMENT '2차 메뉴',
+  depth03 VARCHAR(30) COMMENT '3차 메뉴',
+
+  url VARCHAR(150) COMMENT '요청 URL',
+  param01 VARCHAR(30),
+  param02 VARCHAR(30),
+  param03 VARCHAR(30),
+
+  pageType VARCHAR(30) COMMENT '페이지 유형',
+  diviceType VARCHAR(30) COMMENT '디바이스 종류',
+  referer VARCHAR(500) COMMENT '이전 페이지',
+  refIp VARCHAR(30) COMMENT '접속 IP',
+  logDate DATETIME COMMENT '로그 생성 일시',
+
+  -- 공통 CMS 컬럼
+  dispSeq INT(11),
+  useTF CHAR(1) NOT NULL DEFAULT 'Y',
+  delTF CHAR(1) NOT NULL DEFAULT 'N',
+  regAdm INT(11) UNSIGNED,
+  regDate DATETIME,
+  modifyAdm INT(11) UNSIGNED,
+  modifyDate DATETIME,
+  delAdm INT(11) UNSIGNED,
+  delDate DATETIME
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='사용자 로그 테이블 (세션 기반)';
+
+

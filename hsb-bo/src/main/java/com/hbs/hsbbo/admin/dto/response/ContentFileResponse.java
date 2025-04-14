@@ -1,7 +1,7 @@
-package com.hbs.hsbbo.content.dto.response;
+package com.hbs.hsbbo.admin.dto.response;
 
 
-import com.hbs.hsbbo.content.entity.ContentFile;
+import com.hbs.hsbbo.admin.domain.entity.ContentFile;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

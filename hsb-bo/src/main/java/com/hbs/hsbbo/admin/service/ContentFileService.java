@@ -1,12 +1,12 @@
-package com.hbs.hsbbo.content.service;
+package com.hbs.hsbbo.admin.service;
 
 import com.hbs.hsbbo.common.util.FileUtil;
-import com.hbs.hsbbo.content.dto.request.ContentFileRequest;
-import com.hbs.hsbbo.content.dto.response.ContentFileResponse;
-import com.hbs.hsbbo.content.entity.ContentFile;
-import com.hbs.hsbbo.content.entity.ContentType;
-import com.hbs.hsbbo.content.entity.FileType;
-import com.hbs.hsbbo.content.repository.ContentFileRepository;
+import com.hbs.hsbbo.admin.dto.request.ContentFileRequest;
+import com.hbs.hsbbo.admin.dto.response.ContentFileResponse;
+import com.hbs.hsbbo.admin.domain.entity.ContentFile;
+import com.hbs.hsbbo.admin.domain.type.ContentType;
+import com.hbs.hsbbo.admin.domain.type.FileType;
+import com.hbs.hsbbo.admin.repository.ContentFileRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

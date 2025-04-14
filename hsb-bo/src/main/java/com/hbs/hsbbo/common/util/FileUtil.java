@@ -1,8 +1,8 @@
 // com.hbs.hsbbo.common.util.FileUtil.java
 package com.hbs.hsbbo.common.util;
 
-import com.hbs.hsbbo.content.entity.ContentType;
-import com.hbs.hsbbo.content.entity.FileType;
+import com.hbs.hsbbo.admin.domain.type.ContentType;
+import com.hbs.hsbbo.admin.domain.type.FileType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;

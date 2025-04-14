@@ -1,12 +1,12 @@
-package com.hbs.hsbbo.content.controller;
+package com.hbs.hsbbo.admin.controller;
 
 
-import com.hbs.hsbbo.content.dto.request.ContentFileRequest;
-import com.hbs.hsbbo.content.dto.response.ContentFileResponse;
-import com.hbs.hsbbo.content.entity.ContentFile;
-import com.hbs.hsbbo.content.entity.ContentType;
-import com.hbs.hsbbo.content.entity.FileType;
-import com.hbs.hsbbo.content.service.ContentFileService;
+import com.hbs.hsbbo.admin.dto.request.ContentFileRequest;
+import com.hbs.hsbbo.admin.dto.response.ContentFileResponse;
+import com.hbs.hsbbo.admin.domain.entity.ContentFile;
+import com.hbs.hsbbo.admin.domain.type.ContentType;
+import com.hbs.hsbbo.admin.domain.type.FileType;
+import com.hbs.hsbbo.admin.service.ContentFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

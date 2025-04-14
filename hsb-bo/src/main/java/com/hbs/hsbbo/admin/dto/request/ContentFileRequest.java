@@ -1,4 +1,4 @@
-package com.hbs.hsbbo.content.dto.request;
+package com.hbs.hsbbo.admin.dto.request;
 
 
 /*
@@ -6,8 +6,8 @@ package com.hbs.hsbbo.content.dto.request;
 *  FE에서 요청한 정보를 담을 그릇.
 * */
 
-import com.hbs.hsbbo.content.entity.ContentType;
-import com.hbs.hsbbo.content.entity.FileType;
+import com.hbs.hsbbo.admin.domain.type.ContentType;
+import com.hbs.hsbbo.admin.domain.type.FileType;
 import lombok.Getter;
 import lombok.Setter;
 

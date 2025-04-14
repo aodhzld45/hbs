@@ -1,4 +1,4 @@
-package com.hbs.hsbbo.config;
+package com.hbs.hsbbo.common.config;
 
 import com.hbs.hsbbo.common.util.FileStorageProperties;
 import lombok.RequiredArgsConstructor;

@@ -1,8 +1,8 @@
-package com.hbs.hsbbo.content.repository;
+package com.hbs.hsbbo.admin.repository;
 
-import com.hbs.hsbbo.content.entity.ContentFile;
-import com.hbs.hsbbo.content.entity.ContentType;
-import com.hbs.hsbbo.content.entity.FileType;
+import com.hbs.hsbbo.admin.domain.entity.ContentFile;
+import com.hbs.hsbbo.admin.domain.type.ContentType;
+import com.hbs.hsbbo.admin.domain.type.FileType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
