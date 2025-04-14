@@ -4,6 +4,7 @@ import com.hbs.hsbbo.common.util.FileUtil;
 import com.hbs.hsbbo.content.dto.request.ContentFileRequest;
 import com.hbs.hsbbo.content.dto.response.ContentFileResponse;
 import com.hbs.hsbbo.content.entity.ContentFile;
+import com.hbs.hsbbo.content.entity.ContentType;
 import com.hbs.hsbbo.content.entity.FileType;
 import com.hbs.hsbbo.content.repository.ContentFileRepository;
 import jakarta.transaction.Transactional;
@@ -26,7 +27,7 @@ public class ContentFileService {
 
     // 콘텐츠 목록
     public List<ContentFileResponse> getContentFiles() {
-        List<ContentFile> files = repository.findByDelTFOrderByFileIdDesc('N');
+        List<ContentFile> files = repository.findByFileTypeAndContentTypeAndDelTFOrderByFileIdDesc(FileType.VIDEO, ContentType.HBS,'N');
 
         return files.stream()
                 .map(ContentFileResponse::fromEntity)
