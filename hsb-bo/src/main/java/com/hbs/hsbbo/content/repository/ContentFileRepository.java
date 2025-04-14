@@ -2,6 +2,7 @@ package com.hbs.hsbbo.content.repository;
 
 import com.hbs.hsbbo.content.entity.ContentFile;
 import com.hbs.hsbbo.content.entity.ContentType;
+import com.hbs.hsbbo.content.entity.FileType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,7 +17,8 @@ public interface ContentFileRepository extends JpaRepository<ContentFile, Long> 
     int findMaxDispSeqByContentType(@Param("contentType") ContentType contentType);
 
     // 콘텐츠 목록
-    List<ContentFile> findByDelTFOrderByFileIdDesc(char delTF);
+    //List<ContentFile> findByDelTFOrderByFileIdDesc(char delTF);
+    List<ContentFile> findByFileTypeAndContentTypeAndDelTFOrderByFileIdDesc(FileType fileType, ContentType contentType, char delTF);
 
     // 콘텐츠 상세
     Optional<ContentFile> findByFileIdAndDelTF(Long id, char delTF);
