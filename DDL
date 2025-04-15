@@ -1,5 +1,9 @@
 MYSQL 기준이다이
 
+## 컬럼명 규칙
+
+헝가리안 규칙
+
 -- hbs.contentfile definition
 
 CREATE TABLE `contentfile` (
@@ -65,4 +69,46 @@ CREATE TABLE userlog (
   delDate DATETIME
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='사용자 로그 테이블 (세션 기반)';
 
+
+---hbs.admin
+CREATE TABLE admin (
+    id VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    group_id INT NULL,
+    email VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    name VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    password VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    tel VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    memo VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    password_length INT NULL,
+    access_fail_count INT DEFAULT 0,
+    is_deleted TINYINT(1) DEFAULT 0,
+    logged_at DATETIME NULL,
+    password_updated_at DATETIME NULL,
+    PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+--- adm_menu
+CREATE TABLE adm_menu (
+    id INT NOT NULL AUTO_INCREMENT,  -- 메뉴 고유 시퀀스값
+    name VARCHAR(100) NOT NULL,        -- 메뉴명
+    depth TINYINT NOT NULL,            -- 메뉴 뎁스 구분 (예: 1, 2, 3 등)
+    parent_id INT DEFAULT NULL,        -- 2뎁스 이상일 경우 상위 메뉴 id
+    description VARCHAR(255) DEFAULT NULL,  -- 메모(설명)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 생성일
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,  -- 수정일 (업데이트 시 자동 갱신)
+    url VARCHAR(200) NOT NULL,         -- 메뉴 클릭 시 이동할 주소
+    order_sequence INT NOT NULL,       -- 메뉴 표시 순서
+    use_tf VARCHAR(1) NOT NULL DEFAULT 1,  -- 사용 여부 (1: 사용, 0: 미사용)
+    del_tf VARCHAR(1) NOT NULL DEFAULT 0,  -- 삭제 여부 (논리 삭제: 1이면 삭제된 것으로 간주)
+    PRIMARY KEY (id),
+    INDEX idx_depth (depth),
+    INDEX idx_parent_id (parent_id),
+    INDEX idx_order_sequence (order_sequence),
+    CONSTRAINT fk_parent_menu FOREIGN KEY (parent_id)
+      REFERENCES adm_menu(id)
+      ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

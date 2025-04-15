@@ -8,6 +8,7 @@ import AdminLogin from "./pages/Admin/Login";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import AdminList from "./pages/Admin/AdminAccountManagement";
 import AdminCreate from "./pages/Admin/AdminRegister";
+import AdminMenu from "./pages/Admin/AdminMenuManagement";
 
 // 사용자 페이지 imports
 import ContentManager from './pages/Admin/Hbs/ContentManager';
@@ -46,6 +47,7 @@ function App() {
             <Route path="/admin/content-manager" element={<ContentManager />} />
             <Route path="/admin/admin-manager" element={<AdminList />} />
             <Route path="/admin/admin-create" element={<AdminCreate />} />
+            <Route path="/admin/admin-menu" element={<AdminMenu />} />
           </Route>
           <Route path="/admin/event-form" element={<EventForm />} />
           
