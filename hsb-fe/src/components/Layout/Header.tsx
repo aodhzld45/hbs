@@ -27,7 +27,6 @@ const Header = () => {
           <Link to="/prom" className="hover:text-yellow-300">홍보자료</Link>
           <Link to="/event" className="hover:text-yellow-300">이벤트</Link>
           <Link to="/media" className="hover:text-yellow-300">미디어</Link>
-          <Link to="/admin/content-manager" className="hover:text-yellow-300">콘텐츠 등록</Link>
         </nav>
 
         {/* 우측 검색창 */}

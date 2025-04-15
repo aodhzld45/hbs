@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../../../components/Layout/Layout';
+import AdminLayout from '../../../components/Layout/AdminLayout';
 import api from '../../../services/api';
 import { FileType, ContentType, HbsContent } from '../../../types/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
@@ -67,7 +67,7 @@ function ContentManager() {
 
   
   return (
-    <Layout>
+    <AdminLayout>
       <div className="max-w-xl mx-auto mb-10">
         <h2 className="text-2xl font-bold mb-4">콘텐츠 등록</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -187,7 +187,7 @@ function ContentManager() {
           ))}
         </div>
       </div>
-    </Layout>
+      </AdminLayout>
   );
 }
 
