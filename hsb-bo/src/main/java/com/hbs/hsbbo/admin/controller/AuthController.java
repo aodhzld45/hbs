@@ -4,7 +4,9 @@ import com.hbs.hsbbo.admin.dto.request.LoginRequest;
 import com.hbs.hsbbo.admin.repository.AdminRepository;
 import com.hbs.hsbbo.admin.domain.entity.Admin;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.List;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -36,13 +38,14 @@ public class AuthController {
             if (adminOpt.isPresent()) {
                 // 인증 성공: 세션 생성
                 request.getSession(true);
+                HttpSession session = request.getSession(true);
+                System.out.println("생성된 JSESSIONID: " + session.getId());
                 return ResponseEntity.ok("Login 성공");
             } else {
                 // 인증 실패: 적절한 실패 메시지 반환
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login 실패");
             }
     }
-
 
     // 기존 로그인 API 외에 추가
     @PostMapping("/logout")
@@ -53,4 +56,62 @@ public class AuthController {
         }
         return ResponseEntity.ok("Logout 성공");
     }
+
+    // 전체 관리자 계정 목록 조회
+    @GetMapping("/accounts")
+    public ResponseEntity<List<Admin>> getAllAdmins() {
+        List<Admin> admins = adminRepository.findAll();
+        return ResponseEntity.ok(admins);
+    }
+
+    // 관리자 계정 수정 (간단한 예시: 이름과 이메일만 수정)
+    @PutMapping("/accounts/{id}")
+    public ResponseEntity<?> updateAdmin(@PathVariable("id") String id, @RequestBody Admin updatedAdmin) {
+        return adminRepository.findById(id)
+                .map(admin -> {
+                    // 필요한 필드만 업데이트 (원하는 대로 수정)
+                    admin.setName(updatedAdmin.getName());
+                    admin.setEmail(updatedAdmin.getEmail());
+                    // 추가 수정 필드가 있다면 아래 업데이트
+                    adminRepository.save(admin);
+                    return ResponseEntity.ok(admin);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // 관리자 계정 삭제 (논리 삭제: isDeleted 값을 true로 변경)
+    @DeleteMapping("/accounts/{id}")
+    public ResponseEntity<?> deleteAdmin(@PathVariable("id") String id) {
+        return adminRepository.findById(id)
+                .map(admin -> {
+                    admin.setIsDeleted(true);
+                    adminRepository.save(admin);
+                    return ResponseEntity.ok().build();
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // 관리자 등록 API
+    @PostMapping("/register")
+    public ResponseEntity<?> registerAdmin(@Valid @RequestBody Admin admin) {
+        // 동일한 id가 이미 존재하는지 확인
+        if(adminRepository.existsById(admin.getId())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("해당 아이디의 관리자가 이미 존재합니다.");
+        }
+        // (필요하다면 여기서 비밀번호 암호화 처리, 예: admin.setPassword(passwordEncoder.encode(admin.getPassword())) )
+
+        // 생성일 및 수정일 설정
+        admin.setCreatedAt(LocalDateTime.now());
+        admin.setUpdatedAt(LocalDateTime.now());
+        // 기본 값 설정 (예: isDeleted 기본 false)
+        if(admin.getIsDeleted() == null) {
+            admin.setIsDeleted(false);
+        }
+
+        // 관리자 등록 (저장)
+        Admin savedAdmin = adminRepository.save(admin);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedAdmin);
+    }
+
 }

@@ -6,6 +6,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ContentManagerDetail from "./pages/Admin/Hbs/ContentManagerDetail";
 import AdminLogin from "./pages/Admin/Login";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import AdminList from "./pages/Admin/AdminAccountManagement";
+import AdminCreate from "./pages/Admin/AdminRegister";
 
 // 사용자 페이지 imports
 import ContentManager from './pages/Admin/Hbs/ContentManager';
@@ -37,13 +39,16 @@ function App() {
 
           {/* 관리자 공용 라우트 (로그인 페이지) */}
           <Route path="/admin/login" element={<AdminLogin />} />
-
+          
           {/* 관리자 보호 라우트 */}
           <Route element={<PrivateRoute />}>
             <Route path="/admin/index" element={<AdminDashboard />} />
+            <Route path="/admin/content-manager" element={<ContentManager />} />
+            <Route path="/admin/admin-manager" element={<AdminList />} />
+            <Route path="/admin/admin-create" element={<AdminCreate />} />
           </Route>
           <Route path="/admin/event-form" element={<EventForm />} />
-          <Route path="/admin/content-manager" element={<ContentManager />} />
+          
           <Route path="/admin/hbs/:fileId" element={<ContentManagerDetail />} />
         </Routes>
       </Router>
