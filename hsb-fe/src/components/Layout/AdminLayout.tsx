@@ -1,19 +1,27 @@
 // src/components/Layout/AdminLayout.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import AdminHeader from './AdminHeader';
+import AdminSidebar from './AdminSidebar';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* 상단 헤더 */}
+      {/* 헤더 */}
       <AdminHeader />
-      {/* 콘텐츠 영역: 헤더 아래에 페이지별 콘텐츠가 렌더링됩니다 */}
-      <main className="flex-grow">{children}</main>
-      {/* 필요 시 하단 Footer 등 추가 */}
+
+      {/* 본문: 사이드바 + 콘텐츠 */}
+      <div className="flex flex-1">
+        <AdminSidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+        <main className="flex-1 p-6 bg-gray-50">{children}</main>
+      </div>
     </div>
   );
 };
