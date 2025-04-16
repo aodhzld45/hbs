@@ -1,5 +1,6 @@
 // src/pages/Admin/AdminAccountManagement.tsx
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/Layout/AdminLayout';
 // import Layout from '../../components/Layout/Layout';
 import { Admin } from '../../types/Admin/Admin';
@@ -32,7 +33,15 @@ const AdminAccountManagement: React.FC = () => {
   return (
     <AdminLayout>
       <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold mb-6">관리자 계정 관리</h1>
+        <Link
+            to="/admin/admin-create"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            관리자 계정 등록
+          </Link>
+          </div>
         <div className="overflow-x-auto">
           <table className="min-w-full border divide-y divide-gray-200">
             <thead className="bg-gray-50">

@@ -64,7 +64,7 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
               onClick={() =>
                 setSelectedParent((prev) => (prev === menu.id ? null : menu.id ?? null))
               }              
-              className="block w-full text-left p-2 hover:bg-gray-200 rounded font-semibold"
+              className="border-2 border-solid block w-full text-left p-2 hover:bg-gray-200 rounded font-semibold"
             >
               {isOpen ? menu.name : menu.name.charAt(0)}
             </button>
@@ -75,7 +75,7 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
                   <Link
                     key={child.id}
                     to={child.url}
-                    className="block p-1 text-sm hover:bg-gray-200 rounded"
+                    className="block p-1 text-sm hover:bg-gray-200 rounded border-b last:border-0"
                   > └ 
                     {child.name}
                   </Link>

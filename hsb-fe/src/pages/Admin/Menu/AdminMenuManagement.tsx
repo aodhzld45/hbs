@@ -1,8 +1,15 @@
 // src/pages/Admin/AdminMenuManagement.tsx
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '../../components/Layout/AdminLayout';
-import { AdminMenu } from '../../types/Admin/AdminMenu';
-import { fetchAdminMenus, createAdminMenu, deleteAdminMenu } from '../../services/Admin/adminMenuApi';
+import AdminLayout from '../../../components/Layout/AdminLayout';
+import { AdminMenu } from '../../../types/Admin/AdminMenu';
+import { 
+  fetchAdminMenus, 
+  createAdminMenu, 
+  updateAdminMenu, 
+  deleteAdminMenu 
+} from '../../../services/Admin/adminMenuApi';
+import AdminMenuCreateModal from '../../../components/Admin/Menu/AdminMenuCreateModal';
+import AdminMenuEditModal from '../../../components/Admin/Menu/AdminMenuEditModal';
 
 const AdminMenuManagement: React.FC = () => {
   const [menus, setMenus] = useState<AdminMenu[]>([]);
@@ -18,6 +25,9 @@ const AdminMenuManagement: React.FC = () => {
     useTf: 'Y',
     delTf: 'N',
   });
+  // 수정할 메뉴 상태 (모달이 열리면 해당 메뉴 데이터를 저장)
+  const [editingMenu, setEditingMenu] = useState<AdminMenu | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
 
   useEffect(() => {
     const loadMenus = async () => {
@@ -45,21 +55,11 @@ const AdminMenuManagement: React.FC = () => {
     }));
   };
 
-  const handleCreateMenu = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveNewMenu = async (newMenu: AdminMenu) => {
     try {
       const created = await createAdminMenu(newMenu);
       setMenus(prev => [...prev, created]);
-      setNewMenu({
-        name: '',
-        depth: 1,
-        parentId: undefined,
-        description: '',
-        url: '',
-        orderSequence: 1,
-        useTf: 'Y',
-        delTf: 'N',
-      });
+      setShowCreateModal(false);
     } catch (err) {
       console.error(err);
       setError('메뉴 등록에 실패했습니다.');
@@ -77,6 +77,18 @@ const AdminMenuManagement: React.FC = () => {
     }
   };
 
+  // 수정 모달에서 "저장" 버튼 클릭 시 호출될 함수
+  const handleUpdateMenu = async (updatedMenu: AdminMenu) => {
+    try {
+      const result = await updateAdminMenu(updatedMenu.id as number, updatedMenu);
+      setMenus(prev => prev.map(menu => (menu.id === result.id ? result : menu)));
+      setEditingMenu(null);
+    } catch (err) {
+      console.error(err);
+      setError('메뉴 수정에 실패했습니다.');
+    }
+  };
+
   if (loading) return <div className="text-center py-8">로딩 중...</div>;
   if (error) return <div className="text-red-500 text-center py-8">{error}</div>;
 
@@ -84,69 +96,13 @@ const AdminMenuManagement: React.FC = () => {
     <AdminLayout>
       <div className="container mx-auto py-8">
         <h1 className="text-2xl font-bold mb-6">관리자 메뉴 관리</h1>
-        
-        {/* 신규 메뉴 등록 폼 */}
-        <form onSubmit={handleCreateMenu} className="mb-8">
-          <div className="grid grid-cols-1 gap-4">
-            <input
-              type="text"
-              name="name"
-              placeholder="메뉴 이름"
-              value={newMenu.name}
-              onChange={handleInputChange}
-              className="px-3 py-2 border rounded"
-              required
-            />
-            <input
-              type="text"
-              name="url"
-              placeholder="메뉴 URL"
-              value={newMenu.url}
-              onChange={handleInputChange}
-              className="px-3 py-2 border rounded"
-              required
-            />
-            <input
-              type="number"
-              name="orderSequence"
-              placeholder="순서"
-              value={newMenu.orderSequence}
-              onChange={handleInputChange}
-              className="px-3 py-2 border rounded"
-              required
-            />
-            <input
-              type="number"
-              name="depth"
-              placeholder="뎁스 (예: 1)"
-              value={newMenu.depth}
-              onChange={handleInputChange}
-              className="px-3 py-2 border rounded"
-              required
-            />
-            <input
-              type="text"
-              name="parentId"
-              placeholder="부모 메뉴 ID (없으면 비워두세요)"
-              value={newMenu.parentId ? newMenu.parentId.toString() : ''}
-              onChange={handleInputChange}
-              className="px-3 py-2 border rounded"
-            />
-            <textarea
-              name="description"
-              placeholder="메모 (옵션)"
-              value={newMenu.description}
-              onChange={handleInputChange}
-              className="px-3 py-2 border rounded"
-            ></textarea>
-          </div>
-          <button
-            type="submit"
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             메뉴 등록
           </button>
-        </form>
+      
 
         {/* 메뉴 목록 테이블 */}
         <div className="overflow-x-auto">
@@ -176,8 +132,10 @@ const AdminMenuManagement: React.FC = () => {
                     {menu.useTf === 'Y' ? '사용' : '미사용'} / {menu.delTf === 'N' ? '정상' : '삭제'}
                   </td>
                   <td className="px-4 py-2 text-sm">
-                    {/* 수정 기능은 필요 시 모달이나 별도 페이지로 구현 */}
-                    <button className="text-blue-500 hover:underline mr-2">
+                    <button
+                      onClick={() => setEditingMenu(menu)}
+                      className="text-blue-500 hover:underline mr-2"
+                    >
                       수정
                     </button>
                     <button
@@ -200,6 +158,23 @@ const AdminMenuManagement: React.FC = () => {
           </table>
         </div>
       </div>
+
+
+      {showCreateModal && (
+        <AdminMenuCreateModal
+          onSave={handleSaveNewMenu}
+          onCancel={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {/* 수정 모달: editingMenu가 존재하면 AdminMenuEditModal 컴포넌트 렌더링 */}
+      {editingMenu && (
+        <AdminMenuEditModal
+          menu={editingMenu}
+          onSave={handleUpdateMenu}
+          onCancel={() => setEditingMenu(null)}
+        />
+      )}
     </AdminLayout>
   );
 };

@@ -8,7 +8,7 @@ import AdminLogin from "./pages/Admin/Login";
 import AdminDashboard from "./pages/Admin";
 import AdminList from "./pages/Admin/AdminAccountManagement";
 import AdminCreate from "./pages/Admin/AdminRegister";
-import AdminMenu from "./pages/Admin/AdminMenuManagement";
+import AdminMenu from "./pages/Admin/Menu/AdminMenuManagement";
 
 // 사용자 페이지 imports
 import ContentManager from './pages/Admin/Hbs/ContentManager';
