@@ -1,6 +1,6 @@
 // src/pages/Admin/AdminMenuManagement.tsx
 import React, { useEffect, useState } from 'react';
-import Layout from '../../components/Layout/Layout';
+import AdminLayout from '../../components/Layout/AdminLayout';
 import { AdminMenu } from '../../types/Admin/AdminMenu';
 import { fetchAdminMenus, createAdminMenu, deleteAdminMenu } from '../../services/Admin/adminMenuApi';
 
@@ -81,7 +81,7 @@ const AdminMenuManagement: React.FC = () => {
   if (error) return <div className="text-red-500 text-center py-8">{error}</div>;
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="container mx-auto py-8">
         <h1 className="text-2xl font-bold mb-6">관리자 메뉴 관리</h1>
         
@@ -200,7 +200,7 @@ const AdminMenuManagement: React.FC = () => {
           </table>
         </div>
       </div>
-    </Layout>
+    </AdminLayout>
   );
 };
 
