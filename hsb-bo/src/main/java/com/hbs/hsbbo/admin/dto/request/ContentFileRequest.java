@@ -18,5 +18,6 @@ public class ContentFileRequest {
     private String description;
     private FileType fileType;
     private ContentType contentType;
+    private String fileUrl;
 
 }

@@ -21,6 +21,13 @@ public class FileUtil {
      * 파일 저장
      */
     public String saveFile(Path baseDir, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("업로드할 파일이 없습니다.");
+        }
+        if (baseDir == null) {
+            throw new IllegalArgumentException("저장 경로가 유효하지 않습니다.");
+        }
+
         try {
             String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
             Path fullPath = baseDir.resolve(fileName);
@@ -45,9 +52,12 @@ public class FileUtil {
             case VIDEO -> contentType == ContentType.HBS ? "video/hbs" : "video/etc";
             case IMAGE -> "image";
             case DOCUMENT -> "document/" + contentType.name().toLowerCase();
+            case LINK -> throw new IllegalArgumentException("LINK 타입은 파일 경로가 없습니다.");
         };
+
         return Paths.get(fileStorageProperties.getUploadPath(), subDir);
     }
+
 
     public String getExtension(String name) {
         return name != null && name.contains(".")

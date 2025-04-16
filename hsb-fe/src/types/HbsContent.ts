@@ -1,8 +1,8 @@
 // types/HbsContent.ts - ContentFile Table & Entity = HbsContent 매핑.
 
 
-export type FileType = 'VIDEO' | 'IMAGE' | 'DOCUMENT';
-export type ContentType = 'HBS' | 'PROMO' | 'MEDIA' | 'CI_BI';
+export type FileType = 'VIDEO' | 'IMAGE' | 'DOCUMENT' | 'LINK';
+export type ContentType = 'HBS' | 'YOUTUBE' | 'PROMO' | 'MEDIA' | 'CI_BI';
 
 
 export interface HbsContent {

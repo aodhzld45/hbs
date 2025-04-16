@@ -38,16 +38,14 @@ public class ContentFileController {
     // 콘텐츠 등록
     @PostMapping(value = "/content-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadContents(
-            @RequestPart("file") MultipartFile file,
+            @RequestPart(value = "file", required = false) MultipartFile file,
             @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail,
             @RequestPart("title") String title,
             @RequestPart("description") String description,
             @RequestPart("fileType") String fileType,
-            @RequestPart("contentType") String contentType
+            @RequestPart("contentType") String contentType,
+            @RequestPart(value = "fileUrl", required = false) String fileUrl
     ) {
-        if (file == null || file.isEmpty()) {
-            return ResponseEntity.badRequest().body("파일이 없습니다.");
-        }
 
         try {
             ContentFileRequest request = new ContentFileRequest();
@@ -55,6 +53,10 @@ public class ContentFileController {
             request.setDescription(description);
             request.setFileType(FileType.valueOf(fileType.toUpperCase()));
             request.setContentType(ContentType.valueOf(contentType.toUpperCase()));
+
+            if (fileUrl != null && !fileUrl.isBlank()) {
+                request.setFileUrl(fileUrl); //링크 타입일 경우 저장
+            }
 
             contentFileService.saveContentFile(request, file, thumbnail);
             return ResponseEntity.ok("콘텐츠 등록 완료");

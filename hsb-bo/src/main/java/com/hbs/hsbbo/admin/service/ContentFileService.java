@@ -45,30 +45,39 @@ public class ContentFileService {
     // 통합 콘텐츠 등록
     public void saveContentFile(ContentFileRequest request, MultipartFile file, MultipartFile thumbnail) {
 
-        // 1. 저장 경로 계산
-        Path filePath = fileUtil.resolvePathByType(request.getFileType(), request.getContentType());
-        String fileUrl = fileUtil.saveFile(filePath, file);
-
-        String thumbnailUrl = (thumbnail != null && !thumbnail.isEmpty())
-                ? fileUtil.saveFile(fileUtil.resolvePathByType(FileType.IMAGE, request.getContentType()), thumbnail)
-                : null;
-        // 2. 실제 저장되는 엔티티 생성
         ContentFile entity = new ContentFile();
 
         entity.setTitle(request.getTitle());
         entity.setDescription(request.getDescription());
         entity.setFileType(request.getFileType());
         entity.setContentType(request.getContentType());
-        entity.setFileUrl(fileUrl);
-        entity.setThumbnailUrl(thumbnailUrl);
-        entity.setExtension(fileUtil.getExtension(file.getOriginalFilename()));
+
+        if (request.getFileType() == FileType.LINK) {
+            // 링크 등록일 경우, fileUrl만 저장
+            entity.setFileUrl(request.getFileUrl());
+            entity.setExtension("link"); // 또는 null
+            entity.setThumbnailUrl(null); // 필요 시 썸네일 URL 필드 추가로 확장 가능
+        } else {
+            // 일반 파일 저장 처리
+            Path filePath = fileUtil.resolvePathByType(request.getFileType(), request.getContentType());
+            String fileUrl = fileUtil.saveFile(filePath, file);
+            entity.setFileUrl(fileUrl);
+
+            // 썸네일이 있을 경우 저장
+            String thumbnailUrl = (thumbnail != null && !thumbnail.isEmpty())
+                    ? fileUtil.saveFile(fileUtil.resolvePathByType(FileType.IMAGE, request.getContentType()), thumbnail)
+                    : null;
+            entity.setThumbnailUrl(thumbnailUrl);
+
+            entity.setExtension(fileUtil.getExtension(file.getOriginalFilename()));
+        }
 
         int nextDispSeq = repository.findMaxDispSeqByContentType(request.getContentType()) + 1;
         entity.setDispSeq(nextDispSeq);
 
         repository.save(entity);
-
     }
+
 
     // 톱합 콘텐츠  수정
     public ContentFile updateContent(Long id, ContentFileRequest request, MultipartFile file, MultipartFile thumbnail) {
