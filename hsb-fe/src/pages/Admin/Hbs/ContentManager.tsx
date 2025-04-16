@@ -17,6 +17,43 @@ function ContentManager() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState('');
   const [contents, setContents] = useState<HbsContent[]>([]);
+
+  // 유튜브 썸네일 관련
+  const [youtubeId, setYoutubeId] = useState('');
+  const [youtubeImgUrl, setYoutubeImgUrl] = useState('');
+  const [youtubeThumbUrl, setYoutubeThumbUrl] = useState('');
+
+
+  const extractYoutubeThumbnail = (url: string) => {
+    const url1 = "https://youtu.be/";
+    const url2 = "https://www.youtube.com/watch?v=";
+    let id = "";
+  
+    if (url.includes(url1)) {
+      id = url.replace(url1, "");
+    } else if (url.includes(url2)) {
+      id = url.replace(url2, "");
+    }
+  
+    if (!id) {
+      alert("Youtube 연결 URL을 다시 한번 확인해 주세요.\nhttps://www.youtube.com/watch?v=... 또는 https://youtu.be/... 형식이어야 합니다!");
+      return;
+    }
+  
+    const img = `http://img.youtube.com/vi/${id}/mqdefault.jpg`;
+    const thumb = `http://img.youtube.com/vi/${id}/0.jpg`;
+  
+    setYoutubeId(id);
+    setYoutubeImgUrl(img);
+    setYoutubeThumbUrl(thumb);
+  
+    alert("만약 잠시 후 이미지가 보이지 않는다면 직접 이미지를 등록하셔야 합니다!");
+  };
+  
+
+
+
+
   
   const handleFileTypeChange = (newType: FileType) => {
     setFileType(newType);
@@ -89,58 +126,6 @@ function ContentManager() {
     }
   };
   
-
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-
-  //   // 필수 조건 체크
-  //   if (fileType === 'LINK' && contentType !== 'YOUTUBE') {
-  //     setContentType('YOUTUBE');
-  //     if (!fileUrl) {
-  //       alert('유튜브 링크를 입력해주세요.');
-  //       return;
-  //     }
-  //   } else {
-  //     if (!mainFile || (fileType === 'VIDEO' && !thumbnailFile)) {
-  //       alert('필수 파일을 모두 선택해주세요.');
-  //       return;
-  //     }
-  //   }
-
-  //   const formData = new FormData();
-
-  //   formData.append('title', title);
-  //   formData.append('description', description);
-  //   formData.append('fileType', fileType);
-  //   formData.append('contentType', contentType);
-
-  //   if (fileType === 'LINK') {
-  //     formData.append('fileUrl', fileUrl);
-  //     formData.append('contentType', fileType === 'LINK' ? contentType : contentType);
-  //   } else {
-  //     formData.append('file', mainFile as Blob);
-  //     if (fileType === 'VIDEO') {
-  //       formData.append('thumbnail', thumbnailFile as Blob);
-  //     }
-  //   }
-
-
-  //   try {
-  //     await fetchHbsCreate(formData);
-  //     alert('콘텐츠가 등록되었습니다.');
-  //     // 초기화
-  //     setTitle('');
-  //     setDescription('');
-  //     setMainFile(null);
-  //     setThumbnailFile(null);
-  //     setFileUrl('');
-  //     loadContents();
-  //   } catch (err) {
-  //     console.error(err);
-  //     alert('등록 실패');
-  //   }
-  // };
-
   return (
     <AdminLayout>
       <div className="max-w-xl mx-auto mb-10">
@@ -204,7 +189,64 @@ function ContentManager() {
           />
 
           {/* fileType이 LINK일 경우 fileUrl 입력 */}
+
           {fileType === 'LINK' ? (
+            <div>
+              <label className="block font-semibold mb-1">유튜브 URL</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="https://www.youtube.com/watch?v=xxxx 또는 https://youtu.be/xxxx"
+                  value={fileUrl}
+                  onChange={e => setFileUrl(e.target.value)}
+                  onBlur={() => extractYoutubeThumbnail(fileUrl)} 
+                  className="w-full border px-4 py-2 rounded"
+                  required
+                />
+                {/* 또는 수동으로 버튼 클릭 */}
+                {/* <button type="button" onClick={() => extractYoutubeThumbnail(fileUrl)} className="px-3 py-2 bg-gray-200 rounded">썸네일</button> */}
+              </div>
+
+              {/* 썸네일 미리보기 */}
+              {youtubeImgUrl && (
+                <div className="mt-4 flex gap-4 items-center">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">대표 썸네일</p>
+                    <img src={youtubeImgUrl} width={150} height={100} alt="대표 썸네일" className="rounded border" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">기본 썸네일</p>
+                    <img src={youtubeThumbUrl} width={100} height={50} alt="기본 썸네일" className="rounded border" />
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="block font-semibold mb-1">
+                {fileType === 'VIDEO'
+                  ? '영상 파일 (mp4)'
+                  : fileType === 'IMAGE'
+                  ? '이미지 파일'
+                  : '문서 파일'}
+              </label>
+              <input
+                type="file"
+                accept={
+                  fileType === 'VIDEO'
+                    ? 'video/mp4'
+                    : fileType === 'IMAGE'
+                    ? 'image/*'
+                    : '.pdf,.doc,.docx,.hwp'
+                }
+                onChange={e => setMainFile(e.target.files?.[0] || null)}
+                required
+              />
+            </div>
+          )}
+
+
+          {/* {fileType === 'LINK' ? (
             <div>
               <label className="block font-semibold mb-1">유튜브 임베드 URL</label>
               <input
@@ -238,7 +280,7 @@ function ContentManager() {
                 required
               />
             </div>
-          )}
+          )} */}
 
           {fileType === 'VIDEO' && (
             <div>
