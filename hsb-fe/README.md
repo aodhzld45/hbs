@@ -1,6 +1,7 @@
 # 기본 설치 라이브러리
-### BO와의 통신을 위한 Axios    - npm install Axios 
-### Path 관련                   - npm install react-router-dom
+### BO와의 통신을 위한 Axios          - npm install Axios 
+### Path 관련                         - npm install react-router-dom
+### 아이콘(icon) 관리 라이브러리       - npm install lucide-react
 
 <hr>
 
