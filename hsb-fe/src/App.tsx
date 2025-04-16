@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 // 관리자 페이지 imports
 import ContentManagerDetail from "./pages/Admin/Hbs/ContentManagerDetail";
 import AdminLogin from "./pages/Admin/Login";
-import AdminDashboard from "./pages/Admin/AdminDashboard";
+import AdminDashboard from "./pages/Admin";
 import AdminList from "./pages/Admin/AdminAccountManagement";
 import AdminCreate from "./pages/Admin/AdminRegister";
 import AdminMenu from "./pages/Admin/AdminMenuManagement";

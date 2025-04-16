@@ -39,6 +39,7 @@ public class AuthController {
                 // 인증 성공: 세션 생성
                 request.getSession(true);
                 HttpSession session = request.getSession(true);
+                session.setAttribute("admin", adminOpt.get());
                 System.out.println("생성된 JSESSIONID: " + session.getId());
                 return ResponseEntity.ok("Login 성공");
             } else {
@@ -53,8 +54,21 @@ public class AuthController {
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
+            System.out.println("로그아웃 성공");
         }
         return ResponseEntity.ok("Logout 성공");
+    }
+
+    // 세션 인증
+    @GetMapping("/session-check")
+    public ResponseEntity<?> checkSession(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null && session.getAttribute("admin") != null) {
+            System.out.println("세션 검증 완료" + session.getAttribute("admin"));
+            return ResponseEntity.ok("인증된 세션");
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("세션 없음");
+        }
     }
 
     // 전체 관리자 계정 목록 조회

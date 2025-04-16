@@ -1,41 +1,72 @@
 // src/context/AuthContext.tsx
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext } from "react";
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: () => void;
-  logout: () => void;
+  logout: () => Promise<void>;
+  checkSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
+  isLoading: true,
   login: () => {},
-  logout: () => {},
+  logout: async () => {},
+  checkSession: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-        // 초기값을 localStorage에서 읽어오도록 설정 (예: "true" 문자열)
-        const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
-          localStorage.getItem('isAuthenticated') === 'true'
-        );
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-        const login = () => {
-          setIsAuthenticated(true);
-          localStorage.setItem('isAuthenticated', 'true');
-        };
+  // 앱 시작 시 백엔드 세션 체크
+  useEffect(() => {
+    checkSession();
+  }, []);
 
-        const logout = () => {
-          setIsAuthenticated(false);
-          localStorage.setItem('isAuthenticated', 'false');
-        };
+  const checkSession = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/api/admin/session-check", {
+        method: "GET",
+        credentials: "include", // 쿠키 포함 요청
+      });
+      if (response.ok) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      console.error("세션 체크 실패:", error);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        // 또는, 앱 시작 시 세션 검증 API를 호출하여 인증 상태를 확인할 수 있습니다.
-        useEffect(() => {
-          // 예를 들어, fetchSessionStatus()를 호출하여 인증 상태를 업데이트할 수 있음.
-        }, []);
+  // 로그인 API 호출 후 성공 시 호출 (세션 생성 후 호출)
+  const login = () => {
+    setIsAuthenticated(true);
+  };
+
+  // 로그아웃 시 서버에 로그아웃 API 호출 후 상태 업데이트
+  const logout = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/api/admin/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (response.ok) {
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      console.error("로그아웃 실패:", error);
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout, checkSession }}>
       {children}
     </AuthContext.Provider>
   );
