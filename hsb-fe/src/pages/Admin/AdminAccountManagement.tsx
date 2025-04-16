@@ -1,6 +1,7 @@
 // src/pages/Admin/AdminAccountManagement.tsx
 import React, { useEffect, useState } from 'react';
-import Layout from '../../components/Layout/Layout';
+import AdminLayout from '../../components/Layout/AdminLayout';
+// import Layout from '../../components/Layout/Layout';
 import { Admin } from '../../types/Admin/Admin';
 import { fetchAdminAccounts } from '../../services/Admin/adminApi';
 
@@ -29,7 +30,7 @@ const AdminAccountManagement: React.FC = () => {
   if (error) return <div className="text-red-500 text-center py-8">{error}</div>;
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="container mx-auto py-8">
         <h1 className="text-2xl font-bold mb-6">관리자 계정 관리</h1>
         <div className="overflow-x-auto">
@@ -73,7 +74,7 @@ const AdminAccountManagement: React.FC = () => {
           </table>
         </div>
       </div>
-    </Layout>
+    </AdminLayout>
   );
 };
 

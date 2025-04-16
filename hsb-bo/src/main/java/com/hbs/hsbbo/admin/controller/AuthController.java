@@ -40,8 +40,8 @@ public class AuthController {
                 request.getSession(true);
                 HttpSession session = request.getSession(true);
                 session.setAttribute("admin", adminOpt.get());
-                System.out.println("생성된 JSESSIONID: " + session.getId());
-                return ResponseEntity.ok("Login 성공");
+                Admin admin = adminOpt.get();
+                return ResponseEntity.ok(admin);
             } else {
                 // 인증 실패: 적절한 실패 메시지 반환
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login 실패");

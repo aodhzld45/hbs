@@ -1,4 +1,4 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { fetchAdminLogin } from '../../services/Admin/adminApi';
@@ -16,7 +16,14 @@ const AdminLogin = () => {
   });
   const [error, setError] = useState<string>('');
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { isAuthenticated, login } = useAuth();
+
+  // 이미 로그인된 상태이면 /admin/index로 리다이렉트
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/admin/index');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -34,7 +41,7 @@ const AdminLogin = () => {
     try {
       const admin: Admin = await fetchAdminLogin(formData.id, formData.password);
       console.log('로그인 성공:', admin);
-      login(); // 전역 인증 상태를 업데이트
+      login(admin); // 전역 인증 상태를 업데이트
       navigate('/admin/index'); // 로그인 성공 후 원하는 관리자 페이지로 이동
     } catch (err) {
       setError('로그인에 실패했습니다. 다시 시도해주세요.');

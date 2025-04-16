@@ -15,7 +15,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col">
       {/* 헤더 */}
-      {/* <AdminHeader /> */}
+      <AdminHeader />
 
       {/* 본문: 사이드바 + 콘텐츠 */}
       <div className="flex flex-1">
