@@ -5,27 +5,27 @@ MYSQL 기준이다이
 헝가리안 규칙
 
 -- hbs.contentfile definition
-
 CREATE TABLE `contentfile` (
-  `fileId` int unsigned NOT NULL AUTO_INCREMENT,
-  `fileType` enum('VIDEO','IMAGE','DOCUMENT') COLLATE utf8mb4_general_ci NOT NULL COMMENT '파일 종류: 영상, 이미지, 문서',
-  `contentType` enum('HBS','PROMO','MEDIA','CI_BI') COLLATE utf8mb4_general_ci NOT NULL COMMENT '소속 콘텐츠 유형',
-  `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
-  `fileUrl` varchar(500) COLLATE utf8mb4_general_ci NOT NULL,
-  `thumbnailUrl` varchar(500) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `extension` varchar(10) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `dispSeq` int DEFAULT NULL,
-  `useTF` char(1) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Y',
-  `delTF` char(1) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'N',
-  `regAdm` int unsigned DEFAULT NULL,
+  `fileId` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `fileType` enum('VIDEO','IMAGE','DOCUMENT','LINK') NOT NULL COMMENT '파일 종류: 영상, 이미지, 문서, 링크',
+  `contentType` enum('HBS','PROMO','MEDIA','CI_BI','YOUTUBE') NOT NULL COMMENT '소속 콘텐츠 유형',
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `fileUrl` varchar(500) NOT NULL,
+  `thumbnailUrl` varchar(500) DEFAULT NULL,
+  `extension` varchar(10) DEFAULT NULL,
+  `dispSeq` int(11) DEFAULT NULL,
+  `useTF` char(1) NOT NULL DEFAULT 'Y',
+  `delTF` char(1) NOT NULL DEFAULT 'N',
+  `regAdm` int(10) unsigned DEFAULT NULL,
   `regDate` datetime DEFAULT NULL,
-  `modifyAdm` int unsigned DEFAULT NULL,
+  `modifyAdm` int(10) unsigned DEFAULT NULL,
   `modifyDate` datetime DEFAULT NULL,
-  `delAdm` int unsigned DEFAULT NULL,
+  `delAdm` int(10) unsigned DEFAULT NULL,
   `delDate` datetime DEFAULT NULL,
+  `content` text DEFAULT NULL COMMENT '에디터 본문 내용',
   PRIMARY KEY (`fileId`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 -- hbs.userlog definition
