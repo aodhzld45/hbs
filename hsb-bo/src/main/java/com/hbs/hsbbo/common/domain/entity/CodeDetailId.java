@@ -5,11 +5,11 @@ import java.util.Objects;
 
 public class CodeDetailId implements Serializable {
     private String pcode;
-    private Integer dcodeNo;
+    private Long dcodeNo;
 
     public CodeDetailId() {}
 
-    public CodeDetailId(String pcode, Integer dcodeNo) {
+    public CodeDetailId(String pcode, Long dcodeNo) {
         this.pcode = pcode;
         this.dcodeNo = dcodeNo;
     }

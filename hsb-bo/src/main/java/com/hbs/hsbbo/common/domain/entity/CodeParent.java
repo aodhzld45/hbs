@@ -13,7 +13,7 @@ public class CodeParent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "PCODE_NO")
-    private Integer pcodeNo;
+    private Long pcodeNo;
 
     @Column(name = "SITE_NO")
     private Integer siteNo;
@@ -62,8 +62,8 @@ public class CodeParent {
         LocalDateTime now = LocalDateTime.now();
         this.regDate = now;
         this.upDate = now;
-        if (this.useTf == null) this.useTf = "Y";
-        if (this.delTf == null) this.delTf = "N";
+        if (this.useTf   == null) this.useTf   = "Y";
+        if (this.delTf   == null) this.delTf   = "N";
     }
 
     @PreUpdate

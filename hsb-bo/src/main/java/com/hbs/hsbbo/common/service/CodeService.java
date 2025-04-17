@@ -52,7 +52,7 @@ public class CodeService {
 
     // — 대분류 수정 —
     @Transactional
-    public CodeParentResponse updateParent(Integer id, CodeParentRequest req) {
+    public CodeParentResponse updateParent(Long id, CodeParentRequest req) {
         CodeParent e = parentRepo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("대분류코드가 없습니다: " + id));
         e.setPcode(req.pcode());
@@ -64,7 +64,7 @@ public class CodeService {
 
     // — 대분류 삭제(논리) —
     @Transactional
-    public void deleteParent(Integer id) {
+    public void deleteParent(Long id) {
         CodeParent e = parentRepo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("대분류코드가 없습니다: " + id));
         e.setDelTf("Y");
@@ -96,7 +96,7 @@ public class CodeService {
     // — 하위 수정 —
     @Transactional
     public CodeDetailResponse updateDetail(String pcode,
-                                           Integer dcodeNo,
+                                           Long dcodeNo,
                                            CodeDetailRequest req) {
         CodeDetailId key = new CodeDetailId(pcode, dcodeNo);
         CodeDetail e = detailRepo.findById(key)
@@ -110,7 +110,7 @@ public class CodeService {
 
     // — 하위 삭제(논리) —
     @Transactional
-    public void deleteDetail(String pcode, Integer dcodeNo) {
+    public void deleteDetail(String pcode, Long dcodeNo) {
         CodeDetailId key = new CodeDetailId(pcode, dcodeNo);
         CodeDetail e = detailRepo.findById(key)
                 .orElseThrow(() -> new IllegalArgumentException("하위코드가 없습니다: " + key));

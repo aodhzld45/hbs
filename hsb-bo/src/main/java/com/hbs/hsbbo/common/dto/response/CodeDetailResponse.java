@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 public record CodeDetailResponse(
         String  pcode,
-        Integer dcodeNo,
+        long dcodeNo,
         String  dcode,
         String  dcodeNm,
         String  dcodeExt,

@@ -11,13 +11,13 @@ import java.time.LocalDateTime;
 @Data
 public class CodeDetail {
     @Id
-    @Column(name = "PCODE", length = 50)
-    private String pcode;
-
-    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "DCODE_NO")
-    private Integer dcodeNo;
+    private Long dcodeNo;
+
+    @Id
+    @Column(name = "PCODE", nullable = false, length = 50)
+    private String pcode;
 
     @Column(name = "DCODE", nullable = false, length = 50)
     private String dcode;
@@ -25,7 +25,7 @@ public class CodeDetail {
     @Column(name = "DCODE_NM", nullable = false, length = 50)
     private String dcodeNm;
 
-    @Column(name = "DCODE_EXT", length = 255)
+    @Column(name = "DCODE_EXT", nullable = false, length = 255)
     private String dcodeExt;
 
     @Column(name = "DCODE_SEQ_NO")
@@ -65,7 +65,12 @@ public class CodeDetail {
     private String dcodeInfo03;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "PCODE", insertable = false, updatable = false)
+    @JoinColumn(
+            name               = "PCODE",
+            referencedColumnName = "PCODE",
+            insertable         = false,
+            updatable          = false
+    )
     private CodeParent parent;
 
     @PrePersist
@@ -73,8 +78,8 @@ public class CodeDetail {
         LocalDateTime now = LocalDateTime.now();
         this.regDate = now;
         this.upDate = now;
-        if (this.useTf == null) this.useTf = "Y";
-        if (this.delTf == null) this.delTf = "N";
+        if (this.useTf   == null) this.useTf   = "Y";
+        if (this.delTf   == null) this.delTf   = "N";
     }
 
     @PreUpdate

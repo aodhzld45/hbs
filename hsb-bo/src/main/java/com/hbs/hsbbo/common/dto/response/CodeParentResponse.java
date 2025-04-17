@@ -5,7 +5,7 @@ import com.hbs.hsbbo.common.domain.entity.CodeParent;
 import java.time.LocalDateTime;
 
 public record CodeParentResponse(
-        Integer pcodeNo,
+        long pcodeNo,
         String  pcode,
         String  pcodeNm,
         String  pcodeMemo,

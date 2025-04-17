@@ -40,7 +40,7 @@ public class CodeController {
 
     @PutMapping("/parent/{id}")
     public CodeParentResponse updateParent(
-            @PathVariable Integer id,
+            @PathVariable Long id,
             @Valid @RequestBody CodeParentRequest req
     ) {
         return svc.updateParent(id, req);
@@ -48,7 +48,7 @@ public class CodeController {
 
     @DeleteMapping("/parent/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteParent(@PathVariable Integer id) {
+    public void deleteParent(@PathVariable Long id) {
         svc.deleteParent(id);
     }
 
@@ -71,7 +71,7 @@ public class CodeController {
     @PutMapping("/{pcode}/detail/{dcodeNo}")
     public CodeDetailResponse updateDetail(
             @PathVariable String pcode,
-            @PathVariable Integer dcodeNo,
+            @PathVariable Long dcodeNo,
             @Valid @RequestBody CodeDetailRequest req
     ) {
         return svc.updateDetail(pcode, dcodeNo, req);
@@ -81,7 +81,7 @@ public class CodeController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteDetail(
             @PathVariable String pcode,
-            @PathVariable Integer dcodeNo
+            @PathVariable Long dcodeNo
     ) {
         svc.deleteDetail(pcode, dcodeNo);
     }
