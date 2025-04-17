@@ -18,6 +18,7 @@ import lombok.ToString;
 public class ContentFileRequest {
     private String title;
     private String description;
+    private String content;
     private FileType fileType;
     private ContentType contentType;
     private String fileUrl;

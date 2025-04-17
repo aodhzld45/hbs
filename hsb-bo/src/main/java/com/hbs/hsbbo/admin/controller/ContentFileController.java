@@ -58,6 +58,7 @@ public class ContentFileController {
             @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail,
             @RequestPart("title") String title,
             @RequestPart("description") String description,
+            @RequestPart("content") String content,
             @RequestPart("fileType") String fileType,
             @RequestPart("contentType") String contentType,
             @RequestPart(value = "fileUrl", required = false) String fileUrl,
@@ -68,6 +69,7 @@ public class ContentFileController {
             ContentFileRequest request = new ContentFileRequest();
             request.setTitle(title);
             request.setDescription(description);
+            request.setContent(content);
             request.setFileType(FileType.valueOf(fileType.toUpperCase()));
             request.setContentType(ContentType.valueOf(contentType.toUpperCase()));
 
@@ -76,6 +78,8 @@ public class ContentFileController {
                 request.setFileUrl(fileUrl);
                 request.setThumbnailUrl(thumbnailUrl);
             }
+
+            System.out.println("요청 리퀘스트 정보" + request.toString());
 
             contentFileService.saveContentFile(request, file, thumbnail);
             return ResponseEntity.ok("콘텐츠 등록 완료");
@@ -93,6 +97,7 @@ public class ContentFileController {
             @PathVariable Long id,
             @RequestPart("title") String title,
             @RequestPart("description") String description,
+            @RequestPart("content") String content,
             @RequestPart("fileType") String fileType,
             @RequestPart("contentType") String contentType,
             @RequestPart(value = "file", required = false) MultipartFile file,
@@ -105,6 +110,7 @@ public class ContentFileController {
             ContentFileRequest request = new ContentFileRequest();
             request.setTitle(title);
             request.setDescription(description);
+            request.setContent(content);
             request.setFileType(FileType.valueOf(fileType.toUpperCase()));
             request.setContentType(ContentType.valueOf(contentType.toUpperCase()));
 

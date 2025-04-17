@@ -5,6 +5,11 @@ import { FileType, ContentType, HbsContent } from '../../../types/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
 import { useNavigate } from 'react-router-dom';
 import { fetchHbsCreate } from '../../../services/hbsApi';
+// 에디터용 import
+import { Editor } from '@toast-ui/react-editor';
+import '@toast-ui/editor/dist/toastui-editor.css';
+import { useRef } from 'react'; 
+
 
 function ContentManager() {
   const navigate = useNavigate();
@@ -16,6 +21,8 @@ function ContentManager() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState('');
   const [contents, setContents] = useState<HbsContent[]>([]);
+  
+  const editorRef = useRef<Editor>(null);
 
   // 필터링용 상태
   const [filterFileType, setFilterFileType] = useState<FileType | ''>('');
@@ -78,7 +85,10 @@ function ContentManager() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title || !description) return alert('제목과 설명을 입력해주세요.');
+    const editorInstance = editorRef.current;
+    const htmlContent = editorInstance?.getInstance().getHTML(); 
+
+    if (!title || !description || !htmlContent) return alert('제목과 설명을 입력해주세요.');
 
     if (fileType === 'LINK') {
       if (!fileUrl || !youtubeEmbedUrl) return alert('유튜브 링크를 입력해주세요.');
@@ -91,6 +101,7 @@ function ContentManager() {
     formData.append('description', description);
     formData.append('fileType', fileType);
     formData.append('contentType', contentType);
+    formData.append('content', htmlContent);
 
     if (fileType === 'LINK') {
       formData.append('fileUrl', youtubeEmbedUrl);
@@ -172,6 +183,16 @@ function ContentManager() {
             onChange={e => setDescription(e.target.value)}
             placeholder="설명"
             className="w-full border px-4 py-2 rounded"
+          />
+
+          <label className="block font-semibold mb-1">콘텐츠 (에디터)</label>
+          <Editor
+            initialValue={''}
+            previewStyle="vertical"
+            height="300px"
+            initialEditType="wysiwyg"
+            useCommandShortcut={true}
+            ref={editorRef}
           />
 
           {fileType === 'LINK' ? (

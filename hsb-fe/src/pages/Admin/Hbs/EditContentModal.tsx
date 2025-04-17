@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { HbsContent, FileType, ContentType } from '../../../types/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
 
+// 에디터용 import
+import { Editor } from '@toast-ui/react-editor';
+import '@toast-ui/editor/dist/toastui-editor.css';
+import { useRef } from 'react'; 
+
 interface EditContentModalProps {
   content: HbsContent;
   onClose: () => void;
@@ -17,6 +22,9 @@ const EditContentModal = ({ content, onClose, onSave }: EditContentModalProps) =
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState(content.fileUrl || '');
 
+  const editorRef = useRef<Editor>(null);
+
+  
   const [youtubeId, setYoutubeId] = useState('');
   const [youtubeImgUrl, setYoutubeImgUrl] = useState('');
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState(content.fileUrl || '');
@@ -46,10 +54,13 @@ const EditContentModal = ({ content, onClose, onSave }: EditContentModalProps) =
   };
 
   const handleSubmit = () => {
+    const htmlContent = editorRef.current?.getInstance().getHTML() || '';
+
     const formData = new FormData();
     formData.append('fileId', String(content.fileId));
     formData.append('title', title);
     formData.append('description', description);
+    formData.append('content', htmlContent);
     formData.append('fileType', fileType);
     formData.append('contentType', contentType);
 
@@ -113,6 +124,18 @@ const EditContentModal = ({ content, onClose, onSave }: EditContentModalProps) =
               </>
             )}
           </select>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium">본문 콘텐츠</label>
+          <Editor
+            initialValue={content.content || ''}
+            previewStyle="vertical"
+            height="300px"
+            initialEditType="wysiwyg"
+            useCommandShortcut={true}
+            ref={editorRef}
+          />
         </div>
 
         {fileType === 'LINK' ? (

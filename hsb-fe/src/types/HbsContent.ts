@@ -9,6 +9,7 @@ export interface HbsContent {
     fileId: number;             // 파일 식별 아이디
     title: string;              // 파일 제목
     description: string;        // 파일 설명
+    content: string;            // 에디터 콘텐츠
     fileUrl: string;            // 파일 경로
     thumbnailUrl: string;       // 썸네일 경로
     extension : string;         // 확장자

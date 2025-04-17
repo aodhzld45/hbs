@@ -68,6 +68,7 @@ public class ContentFileService {
 
         entity.setTitle(request.getTitle());
         entity.setDescription(request.getDescription());
+        entity.setContent(request.getContent());
         entity.setFileType(request.getFileType());
         entity.setContentType(request.getContentType());
 
@@ -107,6 +108,8 @@ public class ContentFileService {
         // 1. 기본 정보 수정
         entity.setTitle(request.getTitle());
         entity.setDescription(request.getDescription());
+        entity.setContent(request.getContent());
+        entity.setContent(request.getContent());
         entity.setFileType(request.getFileType());
         entity.setContentType(request.getContentType());
 

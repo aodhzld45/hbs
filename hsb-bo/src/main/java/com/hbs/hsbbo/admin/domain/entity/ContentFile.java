@@ -26,6 +26,10 @@ public class ContentFile {
 
     private String title;
     private String description;
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String content;
+
     private String fileUrl;
     private String thumbnailUrl;
     private String extension;

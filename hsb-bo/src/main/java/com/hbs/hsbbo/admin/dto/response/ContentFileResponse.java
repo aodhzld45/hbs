@@ -18,6 +18,7 @@ public class ContentFileResponse {
     private Long fileId;
     private String title;
     private String description;
+    private String content;
     private String fileUrl;
     private String thumbnailUrl;
     private String extension;
@@ -31,6 +32,7 @@ public class ContentFileResponse {
                 entity.getFileId(),
                 entity.getTitle(),
                 entity.getDescription(),
+                entity.getContent(),
                 entity.getFileUrl(),
                 entity.getThumbnailUrl(),
                 entity.getExtension(),

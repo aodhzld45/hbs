@@ -11,6 +11,11 @@ import { FILE_BASE_URL } from '../../../config/config';
 import Layout from '../../../components/Layout/Layout';
 import EditContentModal from '../Hbs/EditContentModal';
 
+import { Editor } from '@toast-ui/react-editor';
+// 에디터용 import
+import '@toast-ui/editor/dist/toastui-editor.css';
+import { useRef } from 'react'; 
+
 const ContentManagerDetail = () => {
   const { fileId } = useParams<{ fileId: string }>();
   const navigate = useNavigate();
@@ -54,6 +59,12 @@ const ContentManagerDetail = () => {
 
         <h3 className="text-xl font-semibold mt-4">{content.title}</h3>
         <p className="text-gray-700">{content.description}</p>
+        {/* 에디터 저장된 HTML 콘텐츠 표시 */}
+          <div
+            className="prose prose-lg max-w-none"
+            dangerouslySetInnerHTML={{ __html: content.content || '' }}
+          ></div>
+
         <p className="text-sm text-gray-500 mt-2">
           등록일: {new Date(content.regDate).toISOString().slice(0, 16).replace('T', ' ')}
         </p>
