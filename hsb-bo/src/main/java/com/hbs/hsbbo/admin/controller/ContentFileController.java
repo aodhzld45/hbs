@@ -8,6 +8,8 @@ import com.hbs.hsbbo.admin.domain.type.ContentType;
 import com.hbs.hsbbo.admin.domain.type.FileType;
 import com.hbs.hsbbo.admin.service.ContentFileService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ import java.util.List;
 public class ContentFileController {
 
     private final ContentFileService contentFileService;
+    private static final Logger log = LoggerFactory.getLogger(ContentFileController.class);
 
     // 콘텐츠 목록
     @GetMapping("/content-files")
@@ -69,9 +72,9 @@ public class ContentFileController {
             request.setContentType(ContentType.valueOf(contentType.toUpperCase()));
 
             //링크 타입일 경우 저장
-            if (fileUrl != null && !fileUrl.isBlank()) {
+            if (fileUrl != null && "LINK".equalsIgnoreCase(request.getFileType().name())) {
                 request.setFileUrl(fileUrl);
-                request.setThumbnailUrl(thumbnailUrl); //
+                request.setThumbnailUrl(thumbnailUrl);
             }
 
             contentFileService.saveContentFile(request, file, thumbnail);
@@ -93,7 +96,9 @@ public class ContentFileController {
             @RequestPart("fileType") String fileType,
             @RequestPart("contentType") String contentType,
             @RequestPart(value = "file", required = false) MultipartFile file,
-            @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail
+            @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail,
+            @RequestPart(value = "fileUrl", required = false) String fileUrl,
+            @RequestPart(value = "thumbnailUrl", required = false) String  thumbnailUrl
     ) {
 
         try {
@@ -102,6 +107,12 @@ public class ContentFileController {
             request.setDescription(description);
             request.setFileType(FileType.valueOf(fileType.toUpperCase()));
             request.setContentType(ContentType.valueOf(contentType.toUpperCase()));
+
+            //링크 타입일 경우 저장
+            if (fileUrl != null && "LINK".equalsIgnoreCase(request.getFileType().name())) {
+                request.setFileUrl(fileUrl);
+                request.setThumbnailUrl(thumbnailUrl);
+            }
 
             // 서비스 로직
             ContentFile updateContent = contentFileService.updateContent(id, request, file, thumbnail);

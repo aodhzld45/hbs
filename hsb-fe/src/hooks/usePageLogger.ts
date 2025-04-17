@@ -34,7 +34,6 @@ export const usePageLogger = () => {
 
     sendUserLog(logData)
       .then(() => {
-        console.log('로그 전송 성공:', logData);
         hasLoggedRef.current = currentPath; // 경로 저장
       })
       .catch((err) => {

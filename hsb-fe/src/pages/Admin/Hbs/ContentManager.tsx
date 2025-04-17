@@ -21,6 +21,7 @@ function ContentManager() {
   const [filterFileType, setFilterFileType] = useState<FileType | ''>('');
   const [filterContentType, setFilterContentType] = useState<ContentType | ''>('');
 
+  // 유튜브용 상태
   const [youtubeId, setYoutubeId] = useState('');
   const [youtubeImgUrl, setYoutubeImgUrl] = useState('');
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('');

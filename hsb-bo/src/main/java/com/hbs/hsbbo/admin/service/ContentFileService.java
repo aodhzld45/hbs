@@ -71,8 +71,6 @@ public class ContentFileService {
         entity.setFileType(request.getFileType());
         entity.setContentType(request.getContentType());
 
-        System.out.println("요청받은 값 " + request);
-
         if (request.getFileType() == FileType.LINK) {
             // 링크 등록일 경우, fileUrl만 저장
             entity.setFileUrl(request.getFileUrl());
@@ -112,16 +110,23 @@ public class ContentFileService {
         entity.setFileType(request.getFileType());
         entity.setContentType(request.getContentType());
 
-        // 2. 메인 파일 수정 시 저장 후 경로 재설정
+        // 2. fileType이 LINK일 경우: fileUrl 및 썸네일 URL만 반영
+        if (request.getFileType() == FileType.LINK) {
+            entity.setFileUrl(request.getFileUrl());
+            entity.setThumbnailUrl(request.getThumbnailUrl());
+            entity.setExtension("link");
+            return repository.save(entity); // 조기 저장 후 종료
+        }
+
+        // 3. 일반 파일 수정 시 저장 후 경로 재설정
         if (file != null && !file.isEmpty()) {
             Path filePath = fileUtil.resolvePathByType(request.getFileType(), request.getContentType());
             String fileUrl = fileUtil.saveFile(filePath, file);
-
             entity.setFileUrl(fileUrl);
             entity.setExtension(fileUtil.getExtension(file.getOriginalFilename()));
         }
 
-        // 3. 썸네일 수정 시 저장 후 경로 재설정
+        // 4. 썸네일 수정
         if (request.getFileType() == FileType.VIDEO && thumbnail != null && !thumbnail.isEmpty()) {
             Path thumbPath = fileUtil.resolvePathByType(FileType.IMAGE, request.getContentType());
             String thumbnailUrl = fileUtil.saveFile(thumbPath, thumbnail);

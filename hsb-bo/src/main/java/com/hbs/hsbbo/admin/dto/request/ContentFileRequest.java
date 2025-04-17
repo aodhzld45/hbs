@@ -10,9 +10,11 @@ import com.hbs.hsbbo.admin.domain.type.ContentType;
 import com.hbs.hsbbo.admin.domain.type.FileType;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class ContentFileRequest {
     private String title;
     private String description;
