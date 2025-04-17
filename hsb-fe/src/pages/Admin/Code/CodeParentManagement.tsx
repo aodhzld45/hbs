@@ -8,22 +8,25 @@ import {
 } from '../../../services/Common/CodeApi';
 import { CodeParent } from '../../../types/Common/CodeParent';
 import CodeDetailList from '../../../components/Admin/Code/CodeDetailList';
+import CodeParentCreate, { CodeParentCreateValues } from '../../../components/Admin/Code/CodeParentCreate';
+
 
 const CodeParentManagement: React.FC = () => {
   const [parents, setParents] = useState<CodeParent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [selectedPcode, setSelectedPcode] = useState<string>('');
+  //팝업 제어
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const [form, setForm] = useState<CodeParentCreateValues>({
     pcode: '',
     pcodeNm: '',
     pcodeMemo: '',
     pcodeSeqNo: 1,
-    useTf: 'Y' as 'Y' | 'N',
-    delTf: 'N' as 'Y' | 'N',
   });
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const [selectedPcode, setSelectedPcode] = useState<string>('');
 
   useEffect(() => {
     loadParents();
@@ -40,6 +43,13 @@ const CodeParentManagement: React.FC = () => {
     }
   };
 
+  // “코드 등록” 버튼 누를 때
+  const handleOpenCreate = () => {
+    setEditingId(null);
+    setForm({ pcode: '', pcodeNm: '', pcodeMemo: '', pcodeSeqNo: 1 });
+    setShowCreateModal(true);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({
@@ -51,18 +61,24 @@ const CodeParentManagement: React.FC = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      if (editingId !== null) {
-        await updateCodeParent(editingId, form);
-      } else {
-        await createCodeParent(form);
-      }
+      if (editingId != null) {
+               await updateCodeParent(editingId, {
+                ...form,
+                 useTf: 'Y',
+                 delTf: 'N'
+               });
+             } else {
+                await createCodeParent({
+                  ...form,
+                  pcodeMemo: form.pcodeMemo || '',
+                 pcodeSeqNo: form.pcodeSeqNo,
+                });
+              }
       setForm({
         pcode: '',
         pcodeNm: '',
         pcodeMemo: '',
         pcodeSeqNo: 1,
-        useTf: 'Y',
-        delTf: 'N',
       });
       setEditingId(null);
       loadParents();
@@ -78,9 +94,8 @@ const CodeParentManagement: React.FC = () => {
       pcodeNm: p.pcodeNm,
       pcodeMemo: p.pcodeMemo || '',
       pcodeSeqNo: p.pcodeSeqNo,
-      useTf: p.useTf,
-      delTf: p.delTf,
     });
+    setShowCreateModal(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -103,48 +118,15 @@ const CodeParentManagement: React.FC = () => {
   return (
     <AdminLayout>
       <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold mb-4">대분류 코드 관리</h1>
-
-        <form onSubmit={handleSubmit} className="mb-6 grid grid-cols-4 gap-4">
-          <input
-            name="pcode"
-            value={form.pcode}
-            onChange={handleChange}
-            required
-            placeholder="코드"
-            className="border px-2 py-1"
-          />
-          <input
-            name="pcodeNm"
-            value={form.pcodeNm}
-            onChange={handleChange}
-            required
-            placeholder="코드명"
-            className="border px-2 py-1"
-          />
-          <input
-            name="pcodeMemo"
-            value={form.pcodeMemo}
-            onChange={handleChange}
-            placeholder="메모"
-            className="border px-2 py-1"
-          />
-          <input
-            name="pcodeSeqNo"
-            value={form.pcodeSeqNo}
-            onChange={handleChange}
-            type="number"
-            required
-            placeholder="순번"
-            className="border px-2 py-1"
-          />
-          <button
-            type="submit"
-            className="col-span-4 bg-blue-600 text-white rounded py-2"
-          >
-            {editingId !== null ? '수정' : '등록'}
+        <button
+            onClick={handleOpenCreate}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            코드 등록
           </button>
-        </form>
+        </div>
+  
 
         <table className="min-w-full bg-white">
           <thead>
@@ -198,6 +180,19 @@ const CodeParentManagement: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+ {/** 팝업 모달 영역 */}
+ {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-20 z-50">
+          <CodeParentCreate
+            values={form}
+            onChange={handleChange}
+            onSubmit={handleSubmit}
+            isEditing={editingId !== null}
+            onCancel={() => setShowCreateModal(false)}
+          />
+        </div>
+      )}
 
     {showDetails && (
        <CodeDetailList

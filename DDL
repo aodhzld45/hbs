@@ -112,3 +112,45 @@ CREATE TABLE adm_menu (
       ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+
+CREATE TABLE `TBL_CODE_PARENT` (
+  `PCODE_NO` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '대분류	코드 일련번호',
+  `SITE_NO` int(11) unsigned DEFAULT NULL COMMENT '사이트 일련번호',
+  `PCODE` varchar(50) NOT NULL COMMENT '대분류	코드',
+  `PCODE_NM` varchar(50) NOT NULL COMMENT '코드명',
+  `PCODE_MEMO` text DEFAULT NULL COMMENT '코드	메모',
+  `PCODE_SEQ_NO` int(11) DEFAULT NULL COMMENT '코드	전시 순번',
+  `USE_TF` char(1) NOT NULL DEFAULT 'Y' COMMENT '사용	여부 사용(Y),사용안함(N)',
+  `DEL_TF` char(1) NOT NULL DEFAULT 'N' COMMENT '삭제	여부 삭제(Y),사용(N)',
+  `REG_ADM` int(11) unsigned DEFAULT NULL COMMENT '등록	관리자 일련번호 TBL_ADMIN ADM_NO',
+  `REG_DATE` datetime DEFAULT NULL COMMENT '등록일',
+  `UP_ADM` int(11) unsigned DEFAULT NULL COMMENT '수정	관리자 일련번호 TBL_ADMIN ADM_NO',
+  `UP_DATE` datetime DEFAULT NULL COMMENT '수정일',
+  `DEL_ADM` int(11) unsigned DEFAULT NULL COMMENT '삭제	관리자 일련번호 TBL_ADMIN ADM_NO',
+  `DEL_DATE` datetime DEFAULT NULL COMMENT '삭제일',
+  PRIMARY KEY (`PCODE_NO`)
+) ENGINE=MyISAM AUTO_INCREMENT=52 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+CREATE TABLE `TBL_CODE_DETAIL` (
+  `DCODE_NO` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '하위분류	일련번호',
+  `PCODE` varchar(50) NOT NULL COMMENT '대분류	코드 TBL_CODE_PARENT (FK)',
+  `DCODE` varchar(50) NOT NULL COMMENT '하위분류	코드',
+  `DCODE_NM` varchar(50) NOT NULL COMMENT '코드명',
+  `DCODE_EXT` varchar(255) NOT NULL,
+  `DCODE_SEQ_NO` int(11) DEFAULT NULL COMMENT '코드전시순번',
+  `USE_TF` char(1) NOT NULL DEFAULT 'Y' COMMENT '사용	여부 사용(Y),사용안함(N)',
+  `DEL_TF` char(1) NOT NULL DEFAULT 'N' COMMENT '삭제	여부 삭제(Y),사용(N)',
+  `REG_ADM` int(11) unsigned DEFAULT NULL COMMENT '등록	관리자 일련번호 TBL_ADMIN ADM_NO',
+  `REG_DATE` datetime DEFAULT NULL COMMENT '등록일',
+  `UP_ADM` int(11) unsigned DEFAULT NULL COMMENT '수정	관리자 일련번호 TBL_ADMIN ADM_NO',
+  `UP_DATE` datetime DEFAULT NULL COMMENT '수정일',
+  `DEL_ADM` int(11) unsigned DEFAULT NULL COMMENT '삭제	관리자 일련번호 TBL_ADMIN ADM_NO',
+  `DEL_DATE` datetime DEFAULT NULL COMMENT '삭제일',
+  `DCODE_INFO01` varchar(150) DEFAULT NULL,
+  `DCODE_INFO02` varchar(150) DEFAULT NULL,
+  `DCODE_INFO03` varchar(150) DEFAULT NULL,
+  PRIMARY KEY (`PCODE`,`DCODE_NO`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
