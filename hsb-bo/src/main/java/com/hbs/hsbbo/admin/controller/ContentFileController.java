@@ -8,6 +8,7 @@ import com.hbs.hsbbo.admin.domain.type.ContentType;
 import com.hbs.hsbbo.admin.domain.type.FileType;
 import com.hbs.hsbbo.admin.service.ContentFileService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,18 @@ public class ContentFileController {
         List<ContentFileResponse> contents = contentFileService.getContentFiles();
         return ResponseEntity.ok(contents);
     }
+
+    // 콘텐츠 목록 필터링 추가
+    @GetMapping("/contents")
+    public ResponseEntity<List<ContentFileResponse>> getContents(
+            @RequestParam(value = "fileType", required = false) FileType fileType,
+            @RequestParam(value = "contentType", required = false) ContentType contentType
+    ) {
+        List<ContentFileResponse> contents = contentFileService.getContents(fileType, contentType);
+
+        return ResponseEntity.ok(contents);
+
+    }
     
     // 콘텐츠 상세
     @GetMapping("/content-files/{id}")
@@ -44,7 +57,8 @@ public class ContentFileController {
             @RequestPart("description") String description,
             @RequestPart("fileType") String fileType,
             @RequestPart("contentType") String contentType,
-            @RequestPart(value = "fileUrl", required = false) String fileUrl
+            @RequestPart(value = "fileUrl", required = false) String fileUrl,
+            @RequestPart(value = "thumbnailUrl", required = false) String  thumbnailUrl
     ) {
 
         try {
@@ -54,8 +68,10 @@ public class ContentFileController {
             request.setFileType(FileType.valueOf(fileType.toUpperCase()));
             request.setContentType(ContentType.valueOf(contentType.toUpperCase()));
 
+            //링크 타입일 경우 저장
             if (fileUrl != null && !fileUrl.isBlank()) {
-                request.setFileUrl(fileUrl); //링크 타입일 경우 저장
+                request.setFileUrl(fileUrl);
+                request.setThumbnailUrl(thumbnailUrl); //
             }
 
             contentFileService.saveContentFile(request, file, thumbnail);

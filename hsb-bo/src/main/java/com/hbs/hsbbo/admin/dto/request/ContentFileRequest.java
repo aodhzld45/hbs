@@ -19,5 +19,6 @@ public class ContentFileRequest {
     private FileType fileType;
     private ContentType contentType;
     private String fileUrl;
+    private String thumbnailUrl;
 
 }

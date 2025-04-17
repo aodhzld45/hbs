@@ -8,7 +8,6 @@ import { fetchHbsCreate } from '../../../services/hbsApi';
 
 function ContentManager() {
   const navigate = useNavigate();
-
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [fileType, setFileType] = useState<FileType>('VIDEO');
@@ -18,51 +17,30 @@ function ContentManager() {
   const [fileUrl, setFileUrl] = useState('');
   const [contents, setContents] = useState<HbsContent[]>([]);
 
-  // 유튜브 썸네일 관련
+  // 필터링용 상태
+  const [filterFileType, setFilterFileType] = useState<FileType | ''>('');
+  const [filterContentType, setFilterContentType] = useState<ContentType | ''>('');
+
   const [youtubeId, setYoutubeId] = useState('');
   const [youtubeImgUrl, setYoutubeImgUrl] = useState('');
-  const [youtubeThumbUrl, setYoutubeThumbUrl] = useState('');
+  const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('');
 
-
-  const extractYoutubeThumbnail = (url: string) => {
-    const url1 = "https://youtu.be/";
-    const url2 = "https://www.youtube.com/watch?v=";
-    let id = "";
-  
-    if (url.includes(url1)) {
-      id = url.replace(url1, "");
-    } else if (url.includes(url2)) {
-      id = url.replace(url2, "");
-    }
-  
+  const extractYoutubeInfo = (url: string) => {
+    const regex = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{11})/;
+    const match = url.match(regex);
+    const id = match?.[1];
     if (!id) {
-      alert("Youtube 연결 URL을 다시 한번 확인해 주세요.\nhttps://www.youtube.com/watch?v=... 또는 https://youtu.be/... 형식이어야 합니다!");
+      alert('Youtube URL이 유효하지 않습니다.');
       return;
     }
-  
-    const img = `http://img.youtube.com/vi/${id}/mqdefault.jpg`;
-    const thumb = `http://img.youtube.com/vi/${id}/0.jpg`;
-  
     setYoutubeId(id);
-    setYoutubeImgUrl(img);
-    setYoutubeThumbUrl(thumb);
-  
-    alert("만약 잠시 후 이미지가 보이지 않는다면 직접 이미지를 등록하셔야 합니다!");
+    setYoutubeImgUrl(`http://img.youtube.com/vi/${id}/mqdefault.jpg`);
+    setYoutubeEmbedUrl(`https://www.youtube.com/embed/${id}`);
   };
-  
 
-
-
-
-  
-  const handleFileTypeChange = (newType: FileType) => {
-    setFileType(newType);
-  
-    if (newType === 'LINK') {
-      setContentType('YOUTUBE');
-    } else {
-      setContentType('HBS');
-    }
+  const handleFileTypeChange = (type: FileType) => {
+    setFileType(type);
+    setContentType(type === 'LINK' ? 'YOUTUBE' : 'HBS');
   };
 
   const loadContents = async () => {
@@ -74,58 +52,71 @@ function ContentManager() {
     }
   };
 
+  // 테스트 필터링용 함수
+  const fetchFilteredContents = async (fileType: FileType | '', contentType: ContentType | '') => {
+    try {
+      const res = await api.get('/contents', {
+        params: {
+          fileType: fileType || undefined,
+          contentType: contentType || undefined,
+        },
+      });
+      setContents(res.data);
+    } catch (err) {
+      console.error(err);
+      alert('콘텐츠 불러오기 실패');
+    }
+  };
+
+
   useEffect(() => {
+    fetchFilteredContents('',''); // 초기 로딩시 전체 목록
     loadContents();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
-    // 필수 조건 체크
+
+    if (!title || !description) return alert('제목과 설명을 입력해주세요.');
+
     if (fileType === 'LINK') {
-      if (!fileUrl) {
-        alert('링크 URL을 입력해주세요.');
-        return;
-      }
+      if (!fileUrl || !youtubeEmbedUrl) return alert('유튜브 링크를 입력해주세요.');
     } else {
-      if (!mainFile || (fileType === 'VIDEO' && !thumbnailFile)) {
-        alert('필수 파일을 모두 선택해주세요.');
-        return;
-      }
+      if (!mainFile || (fileType === 'VIDEO' && !thumbnailFile)) return alert('필수 파일을 선택해주세요.');
     }
-  
+
     const formData = new FormData();
     formData.append('title', title);
     formData.append('description', description);
     formData.append('fileType', fileType);
-    formData.append('contentType', contentType); // 이건 항상 상태에서 가져오기
-  
+    formData.append('contentType', contentType);
+
     if (fileType === 'LINK') {
-      formData.append('fileUrl', fileUrl);
+      formData.append('fileUrl', youtubeEmbedUrl);
+      formData.append('thumbnailUrl', youtubeImgUrl);
     } else {
       formData.append('file', mainFile as Blob);
-      if (fileType === 'VIDEO') {
-        formData.append('thumbnail', thumbnailFile as Blob);
-      }
+      if (fileType === 'VIDEO') formData.append('thumbnail', thumbnailFile as Blob);
     }
-  
+
     try {
       await fetchHbsCreate(formData);
-      alert('콘텐츠가 등록되었습니다.');
-  
-      // 초기화
+      alert('등록 완료');
       setTitle('');
       setDescription('');
       setMainFile(null);
       setThumbnailFile(null);
       setFileUrl('');
+      setYoutubeEmbedUrl('');
+      setYoutubeImgUrl('');
+      setYoutubeId('');
       loadContents();
     } catch (err) {
       console.error(err);
       alert('등록 실패');
     }
   };
-  
+
   return (
     <AdminLayout>
       <div className="max-w-xl mx-auto mb-10">
@@ -148,27 +139,21 @@ function ContentManager() {
             <div className="flex-1">
               <label className="block mb-1 font-semibold">콘텐츠 유형</label>
               <select
-                  value={contentType}
-                  onChange={e => {
-                    const selected = e.target.value as ContentType;
-                    setContentType(selected);
-                    alert(`선택한 콘텐츠 유형: ${selected}`);
-                  }}
-                  className="w-full border p-2 rounded"
-                >
-                  {fileType === 'LINK' ? (
-                    <>
-                      <option value="YOUTUBE">YOUTUBE</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="HBS">HBS</option>
-                      <option value="PROMO">PROMO</option>
-                      <option value="MEDIA">MEDIA</option>
-                      <option value="CI_BI">CI_BI</option>
-                    </>
-                  )}
-                </select>
+                value={contentType}
+                onChange={e => setContentType(e.target.value as ContentType)}
+                className="w-full border p-2 rounded"
+              >
+                {fileType === 'LINK' ? (
+                  <option value="YOUTUBE">YOUTUBE</option>
+                ) : (
+                  <>
+                    <option value="HBS">HBS</option>
+                    <option value="PROMO">PROMO</option>
+                    <option value="MEDIA">MEDIA</option>
+                    <option value="CI_BI">CI_BI</option>
+                  </>
+                )}
+              </select>
             </div>
           </div>
 
@@ -188,47 +173,28 @@ function ContentManager() {
             className="w-full border px-4 py-2 rounded"
           />
 
-          {/* fileType이 LINK일 경우 fileUrl 입력 */}
-
           {fileType === 'LINK' ? (
             <div>
               <label className="block font-semibold mb-1">유튜브 URL</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="https://www.youtube.com/watch?v=xxxx 또는 https://youtu.be/xxxx"
-                  value={fileUrl}
-                  onChange={e => setFileUrl(e.target.value)}
-                  onBlur={() => extractYoutubeThumbnail(fileUrl)} 
-                  className="w-full border px-4 py-2 rounded"
-                  required
-                />
-                {/* 또는 수동으로 버튼 클릭 */}
-                {/* <button type="button" onClick={() => extractYoutubeThumbnail(fileUrl)} className="px-3 py-2 bg-gray-200 rounded">썸네일</button> */}
-              </div>
-
-              {/* 썸네일 미리보기 */}
+              <input
+                type="text"
+                placeholder="https://www.youtube.com/watch?v=xxxx 또는 https://youtu.be/xxxx"
+                value={fileUrl}
+                onChange={e => setFileUrl(e.target.value)}
+                onBlur={() => extractYoutubeInfo(fileUrl)}
+                className="w-full border px-4 py-2 rounded"
+                required
+              />
               {youtubeImgUrl && (
                 <div className="mt-4 flex gap-4 items-center">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">대표 썸네일</p>
-                    <img src={youtubeImgUrl} width={150} height={100} alt="대표 썸네일" className="rounded border" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">기본 썸네일</p>
-                    <img src={youtubeThumbUrl} width={100} height={50} alt="기본 썸네일" className="rounded border" />
-                  </div>
+                  <img src={youtubeImgUrl} width={150} height={100} alt="썸네일" className="rounded border" />
                 </div>
               )}
             </div>
           ) : (
             <div>
               <label className="block font-semibold mb-1">
-                {fileType === 'VIDEO'
-                  ? '영상 파일 (mp4)'
-                  : fileType === 'IMAGE'
-                  ? '이미지 파일'
-                  : '문서 파일'}
+                {fileType === 'VIDEO' ? '영상 파일 (mp4)' : fileType === 'IMAGE' ? '이미지 파일' : '문서 파일'}
               </label>
               <input
                 type="file"
@@ -244,43 +210,6 @@ function ContentManager() {
               />
             </div>
           )}
-
-
-          {/* {fileType === 'LINK' ? (
-            <div>
-              <label className="block font-semibold mb-1">유튜브 임베드 URL</label>
-              <input
-                type="text"
-                placeholder="https://www.youtube.com/embed/xxxx"
-                value={fileUrl}
-                onChange={e => setFileUrl(e.target.value)}
-                className="w-full border px-4 py-2 rounded"
-                required
-              />
-            </div>
-          ) : (
-            <div>
-              <label className="block font-semibold mb-1">
-                {fileType === 'VIDEO'
-                  ? '영상 파일 (mp4)'
-                  : fileType === 'IMAGE'
-                  ? '이미지 파일'
-                  : '문서 파일'}
-              </label>
-              <input
-                type="file"
-                accept={
-                  fileType === 'VIDEO'
-                    ? 'video/mp4'
-                    : fileType === 'IMAGE'
-                    ? 'image/*'
-                    : '.pdf,.doc,.docx,.hwp'
-                }
-                onChange={e => setMainFile(e.target.files?.[0] || null)}
-                required
-              />
-            </div>
-          )} */}
 
           {fileType === 'VIDEO' && (
             <div>
@@ -294,18 +223,52 @@ function ContentManager() {
             </div>
           )}
 
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
+          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
             등록하기
           </button>
         </form>
       </div>
-
       {/* ▼ 등록된 콘텐츠 미리보기 영역 */}
       <div className="max-w-7xl mx-auto">
+        {/* 필터 셀렉트 박스 추가 */}
+        <div className="flex justify-end gap-4 mb-4">
+          <select
+            value={filterFileType}
+            onChange={(e) => {
+              const value = e.target.value as FileType | '';
+              setFilterFileType(value);
+              fetchFilteredContents(value, filterContentType);
+            }}
+            className="border px-3 py-2 rounded"
+          >
+            <option value="">파일 타입 전체</option>
+            <option value="VIDEO">VIDEO</option>
+            <option value="IMAGE">IMAGE</option>
+            <option value="DOCUMENT">DOCUMENT</option>
+            <option value="LINK">LINK</option>
+          </select>
+
+          <select
+            value={filterContentType}
+            onChange={(e) => {
+              const value = e.target.value as ContentType | '';
+              setFilterContentType(value);
+              fetchFilteredContents(filterFileType, value);
+            }}
+            className="border px-3 py-2 rounded"
+          >
+            <option value="">콘텐츠 타입 전체</option>
+            <option value="HBS">HBS</option>
+            <option value="PROMO">PROMO</option>
+            <option value="MEDIA">MEDIA</option>
+            <option value="CI_BI">CI_BI</option>
+            <option value="YOUTUBE">YOUTUBE</option>
+          </select>
+        </div>
+
         <h3 className="text-xl font-bold mb-4">등록된 콘텐츠</h3>
+
+        {/* 🔽 콘텐츠 목록 출력 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {contents.map((item) => (
             <div
@@ -324,10 +287,9 @@ function ContentManager() {
                   referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
                 ></iframe>
-              ) : item.contentType === 'HBS' && item.thumbnailUrl ? (
+              ) : item.thumbnailUrl ? (
                 <img
                   src={`${FILE_BASE_URL}${item.thumbnailUrl}`}
-                  
                   alt={item.title}
                   className="w-full h-40 object-cover"
                 />
@@ -346,6 +308,11 @@ function ContentManager() {
           ))}
         </div>
       </div>
+
+   
+
+
+     
     </AdminLayout>
   );
 }
