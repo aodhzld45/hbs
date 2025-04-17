@@ -15,16 +15,7 @@ const AdminMenuManagement: React.FC = () => {
   const [menus, setMenus] = useState<AdminMenu[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  const [newMenu, setNewMenu] = useState<AdminMenu>({
-    name: '',
-    depth: 1,
-    parentId: undefined,
-    description: '',
-    url: '',
-    orderSequence: 1,
-    useTf: 'Y',
-    delTf: 'N',
-  });
+
   // 수정할 메뉴 상태 (모달이 열리면 해당 메뉴 데이터를 저장)
   const [editingMenu, setEditingMenu] = useState<AdminMenu | null>(null);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
@@ -43,17 +34,6 @@ const AdminMenuManagement: React.FC = () => {
     };
     loadMenus();
   }, []);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setNewMenu(prev => ({
-      ...prev,
-      [name]:
-        name === 'orderSequence' || name === 'depth'
-          ? Number(value)
-          : value,
-    }));
-  };
 
   const handleSaveNewMenu = async (newMenu: AdminMenu) => {
     try {
@@ -95,14 +75,14 @@ const AdminMenuManagement: React.FC = () => {
   return (
     <AdminLayout>
       <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold mb-6">관리자 메뉴 관리</h1>
         <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             메뉴 등록
           </button>
-      
+          </div>
 
         {/* 메뉴 목록 테이블 */}
         <div className="overflow-x-auto">
