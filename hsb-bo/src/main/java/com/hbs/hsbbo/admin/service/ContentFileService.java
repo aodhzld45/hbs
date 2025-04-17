@@ -27,7 +27,7 @@ public class ContentFileService {
 
     // 콘텐츠 목록
     public List<ContentFileResponse> getContentFiles() {
-        List<ContentFile> files = repository.findByFileTypeAndContentTypeAndDelTFOrderByFileIdDesc(FileType.VIDEO, ContentType.HBS,'N');
+        List<ContentFile> files = repository.findByFileTypeAndContentTypeAndDelTFOrderByFileIdDesc(FileType.LINK, ContentType.YOUTUBE,'N');
 
         return files.stream()
                 .map(ContentFileResponse::fromEntity)
@@ -52,11 +52,13 @@ public class ContentFileService {
         entity.setFileType(request.getFileType());
         entity.setContentType(request.getContentType());
 
+        System.out.println("요청받은 값 " + request);
+
         if (request.getFileType() == FileType.LINK) {
             // 링크 등록일 경우, fileUrl만 저장
             entity.setFileUrl(request.getFileUrl());
             entity.setExtension("link"); // 또는 null
-            entity.setThumbnailUrl(null); // 필요 시 썸네일 URL 필드 추가로 확장 가능
+            entity.setThumbnailUrl(request.getThumbnailUrl()); // 필요 시 썸네일 URL 필드 추가로 확장 가능
         } else {
             // 일반 파일 저장 처리
             Path filePath = fileUtil.resolvePathByType(request.getFileType(), request.getContentType());

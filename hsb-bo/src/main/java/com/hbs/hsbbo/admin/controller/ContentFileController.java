@@ -44,7 +44,8 @@ public class ContentFileController {
             @RequestPart("description") String description,
             @RequestPart("fileType") String fileType,
             @RequestPart("contentType") String contentType,
-            @RequestPart(value = "fileUrl", required = false) String fileUrl
+            @RequestPart(value = "fileUrl", required = false) String fileUrl,
+            @RequestPart(value = "thumbnailUrl", required = false) String  thumbnailUrl
     ) {
 
         try {
@@ -54,8 +55,10 @@ public class ContentFileController {
             request.setFileType(FileType.valueOf(fileType.toUpperCase()));
             request.setContentType(ContentType.valueOf(contentType.toUpperCase()));
 
+            //링크 타입일 경우 저장
             if (fileUrl != null && !fileUrl.isBlank()) {
-                request.setFileUrl(fileUrl); //링크 타입일 경우 저장
+                request.setFileUrl(fileUrl);
+                request.setThumbnailUrl(thumbnailUrl); //
             }
 
             contentFileService.saveContentFile(request, file, thumbnail);
