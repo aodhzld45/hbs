@@ -34,6 +34,25 @@ public class ContentFileService {
                 .collect(Collectors.toList());
     }
 
+    // 콘텐츠 목록 필터링 추가
+    public List<ContentFileResponse> getContents(FileType fileType, ContentType contentType) {
+        List<ContentFile> files;
+
+        if (fileType != null && contentType != null) {
+            files = repository.findByFileTypeAndContentTypeAndDelTFOrderByFileIdDesc(fileType, contentType, 'N');
+        } else if (fileType != null) {
+            files = repository.findByFileTypeAndDelTFOrderByFileIdDesc(fileType, 'N');
+        } else if (contentType != null) {
+            files = repository.findByContentTypeAndDelTFOrderByFileIdDesc(contentType, 'N');
+        } else {
+            files = repository.findByDelTFOrderByFileIdDesc('N');
+        }
+
+        return files.stream()
+                .map(ContentFileResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
     // 콘텐츠 상세
     public ContentFileResponse getContentsDetail(Long id) {
         ContentFile detailContent = repository.findByFileIdAndDelTF(id, 'N')

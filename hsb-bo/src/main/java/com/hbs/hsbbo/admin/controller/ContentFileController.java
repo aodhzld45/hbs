@@ -8,6 +8,7 @@ import com.hbs.hsbbo.admin.domain.type.ContentType;
 import com.hbs.hsbbo.admin.domain.type.FileType;
 import com.hbs.hsbbo.admin.service.ContentFileService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,18 @@ public class ContentFileController {
     public ResponseEntity<List<ContentFileResponse>> getContentFiles() {
         List<ContentFileResponse> contents = contentFileService.getContentFiles();
         return ResponseEntity.ok(contents);
+    }
+
+    // 콘텐츠 목록 필터링 추가
+    @GetMapping("/contents")
+    public ResponseEntity<List<ContentFileResponse>> getContents(
+            @RequestParam(value = "fileType", required = false) FileType fileType,
+            @RequestParam(value = "contentType", required = false) ContentType contentType
+    ) {
+        List<ContentFileResponse> contents = contentFileService.getContents(fileType, contentType);
+
+        return ResponseEntity.ok(contents);
+
     }
     
     // 콘텐츠 상세

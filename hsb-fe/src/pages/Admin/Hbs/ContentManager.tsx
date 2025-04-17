@@ -17,6 +17,10 @@ function ContentManager() {
   const [fileUrl, setFileUrl] = useState('');
   const [contents, setContents] = useState<HbsContent[]>([]);
 
+  // 필터링용 상태
+  const [filterFileType, setFilterFileType] = useState<FileType | ''>('');
+  const [filterContentType, setFilterContentType] = useState<ContentType | ''>('');
+
   const [youtubeId, setYoutubeId] = useState('');
   const [youtubeImgUrl, setYoutubeImgUrl] = useState('');
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('');
@@ -48,7 +52,25 @@ function ContentManager() {
     }
   };
 
+  // 테스트 필터링용 함수
+  const fetchFilteredContents = async (fileType: FileType | '', contentType: ContentType | '') => {
+    try {
+      const res = await api.get('/contents', {
+        params: {
+          fileType: fileType || undefined,
+          contentType: contentType || undefined,
+        },
+      });
+      setContents(res.data);
+    } catch (err) {
+      console.error(err);
+      alert('콘텐츠 불러오기 실패');
+    }
+  };
+
+
   useEffect(() => {
+    fetchFilteredContents('',''); // 초기 로딩시 전체 목록
     loadContents();
   }, []);
 
@@ -206,10 +228,47 @@ function ContentManager() {
           </button>
         </form>
       </div>
-
       {/* ▼ 등록된 콘텐츠 미리보기 영역 */}
       <div className="max-w-7xl mx-auto">
+        {/* 필터 셀렉트 박스 추가 */}
+        <div className="flex justify-end gap-4 mb-4">
+          <select
+            value={filterFileType}
+            onChange={(e) => {
+              const value = e.target.value as FileType | '';
+              setFilterFileType(value);
+              fetchFilteredContents(value, filterContentType);
+            }}
+            className="border px-3 py-2 rounded"
+          >
+            <option value="">파일 타입 전체</option>
+            <option value="VIDEO">VIDEO</option>
+            <option value="IMAGE">IMAGE</option>
+            <option value="DOCUMENT">DOCUMENT</option>
+            <option value="LINK">LINK</option>
+          </select>
+
+          <select
+            value={filterContentType}
+            onChange={(e) => {
+              const value = e.target.value as ContentType | '';
+              setFilterContentType(value);
+              fetchFilteredContents(filterFileType, value);
+            }}
+            className="border px-3 py-2 rounded"
+          >
+            <option value="">콘텐츠 타입 전체</option>
+            <option value="HBS">HBS</option>
+            <option value="PROMO">PROMO</option>
+            <option value="MEDIA">MEDIA</option>
+            <option value="CI_BI">CI_BI</option>
+            <option value="YOUTUBE">YOUTUBE</option>
+          </select>
+        </div>
+
         <h3 className="text-xl font-bold mb-4">등록된 콘텐츠</h3>
+
+        {/* 🔽 콘텐츠 목록 출력 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {contents.map((item) => (
             <div
@@ -228,10 +287,9 @@ function ContentManager() {
                   referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
                 ></iframe>
-              ) : item.contentType === 'HBS' && item.thumbnailUrl ? (
+              ) : item.thumbnailUrl ? (
                 <img
                   src={`${FILE_BASE_URL}${item.thumbnailUrl}`}
-                  
                   alt={item.title}
                   className="w-full h-40 object-cover"
                 />
@@ -250,6 +308,11 @@ function ContentManager() {
           ))}
         </div>
       </div>
+
+   
+
+
+     
     </AdminLayout>
   );
 }

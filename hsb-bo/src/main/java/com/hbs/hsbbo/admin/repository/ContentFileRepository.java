@@ -16,9 +16,11 @@ public interface ContentFileRepository extends JpaRepository<ContentFile, Long> 
     @Query("SELECT COALESCE(MAX(cf.dispSeq), 0) FROM ContentFile cf WHERE cf.contentType = :contentType")
     int findMaxDispSeqByContentType(@Param("contentType") ContentType contentType);
 
-    // 콘텐츠 목록
-    //List<ContentFile> findByDelTFOrderByFileIdDesc(char delTF);
+    // 콘텐츠 목록 - 왜 이렇게 많이 만드는지 JPA ㅡㅡ 쩝...
     List<ContentFile> findByFileTypeAndContentTypeAndDelTFOrderByFileIdDesc(FileType fileType, ContentType contentType, char delTF);
+    List<ContentFile> findByFileTypeAndDelTFOrderByFileIdDesc(FileType fileType, char delTF);
+    List<ContentFile> findByContentTypeAndDelTFOrderByFileIdDesc(ContentType contentType, char delTF);
+    List<ContentFile> findByDelTFOrderByFileIdDesc(char delTF);
 
     // 콘텐츠 상세
     Optional<ContentFile> findByFileIdAndDelTF(Long id, char delTF);
