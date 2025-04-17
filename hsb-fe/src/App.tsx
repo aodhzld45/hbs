@@ -10,6 +10,9 @@ import AdminList from "./pages/Admin/AdminAccountManagement";
 import AdminCreate from "./pages/Admin/AdminRegister";
 import AdminMenu from "./pages/Admin/Menu/AdminMenuManagement";
 
+import CodeParentManagement from "./pages/Admin/Code/CodeParentManagement";
+import CodeDetailManagement from "./pages/Admin/Code/CodeDetailManagement";
+
 // 사용자 페이지 imports
 import ContentManager from './pages/Admin/Hbs/ContentManager';
 import EventForm from './pages/Admin/EventForm';
@@ -48,6 +51,9 @@ function App() {
             <Route path="/admin/admin-manager" element={<AdminList />} />
             <Route path="/admin/admin-create" element={<AdminCreate />} />
             <Route path="/admin/admin-menu" element={<AdminMenu />} />
+            <Route path="/admin/code-parent" element={<CodeParentManagement />} />
+            <Route path="/admin/code-parent/:pcode/details" element={<CodeDetailManagement />} />
+
           </Route>
           <Route path="/admin/event-form" element={<EventForm />} />
           
