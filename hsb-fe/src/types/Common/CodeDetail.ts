@@ -11,3 +11,9 @@ export interface CodeDetail {
     upDate: string;
   }
   
+  export interface CodeDetailRequest {
+    dcode: string
+    dcodeNm: string
+    dcodeExt?: string
+    dcodeSeqNo: number
+  }

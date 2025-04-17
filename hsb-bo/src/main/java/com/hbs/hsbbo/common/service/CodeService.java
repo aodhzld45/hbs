@@ -83,8 +83,13 @@ public class CodeService {
     // — 하위 등록 —
     @Transactional
     public CodeDetailResponse createDetail(String pcode, CodeDetailRequest req) {
+        // 1) 다음 dcodeNo 계산
+        Long maxNo = detailRepo.findMaxDcodeNoByPcode(pcode);
+        Long nextNo = maxNo + 1;
+
         CodeDetail e = new CodeDetail();
         e.setPcode(pcode);
+        e.setDcodeNo(nextNo);
         e.setDcode(req.dcode());
         e.setDcodeNm(req.dcodeNm());
         e.setDcodeExt(req.dcodeExt());

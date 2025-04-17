@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 @Data
 public class CodeDetail {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "DCODE_NO")
     private Long dcodeNo;
 
