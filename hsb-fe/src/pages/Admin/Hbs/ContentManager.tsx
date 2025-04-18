@@ -29,6 +29,7 @@ function ContentManager() {
   const [filterContentType, setFilterContentType] = useState<ContentType | ''>('');
 
   // 유튜브용 상태
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [youtubeId, setYoutubeId] = useState('');
   const [youtubeImgUrl, setYoutubeImgUrl] = useState('');
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('');
