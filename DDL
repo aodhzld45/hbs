@@ -23,7 +23,7 @@ CREATE TABLE `contentfile` (
   `modifyDate` datetime DEFAULT NULL,
   `delAdm` int(10) unsigned DEFAULT NULL,
   `delDate` datetime DEFAULT NULL,
-  `content` text DEFAULT NULL COMMENT '에디터 본문 내용',
+  `content` LONGTEXT DEFAULT NULL COMMENT '에디터 본문 내용',
   PRIMARY KEY (`fileId`)
 ) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
