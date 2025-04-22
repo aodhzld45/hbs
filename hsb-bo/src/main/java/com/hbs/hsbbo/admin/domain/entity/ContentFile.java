@@ -5,12 +5,14 @@ import com.hbs.hsbbo.admin.domain.type.FileType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Setter
+@ToString
 @Table(name = "contentfile")
 public class ContentFile {
 
