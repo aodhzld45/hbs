@@ -9,6 +9,7 @@ import AdminDashboard from "./pages/Admin";
 import AdminList from "./pages/Admin/AdminAccountManagement";
 import AdminCreate from "./pages/Admin/AdminRegister";
 import AdminMenu from "./pages/Admin/Menu/AdminMenuManagement";
+import AdminAuthManagement from './pages/Admin/Role/AdminRoleManagement';
 
 import CodeParentManagement from "./pages/Admin/Code/CodeParentManagement";
 
@@ -48,6 +49,7 @@ function App() {
             <Route path="/admin/index" element={<AdminDashboard />} />
             <Route path="/admin/content-manager" element={<ContentManager />} />
             <Route path="/admin/admin-manager" element={<AdminList />} />
+            <Route path="/admin/auth-management" element={<AdminAuthManagement />} />
             <Route path="/admin/admin-create" element={<AdminCreate />} />
             <Route path="/admin/admin-menu" element={<AdminMenu />} />
             <Route path="/admin/code-parent" element={<CodeParentManagement />} />
