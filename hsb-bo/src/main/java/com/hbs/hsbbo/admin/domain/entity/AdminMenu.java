@@ -11,7 +11,7 @@ public class AdminMenu {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;  // 시퀀스값, AUTO_INCREMENT
+    private Long id;  // 시퀀스값, AUTO_INCREMENT
 
     @Column(nullable = false, length = 100)
     private String name;  // 메뉴명

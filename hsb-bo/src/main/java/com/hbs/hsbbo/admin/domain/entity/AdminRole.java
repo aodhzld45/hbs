@@ -3,8 +3,8 @@ package com.hbs.hsbbo.admin.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Table(name = "admin_role")
 @Getter
 @Setter
-
+@ToString
 public class AdminRole {
 
     @Id
