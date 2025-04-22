@@ -29,4 +29,5 @@ public class AdminRoleMenu {
 
     @Column(name = "del_tf", length = 1)
     private String delTf;
+
 }

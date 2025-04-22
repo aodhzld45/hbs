@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,14 +40,15 @@ public class AdminRoleMenuService {
 
         List<AdminMenu> menus = adminMenuRepository.findAllById(menuIds);
 
-        List<AdminRoleMenu> roleMenus = menus.stream()
-                .map(menu -> AdminRoleMenu.builder()
-                        .role(role)
-                        .menu(menu)
-                        .useTf("Y")
-                        .delTf("N")
-                        .build())
-                .collect(Collectors.toList());
+        List<AdminRoleMenu> roleMenus = new ArrayList<>();
+        for (AdminMenu menu : menus) {
+            AdminRoleMenu roleMenu = new AdminRoleMenu();
+            roleMenu.setRole(role);
+            roleMenu.setMenu(menu);
+            roleMenu.setUseTf("Y");
+            roleMenu.setDelTf("N");
+            roleMenus.add(roleMenu);
+        }
 
         adminRoleMenuRepository.saveAll(roleMenus);
     }

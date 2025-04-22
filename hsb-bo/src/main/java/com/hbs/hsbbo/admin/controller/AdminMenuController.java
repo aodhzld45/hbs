@@ -35,7 +35,7 @@ public class AdminMenuController {
     // 메뉴 수정
     @PutMapping("/{id}")
     public ResponseEntity<?> updateMenu(@PathVariable("id") Integer id, @Valid @RequestBody AdminMenu updatedMenu) {
-        Optional<AdminMenu> optionalMenu = adminMenuRepository.findById(id);
+        Optional<AdminMenu> optionalMenu = adminMenuRepository.findById(Long.valueOf(id));
         if (optionalMenu.isPresent()) {
             AdminMenu menu = optionalMenu.get();
             menu.setName(updatedMenu.getName());
@@ -56,7 +56,7 @@ public class AdminMenuController {
     // 메뉴 삭제 (논리 삭제: del_tf를 'Y'로 변경)
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteMenu(@PathVariable("id") Integer id) {
-        Optional<AdminMenu> optionalMenu = adminMenuRepository.findById(id);
+        Optional<AdminMenu> optionalMenu = adminMenuRepository.findById(Long.valueOf(id));
         if (optionalMenu.isPresent()) {
             AdminMenu menu = optionalMenu.get();
             menu.setDelTf("Y");
