@@ -1,9 +1,11 @@
 // src/components/Layout/AdminSidebar.tsx
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { AdminMenu } from '../../types/Admin/AdminMenu';
 import { fetchAdminMenus } from '../../services/Admin/adminMenuApi';
+
 
 interface Props {
   isOpen: boolean;
@@ -13,6 +15,7 @@ interface Props {
 const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
   const [menus, setMenus] = useState<AdminMenu[]>([]);
   const [selectedParent, setSelectedParent] = useState<number | null>(null);
+  const location = useLocation();
 
   useEffect(() => {
     const loadMenus = async () => {
@@ -27,6 +30,16 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
     loadMenus();
   }, []);
 
+    // 현재 경로에 따라 자동으로 selectedParent 설정
+    useEffect(() => {
+      const matched = menus.find(
+        (menu) => menu.depth === 2 && menu.url === location.pathname
+      );
+      if (matched) {
+        setSelectedParent(matched?.parentId ?? null);
+      }
+    }, [location.pathname, menus]);
+  
   // 1뎁스 메뉴 필터링: depth가 1인 메뉴들
   const topMenus = menus.filter(
     (menu) => menu.depth === 1 && menu.useTf === 'Y' && menu.delTf === 'N'
@@ -75,9 +88,13 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
                   <Link
                     key={child.id}
                     to={child.url}
-                    className="block p-1 text-sm hover:bg-gray-200 rounded border-b last:border-0"
-                  > └ 
-                    {child.name}
+                    className={`block p-1 text-sm rounded border-b last:border-0 ${
+                      location.pathname === child.url
+                        ? 'bg-blue-100 text-blue-600 font-bold'
+                        : 'hover:bg-gray-200'
+                    }`}
+                  >
+                    └ {child.name}
                   </Link>
                 ))}
               </div>
