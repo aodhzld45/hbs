@@ -4,3 +4,14 @@ export interface RoleGroup {
     description?: string;
     useTf: 'Y' | 'N';
   }
+
+export interface MenuPermission {
+  menuId: number;
+  read: boolean;
+  write: boolean;
+  delete: boolean;
+}
+
+export interface RoleMenuResponse {
+  menuPermissions: MenuPermission[];
+}

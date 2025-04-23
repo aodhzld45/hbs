@@ -2,10 +2,13 @@ package com.hbs.hsbbo.admin.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "adm_menu")
+@NoArgsConstructor
 @Data
 public class AdminMenu {
 
