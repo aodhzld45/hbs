@@ -158,36 +158,45 @@ CREATE TABLE `TBL_CODE_DETAIL` (
 ---------------- 관리자 권한 관련 테이블 ----------------
 
 -- 1. admin_role (권한 그룹)
-CREATE TABLE admin_role (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL COMMENT '권한 그룹명',
-  description TEXT COMMENT '설명',
-  use_tf CHAR(1) NOT NULL DEFAULT 'Y',
-  del_tf CHAR(1) NOT NULL DEFAULT 'N',
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+CREATE TABLE `admin_role` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL COMMENT '권한 그룹명',
+  `description` text DEFAULT NULL COMMENT '설명',
+  `use_tf` char(1) NOT NULL DEFAULT 'Y',
+  `del_tf` char(1) NOT NULL DEFAULT 'N',
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 2. admin_role_menu (권한 그룹 ↔ 메뉴 매핑)
-CREATE TABLE admin_role_menu (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  role_id INT NOT NULL,
-  menu_id INT NOT NULL,
-  read_tf CHAR(1) DEFAULT 'Y' COMMENT '조회 권한',
-  write_tf CHAR(1) DEFAULT 'N' COMMENT '등록/수정 권한',
-  delete_tf CHAR(1) DEFAULT 'N' COMMENT '삭제 권한',
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (role_id) REFERENCES admin_role(id) ON DELETE CASCADE,
-  FOREIGN KEY (menu_id) REFERENCES adm_menu(id) ON DELETE CASCADE
-);
+CREATE TABLE `admin_role_menu` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `role_id` int(11) NOT NULL,
+  `menu_id` int(11) NOT NULL,
+  `read_tf` char(1) DEFAULT 'Y' COMMENT '조회 권한',
+  `write_tf` char(1) DEFAULT 'N' COMMENT '등록/수정 권한',
+  `delete_tf` char(1) DEFAULT 'N',
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `role_id` (`role_id`),
+  KEY `menu_id` (`menu_id`),
+  CONSTRAINT `admin_role_menu_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `admin_role` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `admin_role_menu_ibfk_2` FOREIGN KEY (`menu_id`) REFERENCES `adm_menu` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
 
 -- 3. admin_role_user (관리자 ↔ 권한 그룹 매핑)
-CREATE TABLE admin_role_user (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  admin_id VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  role_id INT NOT NULL,
-  assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (admin_id) REFERENCES admin(id),
-  FOREIGN KEY (role_id) REFERENCES admin_role(id)
-);
+CREATE TABLE `admin_role_user` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `admin_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role_id` int(11) NOT NULL,
+  `assigned_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `admin_id` (`admin_id`),
+  KEY `role_id` (`role_id`),
+  CONSTRAINT `admin_role_user_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`),
+  CONSTRAINT `admin_role_user_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `admin_role` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
