@@ -9,6 +9,7 @@ import com.hbs.hsbbo.admin.repository.AdminRoleRepository;
 import com.hbs.hsbbo.admin.repository.AdminRoleUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +21,11 @@ public class AdminRoleUserService {
     private final AdminRoleUserRepository adminRoleUserRepository;
     private final AdminRepository adminRepository;
     private final AdminRoleRepository adminRoleRepository;
+
+    // 전체 관리자 목록 + 매핑된 권한 그룹 조회(없으면 null)
+    public List<UserRoleResponse> getAllUsersRoles() {
+        return adminRoleUserRepository.findAllAdminRoleMappings();
+    }
 
     // 사용자 + 권한 목록 조회
     public List<UserRoleResponse> getAllUsersWithRoles() {
@@ -41,6 +47,7 @@ public class AdminRoleUserService {
     }
 
     // 사용자에게 권한 지정
+    @Transactional
     public void assignRoleToUser(String adminId, Long roleId) {
         Admin admin = adminRepository.findById(adminId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 관리자가 존재하지 않습니다."));

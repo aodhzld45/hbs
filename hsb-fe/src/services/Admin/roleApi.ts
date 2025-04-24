@@ -1,5 +1,5 @@
 import api from '../api';
-import { RoleGroup, MenuPermission, RoleMenuResponse } from '../../types/Admin/RoleGroup'
+import { RoleGroup, MenuPermission, RoleMenuResponse, UserRoleAssign } from '../../types/Admin/RoleGroup'
 
 /*
     권한 그룹 관련 API
@@ -54,3 +54,16 @@ export const saveRoleMenus = async (
   ): Promise<void> => {
     await api.put(`/admin/roles/${roleId}/menus`, { menuPermissions });
 };
+
+/*
+    사용자 권한 지정 API
+*/
+
+export const fetchUserRoles = async (): Promise<UserRoleAssign[]> => {
+    const res = await api.get('/admin/role-user');
+    return res.data;
+  };
+  
+  export const updateUserRole = async (adminId: string, roleId: number): Promise<void> => {
+    await api.put('/admin/role-user', { adminId, roleId });
+  };

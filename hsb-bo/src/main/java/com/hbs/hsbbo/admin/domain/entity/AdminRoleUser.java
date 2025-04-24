@@ -29,6 +29,7 @@ public class AdminRoleUser {
     @JoinColumn(name = "role_id", referencedColumnName = "id")
     private AdminRole role; // 권한 그룹
 
+    @Column(name = "assigned_at")
     private LocalDateTime assignedAt;
 
 }

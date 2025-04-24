@@ -15,3 +15,11 @@ export interface MenuPermission {
 export interface RoleMenuResponse {
   menuPermissions: MenuPermission[];
 }
+
+export interface UserRoleAssign {
+  adminId: string;
+  adminName: string;
+  email: string;
+  roleId: number;
+  roleName: string;
+}
