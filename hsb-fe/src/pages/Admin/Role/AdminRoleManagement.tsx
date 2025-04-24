@@ -1,13 +1,20 @@
 // src/pages/admin/authority/AdminAuthManagement.tsx
 
-import React, { useState } from 'react';
+import React, { useEffect,useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import AdminLayout from '../../../components/Layout/AdminLayout';
 import RoleGroupList from '../../../components/Admin/Role/RoleGroupList';
 import RoleMenuMapping from '../../../components/Admin/Role/RoleMenuMapping';
 import UserRoleAssignment from '../../../components/Admin/Role/UserRoleAssignment';
 
 const AdminAuthManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'ROLE' | 'MENU' | 'USER'>('ROLE');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') as 'ROLE' | 'MENU' | 'USER' || 'ROLE';
+  const [activeTab, setActiveTab] = useState<'ROLE' | 'MENU' | 'USER'>(defaultTab);
+
+  useEffect(() => {
+    setSearchParams({ tab: activeTab });
+  }, [activeTab, setSearchParams]);
 
   return (
     <AdminLayout>
