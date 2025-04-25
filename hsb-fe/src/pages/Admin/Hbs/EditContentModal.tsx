@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { HbsContent, FileType, ContentType } from '../../../types/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
 
+
 // 에디터용 import
-import { Editor } from '@toast-ui/react-editor';
-import '@toast-ui/editor/dist/toastui-editor.css';
-import { useRef } from 'react'; 
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 interface EditContentModalProps {
   content: HbsContent;
@@ -21,10 +21,10 @@ const EditContentModal = ({ content, onClose, onSave }: EditContentModalProps) =
   const [mainFile, setMainFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState(content.fileUrl || '');
+  const [editorContent, setEditorContent] = useState<string>(content.content || '');
 
-  const editorRef = useRef<Editor>(null);
-
-  
+    // 유튜브용 상태
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [youtubeId, setYoutubeId] = useState('');
   const [youtubeImgUrl, setYoutubeImgUrl] = useState('');
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState(content.fileUrl || '');
@@ -54,7 +54,7 @@ const EditContentModal = ({ content, onClose, onSave }: EditContentModalProps) =
   };
 
   const handleSubmit = () => {
-    const htmlContent = editorRef.current?.getInstance().getHTML() || '';
+    const htmlContent = editorContent;
 
     const formData = new FormData();
     formData.append('fileId', String(content.fileId));
@@ -86,26 +86,40 @@ const EditContentModal = ({ content, onClose, onSave }: EditContentModalProps) =
   const thumbnailFileName = getOriginalFilename(content.thumbnailUrl?.split('/').pop() || '');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4">콘텐츠 수정</h2>
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-2">
+      <div className="bg-white rounded-lg p-4 sm:p-6 w-[90%] sm:max-w-md">
+        <h2 className="text-lg sm:text-xl font-semibold mb-4">콘텐츠 수정</h2>
+  
         <label className="block mb-2 text-sm font-medium">제목</label>
-        <input type="text" className="w-full border p-2 mb-4" value={title} onChange={(e) => setTitle(e.target.value)} />
-
+        <input
+          type="text"
+          className="w-full border p-2 mb-4"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+  
         <label className="block mb-2 text-sm font-medium">설명</label>
-        <textarea className="w-full border p-2 mb-4" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-
+        <textarea
+          className="w-full border p-2 mb-4"
+          rows={3}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+  
         <div className="mb-4">
           <label className="block text-sm font-medium">파일 타입</label>
-          <select value={fileType} onChange={(e) => handleFileTypeChange(e.target.value as FileType)} className="w-full border p-2">
+          <select
+            value={fileType}
+            onChange={(e) => handleFileTypeChange(e.target.value as FileType)}
+            className="w-full border p-2"
+          >
             <option value="VIDEO">VIDEO</option>
             <option value="IMAGE">IMAGE</option>
             <option value="DOCUMENT">DOCUMENT</option>
             <option value="LINK">LINK</option>
           </select>
         </div>
-
+  
         <div className="mb-4">
           <label className="block text-sm font-medium">콘텐츠 타입</label>
           <select
@@ -125,22 +139,24 @@ const EditContentModal = ({ content, onClose, onSave }: EditContentModalProps) =
             )}
           </select>
         </div>
-
+  
         <div className="mb-4">
           <label className="block text-sm font-medium">본문 콘텐츠</label>
-          <Editor
-            initialValue={content.content || ''}
-            previewStyle="vertical"
-            height="300px"
-            initialEditType="wysiwyg"
-            useCommandShortcut={true}
-            ref={editorRef}
-          />
+          <div className="editor-wrapper max-w-full overflow-x-auto">
+            <CKEditor
+              editor={ClassicEditor}
+              data={editorContent}
+              onChange={(event: any, editor: any) => {
+                const data = editor.getData();
+                setEditorContent(data);
+              }}
+            />
+          </div>
         </div>
-
+  
         {fileType === 'LINK' ? (
           <div className="mb-4">
-          <label className="block font-semibold mb-1">유튜브 URL</label>
+            <label className="block font-semibold mb-1">유튜브 URL</label>
             <input
               type="text"
               placeholder="https://www.youtube.com/watch?v=xxxx 또는 https://youtu.be/xxxx"
@@ -152,19 +168,24 @@ const EditContentModal = ({ content, onClose, onSave }: EditContentModalProps) =
             />
             {youtubeImgUrl && (
               <div className="mt-4 flex gap-4 items-center">
-                <img src={youtubeImgUrl} width={150} height={100} alt="썸네일" className="rounded border" />
+                <img
+                  src={youtubeImgUrl}
+                  width={150}
+                  height={100}
+                  alt="썸네일"
+                  className="rounded border"
+                />
               </div>
             )}
           </div>
         ) : (
-          
-          <div>
+          <div className="mb-4">
             <label className="block font-semibold mb-1">
               {fileType === 'VIDEO'
-              ? '영상 파일 (mp4)'
-              : fileType === 'IMAGE'
-              ? '이미지 파일'
-              : '문서 파일'}
+                ? '영상 파일 (mp4)'
+                : fileType === 'IMAGE'
+                ? '이미지 파일'
+                : '문서 파일'}
             </label>
             <input
               type="file"
@@ -177,17 +198,20 @@ const EditContentModal = ({ content, onClose, onSave }: EditContentModalProps) =
               }
               onChange={(e) => setMainFile(e.target.files?.[0] || null)}
             />
-
             <p className="text-sm text-gray-600 mt-1">
               기존 파일명: <strong>{fileName || '없음'}</strong>
             </p>
           </div>
         )}
-
+  
         {fileType === 'VIDEO' && (
           <div className="mb-4">
             <label className="block text-sm font-medium">썸네일 이미지 (선택)</label>
-            <input type="file" accept="image/*" onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)} />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
+            />
             {thumbnailFile ? (
               <p className="text-sm text-gray-600 mt-1">{thumbnailFileName}</p>
             ) : (
@@ -201,18 +225,25 @@ const EditContentModal = ({ content, onClose, onSave }: EditContentModalProps) =
             )}
           </div>
         )}
-
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-400 text-white rounded">
+  
+        <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-400 text-white rounded"
+          >
             취소
           </button>
-          <button onClick={handleSubmit} className="px-4 py-2 bg-blue-600 text-white rounded">
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 bg-blue-600 text-white rounded"
+          >
             저장
           </button>
         </div>
       </div>
     </div>
   );
+  
 };
 
 export default EditContentModal;

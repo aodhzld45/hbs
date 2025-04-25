@@ -6,10 +6,8 @@ import { FILE_BASE_URL } from '../../../config/config';
 import { useNavigate } from 'react-router-dom';
 import { fetchHbsCreate } from '../../../services/hbsApi';
 // 에디터용 import
-import { Editor } from '@toast-ui/react-editor';
-import '@toast-ui/editor/dist/toastui-editor.css';
-import { useRef } from 'react'; 
-
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 function ContentManager() {
   const navigate = useNavigate();
@@ -21,8 +19,7 @@ function ContentManager() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState('');
   const [contents, setContents] = useState<HbsContent[]>([]);
-  
-  const editorRef = useRef<Editor>(null);
+  const [content, setContent] = useState<string>(''); 
 
   // 필터링용 상태
   const [filterFileType, setFilterFileType] = useState<FileType | ''>('');
@@ -86,8 +83,7 @@ function ContentManager() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const editorInstance = editorRef.current;
-    const htmlContent = editorInstance?.getInstance().getHTML(); 
+    const htmlContent = content;
 
     if (!title || !description || !htmlContent) return alert('제목과 설명을 입력해주세요.');
 
@@ -187,13 +183,14 @@ function ContentManager() {
           />
 
           <label className="block font-semibold mb-1">콘텐츠 (에디터)</label>
-          <Editor
-            initialValue={''}
-            previewStyle="vertical"
-            height="300px"
-            initialEditType="wysiwyg"
-            useCommandShortcut={true}
-            ref={editorRef}
+   
+          <CKEditor
+            editor={ClassicEditor}
+            data={content}
+            onChange={(event: any, editor: any) => {
+              const data = editor.getData();
+              setContent(data);
+            }}
           />
 
           {fileType === 'LINK' ? (
@@ -291,7 +288,7 @@ function ContentManager() {
 
         <h3 className="text-xl font-bold mb-4">등록된 콘텐츠</h3>
 
-        {/* 🔽 콘텐츠 목록 출력 */}
+        {/* 콘텐츠 목록 출력 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {contents.map((item) => (
             <div

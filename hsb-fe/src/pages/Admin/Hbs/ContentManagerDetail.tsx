@@ -11,10 +11,9 @@ import { FILE_BASE_URL } from '../../../config/config';
 import Layout from '../../../components/Layout/Layout';
 import EditContentModal from '../Hbs/EditContentModal';
 
-import { Editor } from '@toast-ui/react-editor';
 // 에디터용 import
-import '@toast-ui/editor/dist/toastui-editor.css';
-import { useRef } from 'react'; 
+// import { CKEditor } from '@ckeditor/ckeditor5-react';
+// import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 const ContentManagerDetail = () => {
   const { fileId } = useParams<{ fileId: string }>();
