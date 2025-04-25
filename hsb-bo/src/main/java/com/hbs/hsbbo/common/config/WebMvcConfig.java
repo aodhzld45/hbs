@@ -26,7 +26,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/files/**")
-                .addResourceLocations("file:C:/upload/hsb/")
+                .addResourceLocations("file:" + fileStorageProperties.getUploadPath() + "/")
                 .setCachePeriod(3600);
     }
 

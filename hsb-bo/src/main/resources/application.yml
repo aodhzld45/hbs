@@ -21,7 +21,7 @@ spring:
       max-request-size: 50MB
 
 file:
-  upload-path: C:/upload/hsb
+  upload-path: /home/upload/hbs
 
 server:
   servlet:
