@@ -1,0 +1,25 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./hbs-bo
+      dockerfile: Dockerfile
+    image: hbs-be
+    container_name: hbs-be
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./hbs-fe
+      dockerfile: Dockerfile
+    image: hbs-fe
+    container_name: hbs-fe
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
