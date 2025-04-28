@@ -1,11 +1,11 @@
 spring:
   datasource:
-#    url: jdbc:mysql://158.179.168.106:3306/hbs
-#    username: admin
-#    password: 2134
     url: jdbc:mysql://158.179.168.106:3306/hbs
     username: admin
     password: 2134
+  #    url: jdbc:mysql://192.168.0.67:3306/hbs
+  #    username: HBS
+  #    password: ucp87411!
   jpa:
     hibernate:
       ddl-auto: none
@@ -21,9 +21,26 @@ spring:
       max-request-size: 50MB
 
 file:
-  upload-path: /home/upload/hbs
+  # 로컬
+  upload-path: C:/upload/hsb
+  # 서버
+  #upload-path: /home/upload/hbs
 
 server:
   servlet:
     session:
       timeout: 30m
+
+cloud:
+  aws:
+    credentials:
+      # 로컬용
+      # access-key: AKIAU4LPN2FWUNER2GCM
+      # secret-key: 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
+
+      # 배포용
+      access-key: AKIAU4LPN2FW627IC2TI
+      secret-key: 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
+
+    region:
+      static: ap-northeast-2

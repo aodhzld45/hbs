@@ -6,6 +6,7 @@ import { FILE_BASE_URL } from '../../../config/config';
 // 에디터용 import
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { Base64UploadAdapterPlugin } from "../../../types/Common/ckeditor";
 
 interface EditContentModalProps {
   content: HbsContent;
@@ -144,7 +145,10 @@ const EditContentModal = ({ content, onClose, onSave }: EditContentModalProps) =
           <label className="block text-sm font-medium">본문 콘텐츠</label>
           <div className="editor-wrapper max-w-full overflow-x-auto">
             <CKEditor
-              editor={ClassicEditor}
+              editor={ClassicEditor as any}
+              config={{
+                extraPlugins: [Base64UploadAdapterPlugin],
+              }}
               data={editorContent}
               onChange={(event: any, editor: any) => {
                 const data = editor.getData();

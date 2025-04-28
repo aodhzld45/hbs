@@ -8,6 +8,7 @@ import { fetchHbsCreate } from '../../../services/hbsApi';
 // 에디터용 import
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { Base64UploadAdapterPlugin } from "../../../types/Common/ckeditor";
 
 function ContentManager() {
   const navigate = useNavigate();
@@ -73,7 +74,6 @@ function ContentManager() {
       alert('콘텐츠 불러오기 실패');
     }
   };
-
 
   useEffect(() => {
     fetchFilteredContents('',''); // 초기 로딩시 전체 목록
@@ -183,9 +183,11 @@ function ContentManager() {
           />
 
           <label className="block font-semibold mb-1">콘텐츠 (에디터)</label>
-   
           <CKEditor
-            editor={ClassicEditor}
+            editor={ClassicEditor as any}
+            config={{
+              extraPlugins: [Base64UploadAdapterPlugin],
+            }}
             data={content}
             onChange={(event: any, editor: any) => {
               const data = editor.getData();
