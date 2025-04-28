@@ -14,6 +14,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final FileStorageProperties fileStorageProperties;
 
     // CORS 설정
+    // 배포서버
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
@@ -22,6 +23,16 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }
+
+    // 로컬
+    // @Override
+    // public void addCorsMappings(CorsRegistry registry) {
+    //     registry.addMapping("/api/**")
+    //             .allowedOrigins("http://localhost:3000")
+    //             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+    //             .allowedHeaders("*")
+    //             .allowCredentials(true);
+    // }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {

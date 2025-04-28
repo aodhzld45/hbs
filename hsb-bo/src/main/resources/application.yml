@@ -1,8 +1,10 @@
 spring:
   datasource:
+  #    이지민의 저장공간
     url: jdbc:mysql://158.179.168.106:3306/hbs
     username: admin
     password: 2134
+  #    로컬
   #    url: jdbc:mysql://192.168.0.67:3306/hbs
   #    username: HBS
   #    password: ucp87411!
@@ -22,9 +24,9 @@ spring:
 
 file:
   # 로컬
-  upload-path: C:/upload/hsb
+  #upload-path: C:/upload/hsb
   # 서버
-  #upload-path: /home/upload/hbs
+  upload-path: /home/upload/hbs
 
 server:
   servlet:
