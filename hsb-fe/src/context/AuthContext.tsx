@@ -2,6 +2,8 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { Admin } from "../types/Admin/Admin";
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -31,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkSession = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/admin/session-check", {
+      const response = await fetch(`${API_BASE_URL}/admin/session-check`, {
         method: "GET",
         credentials: "include",
       });
@@ -62,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/admin/logout", {
+      const response = await fetch(`${API_BASE_URL}/api/admin/logout`, {
         method: "POST",
         credentials: "include",
       });

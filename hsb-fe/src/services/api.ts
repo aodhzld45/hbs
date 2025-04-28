@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://13.125.133.75:8080/api', // ← 백엔드 주소에 맞게 수정
+  baseURL: 'http://43.203.62.30:8080/api', // ← 백엔드 주소에 맞게 수정
   headers: {
     'Content-Type': 'application/json',
   },
