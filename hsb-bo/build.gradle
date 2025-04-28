@@ -35,12 +35,21 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'com.mysql:mysql-connector-j'
 
+	// Aws s3 파일 관련 의존성 추가
+	implementation 'software.amazon.awssdk:s3:2.20.0'
+	// Spring Cloud AWS Starter (올바른 artifactId)
+	implementation 'io.awspring.cloud:spring-cloud-aws-starter:3.0.2'
+	implementation platform('software.amazon.awssdk:bom:2.20.129') // 버전 통합 관리
+	implementation 'software.amazon.awssdk:s3'
+	// → 또는 S3 전용만 쓰려면:
+	// implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.0.2'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-
 }
 
 tasks.named('test') {
+
+
 	useJUnitPlatform()
 }
