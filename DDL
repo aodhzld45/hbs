@@ -70,90 +70,109 @@ CREATE TABLE userlog (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='사용자 로그 테이블 (세션 기반)';
 
 
----hbs.admin
-CREATE TABLE admin (
-    id VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-    group_id INT NULL,
-    email VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
-    name VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
-    password VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    tel VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
-    memo VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
-    password_length INT NULL,
-    access_fail_count INT DEFAULT 0,
-    is_deleted TINYINT(1) DEFAULT 0,
-    logged_at DATETIME NULL,
-    password_updated_at DATETIME NULL,
-    PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- 4. admin
+CREATE TABLE `admin` (
+  `id`                 VARCHAR(100)     NOT NULL COMMENT '관리자 아이디',
+  `groupId`            INT(11)          NULL    COMMENT '그룹 번호',
+  `email`              VARCHAR(100)     NULL    COMMENT '이메일',
+  `name`               VARCHAR(100)     NULL    COMMENT '이름',
+  `password`           VARCHAR(100)     NULL    COMMENT '비밀번호',
+  `tel`                VARCHAR(100)     NULL    COMMENT '전화번호',
+  `memo`               VARCHAR(100)     NULL    COMMENT '메모',
+  `passwordLength`     INT(11)          NULL    COMMENT '비밀번호 길이',
+  `accessFailCount`    INT(11) NOT NULL DEFAULT 0 COMMENT '로그인 실패 횟수',
+  `dispSeq`            INT(11)          NULL    COMMENT '전시 순번',
+  `useTF`              CHAR(1) NOT NULL DEFAULT 'Y' COMMENT '사용 여부 (Y/N)',
+  `delTF`              CHAR(1) NOT NULL DEFAULT 'N' COMMENT '삭제 여부 (Y/N)',
+  `regAdm`             INT(11) UNSIGNED NULL    COMMENT '등록 관리자',
+  `regDate`            DATETIME         NULL    COMMENT '등록일',
+  `modifyAdm`          INT(11) UNSIGNED NULL    COMMENT '수정 관리자',
+  `modifyDate`         DATETIME         NULL    COMMENT '수정일',
+  `delAdm`             INT(11) UNSIGNED NULL    COMMENT '삭제 관리자',
+  `delDate`            DATETIME         NULL    COMMENT '삭제일',
+  `loggedAt`           DATETIME         NULL    COMMENT '최종 로그인 일시',
+  `passwordUpdatedAt`  DATETIME         NULL    COMMENT '비밀번호 변경 일시',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
---- adm_menu
-CREATE TABLE adm_menu (
-    id INT NOT NULL AUTO_INCREMENT,  -- 메뉴 고유 시퀀스값
-    name VARCHAR(100) NOT NULL,        -- 메뉴명
-    depth TINYINT NOT NULL,            -- 메뉴 뎁스 구분 (예: 1, 2, 3 등)
-    parent_id INT DEFAULT NULL,        -- 2뎁스 이상일 경우 상위 메뉴 id
-    description VARCHAR(255) DEFAULT NULL,  -- 메모(설명)
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 생성일
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,  -- 수정일 (업데이트 시 자동 갱신)
-    url VARCHAR(200) NOT NULL,         -- 메뉴 클릭 시 이동할 주소
-    order_sequence INT NOT NULL,       -- 메뉴 표시 순서
-    use_tf VARCHAR(1) NOT NULL DEFAULT 1,  -- 사용 여부 (1: 사용, 0: 미사용)
-    del_tf VARCHAR(1) NOT NULL DEFAULT 0,  -- 삭제 여부 (논리 삭제: 1이면 삭제된 것으로 간주)
-    PRIMARY KEY (id),
-    INDEX idx_depth (depth),
-    INDEX idx_parent_id (parent_id),
-    INDEX idx_order_sequence (order_sequence),
-    CONSTRAINT fk_parent_menu FOREIGN KEY (parent_id)
-      REFERENCES adm_menu(id)
-      ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
-
-CREATE TABLE `TBL_CODE_PARENT` (
-  `PCODE_NO` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '대분류	코드 일련번호',
-  `SITE_NO` int(11) unsigned DEFAULT NULL COMMENT '사이트 일련번호',
-  `PCODE` varchar(50) NOT NULL COMMENT '대분류	코드',
-  `PCODE_NM` varchar(50) NOT NULL COMMENT '코드명',
-  `PCODE_MEMO` text DEFAULT NULL COMMENT '코드	메모',
-  `PCODE_SEQ_NO` int(11) DEFAULT NULL COMMENT '코드	전시 순번',
-  `USE_TF` char(1) NOT NULL DEFAULT 'Y' COMMENT '사용	여부 사용(Y),사용안함(N)',
-  `DEL_TF` char(1) NOT NULL DEFAULT 'N' COMMENT '삭제	여부 삭제(Y),사용(N)',
-  `REG_ADM` int(11) unsigned DEFAULT NULL COMMENT '등록	관리자 일련번호 TBL_ADMIN ADM_NO',
-  `REG_DATE` datetime DEFAULT NULL COMMENT '등록일',
-  `UP_ADM` int(11) unsigned DEFAULT NULL COMMENT '수정	관리자 일련번호 TBL_ADMIN ADM_NO',
-  `UP_DATE` datetime DEFAULT NULL COMMENT '수정일',
-  `DEL_ADM` int(11) unsigned DEFAULT NULL COMMENT '삭제	관리자 일련번호 TBL_ADMIN ADM_NO',
-  `DEL_DATE` datetime DEFAULT NULL COMMENT '삭제일',
-  PRIMARY KEY (`PCODE_NO`)
-) ENGINE=MyISAM AUTO_INCREMENT=52 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- 3. adm_menu
+CREATE TABLE `adm_menu` (
+  `id`         INT(11)           NOT NULL AUTO_INCREMENT COMMENT '메뉴 고유 시퀀스',
+  `name`       VARCHAR(100)      NOT NULL               COMMENT '메뉴명',
+  `depth`      TINYINT           NOT NULL               COMMENT '메뉴 뎁스',
+  `parentId`   INT(11)           NULL                   COMMENT '상위 메뉴 ID',
+  `description` VARCHAR(255)     NULL                   COMMENT '메모',
+  `url`        VARCHAR(200)      NOT NULL               COMMENT '이동 URL',
+  `dispSeq`    INT(11)           NOT NULL               COMMENT '전시 순번',
+  `useTF`      CHAR(1)           NOT NULL DEFAULT 'Y'   COMMENT '사용 여부 (Y/N)',
+  `delTF`      CHAR(1)           NOT NULL DEFAULT 'N'   COMMENT '삭제 여부 (Y/N)',
+  `regAdm`     INT(11) UNSIGNED  NULL                   COMMENT '등록 관리자',
+  `regDate`    DATETIME          NULL                   COMMENT '등록일',
+  `modifyAdm`  INT(11) UNSIGNED  NULL                   COMMENT '수정 관리자',
+  `modifyDate` DATETIME          NULL                   COMMENT '수정일',
+  `delAdm`     INT(11) UNSIGNED  NULL                   COMMENT '삭제 관리자',
+  `delDate`    DATETIME          NULL                   COMMENT '삭제일',
+  PRIMARY KEY (`id`),
+  INDEX `idxParentId` (`parentId`),
+  INDEX `idxDepth` (`depth`),
+  CONSTRAINT `fkParentMenu`
+    FOREIGN KEY (`parentId`)
+    REFERENCES `adm_menu` (`id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 
-CREATE TABLE `TBL_CODE_DETAIL` (
-  `DCODE_NO` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '하위분류	일련번호',
-  `PCODE` varchar(50) NOT NULL COMMENT '대분류	코드 TBL_CODE_PARENT (FK)',
-  `DCODE` varchar(50) NOT NULL COMMENT '하위분류	코드',
-  `DCODE_NM` varchar(50) NOT NULL COMMENT '코드명',
-  `DCODE_EXT` varchar(255) NOT NULL,
-  `DCODE_SEQ_NO` int(11) DEFAULT NULL COMMENT '코드전시순번',
-  `USE_TF` char(1) NOT NULL DEFAULT 'Y' COMMENT '사용	여부 사용(Y),사용안함(N)',
-  `DEL_TF` char(1) NOT NULL DEFAULT 'N' COMMENT '삭제	여부 삭제(Y),사용(N)',
-  `REG_ADM` int(11) unsigned DEFAULT NULL COMMENT '등록	관리자 일련번호 TBL_ADMIN ADM_NO',
-  `REG_DATE` datetime DEFAULT NULL COMMENT '등록일',
-  `UP_ADM` int(11) unsigned DEFAULT NULL COMMENT '수정	관리자 일련번호 TBL_ADMIN ADM_NO',
-  `UP_DATE` datetime DEFAULT NULL COMMENT '수정일',
-  `DEL_ADM` int(11) unsigned DEFAULT NULL COMMENT '삭제	관리자 일련번호 TBL_ADMIN ADM_NO',
-  `DEL_DATE` datetime DEFAULT NULL COMMENT '삭제일',
-  `DCODE_INFO01` varchar(150) DEFAULT NULL,
-  `DCODE_INFO02` varchar(150) DEFAULT NULL,
-  `DCODE_INFO03` varchar(150) DEFAULT NULL,
-  PRIMARY KEY (`PCODE`,`DCODE_NO`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- 1. code_parent
+CREATE TABLE `code_parent` (
+  `pcodeNo`    INT(11) UNSIGNED      NOT NULL AUTO_INCREMENT COMMENT '대분류 코드 일련번호',
+  `siteNo`     INT(11) UNSIGNED      NULL               COMMENT '사이트 일련번호',
+  `pcode`      VARCHAR(50)           NOT NULL           COMMENT '대분류 코드',
+  `pcodeNm`    VARCHAR(50)           NOT NULL           COMMENT '코드명',
+  `pcodeMemo`  TEXT                  NULL               COMMENT '코드 메모',
+  `dispSeq`    INT(11)               NULL               COMMENT '전시 순번',
+  `useTF`      CHAR(1)               NOT NULL DEFAULT 'Y' COMMENT '사용 여부 (Y/N)',
+  `delTF`      CHAR(1)               NOT NULL DEFAULT 'N' COMMENT '삭제 여부 (Y/N)',
+  `regAdm`     INT(11) UNSIGNED      NULL               COMMENT '등록 관리자',
+  `regDate`    DATETIME              NULL               COMMENT '등록일',
+  `modifyAdm`  INT(11) UNSIGNED      NULL               COMMENT '수정 관리자',
+  `modifyDate` DATETIME              NULL               COMMENT '수정일',
+  `delAdm`     INT(11) UNSIGNED      NULL               COMMENT '삭제 관리자',
+  `delDate`    DATETIME              NULL               COMMENT '삭제일',
+  PRIMARY KEY (`pcodeNo`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+-- 2. code_detail
+CREATE TABLE `code_detail` (
+  `pcode`        VARCHAR(50)         NOT NULL           COMMENT '대분류 코드',
+  `dcodeNo`      INT(11) UNSIGNED    NOT NULL AUTO_INCREMENT COMMENT '하위분류 일련번호',
+  `dcode`        VARCHAR(50)         NOT NULL           COMMENT '하위분류 코드',
+  `dcodeNm`      VARCHAR(50)         NOT NULL           COMMENT '코드명',
+  `dcodeExt`     VARCHAR(255)        NULL               COMMENT '추가 정보',
+  `dcodeInfo01`  VARCHAR(150)        NULL               COMMENT '추가 정보1',
+  `dcodeInfo02`  VARCHAR(150)        NULL               COMMENT '추가 정보2',
+  `dcodeInfo03`  VARCHAR(150)        NULL               COMMENT '추가 정보3',
+  `dispSeq`      INT(11)             NULL               COMMENT '전시 순번',
+  `useTF`        CHAR(1)             NOT NULL DEFAULT 'Y' COMMENT '사용 여부 (Y/N)',
+  `delTF`        CHAR(1)             NOT NULL DEFAULT 'N' COMMENT '삭제 여부 (Y/N)',
+  `regAdm`       INT(11) UNSIGNED    NULL               COMMENT '등록 관리자',
+  `regDate`      DATETIME            NULL               COMMENT '등록일',
+  `modifyAdm`    INT(11) UNSIGNED    NULL               COMMENT '수정 관리자',
+  `modifyDate`   DATETIME            NULL               COMMENT '수정일',
+  `delAdm`       INT(11) UNSIGNED    NULL               COMMENT '삭제 관리자',
+  `delDate`      DATETIME            NULL               COMMENT '삭제일',
+  PRIMARY KEY (`pcode`,`dcodeNo`),
+  KEY `idxPcode` (`pcode`),
+  CONSTRAINT `fkCodeParent`
+    FOREIGN KEY (`pcode`)
+    REFERENCES `code_parent` (`pcode`)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 ---------------- 관리자 권한 관련 테이블 ----------------
 

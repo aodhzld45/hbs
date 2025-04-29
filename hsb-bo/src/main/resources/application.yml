@@ -33,6 +33,18 @@ server:
     session:
       timeout: 30m
 
+
+
+# 여기에 추가 ↓
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
 cloud:
   aws:
     credentials:
