@@ -90,6 +90,50 @@ public class ContentFileController {
         }
     }
 
+    // s3 콘텐츠 업로드
+    @PostMapping(value = "/s3-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> s3UploadContents(
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail,
+            @RequestPart("title") String title,
+            @RequestPart("description") String description,
+            @RequestPart("content") String content,
+            @RequestPart("fileType") String fileTypeStr,
+            @RequestPart("contentType") String contentTypeStr,
+            @RequestPart(value = "fileUrl", required = false) String fileUrl,
+            @RequestPart(value = "thumbnailUrl", required = false) String thumbnailUrl
+    ) {
+        try {
+            FileType fileType = FileType.valueOf(fileTypeStr.toUpperCase());
+            ContentType contentType = ContentType.valueOf(contentTypeStr.toUpperCase());
+
+            ContentFileRequest request = new ContentFileRequest();
+            request.setTitle(title);
+            request.setDescription(description);
+            request.setContent(content);
+            request.setFileType(fileType);
+            request.setContentType(contentType);
+
+            // 👉 LINK 타입은 fileUrl, thumbnailUrl 그대로 사용
+            if (fileType == FileType.LINK) {
+                request.setFileUrl(fileUrl);
+                request.setThumbnailUrl(thumbnailUrl);
+            }
+
+            contentFileService.s3UploadContents(request, file, thumbnail);
+
+            return ResponseEntity.ok("콘텐츠 등록 완료");
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("잘못된 fileType 또는 contentType입니다.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("서버 오류: " + e.getMessage());
+        }
+    }
+
+
+
     // 콘텐츠 수정
     @PutMapping(value = "/content-files/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateContent(

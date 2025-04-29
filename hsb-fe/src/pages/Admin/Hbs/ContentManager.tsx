@@ -4,7 +4,7 @@ import api from '../../../services/api';
 import { FileType, ContentType, HbsContent } from '../../../types/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
 import { useNavigate } from 'react-router-dom';
-import { fetchHbsCreate } from '../../../services/hbsApi';
+import { fetchHbsCreate, fetchS3Create } from '../../../services/hbsApi';
 // 에디터용 import
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
@@ -109,7 +109,8 @@ function ContentManager() {
     }
 
     try {
-      await fetchHbsCreate(formData);
+      //await fetchHbsCreate(formData);
+      await fetchS3Create(formData);
       alert('등록 완료');
       setTitle('');
       setDescription('');
@@ -311,7 +312,8 @@ function ContentManager() {
                 ></iframe>
               ) : item.thumbnailUrl ? (
                 <img
-                  src={`${FILE_BASE_URL}${item.thumbnailUrl}`}
+                  //src={`${FILE_BASE_URL}${item.thumbnailUrl}`}
+                  src={item.thumbnailUrl}
                   alt={item.title}
                   className="w-full h-40 object-cover"
                 />

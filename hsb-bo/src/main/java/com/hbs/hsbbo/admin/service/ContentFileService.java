@@ -7,6 +7,7 @@ import com.hbs.hsbbo.admin.domain.entity.ContentFile;
 import com.hbs.hsbbo.admin.domain.type.ContentType;
 import com.hbs.hsbbo.admin.domain.type.FileType;
 import com.hbs.hsbbo.admin.repository.ContentFileRepository;
+import com.hbs.hsbbo.common.util.S3Uploader;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class ContentFileService {
 
     private final ContentFileRepository repository;
     private final FileUtil fileUtil;
+    private final S3Uploader s3Uploader;
 
 
     // 콘텐츠 목록
@@ -90,6 +92,67 @@ public class ContentFileService {
             entity.setThumbnailUrl(thumbnailUrl);
 
             entity.setExtension(fileUtil.getExtension(file.getOriginalFilename()));
+        }
+
+        int nextDispSeq = repository.findMaxDispSeqByContentType(request.getContentType()) + 1;
+        entity.setDispSeq(nextDispSeq);
+
+        repository.save(entity);
+    }
+
+    // s3 업로드
+    public void s3UploadContents(ContentFileRequest request, MultipartFile file, MultipartFile thumbnail) {
+
+        // 1. S3 업로드
+        if (request.getFileType() != FileType.LINK) {
+            if (file != null) {
+                String fileUrl = s3Uploader.uploadFileToS3(request.getFileType(), request.getContentType(), file);
+                request.setFileUrl(fileUrl);
+            }
+            if (thumbnail != null) {
+                String thumbUrl = s3Uploader.uploadFileToS3(FileType.IMAGE, request.getContentType(), thumbnail);
+                request.setThumbnailUrl(thumbUrl);
+            }
+        }
+
+        // 2. 엔티티 변환
+        ContentFile entity = new ContentFile();
+
+        entity.setTitle(request.getTitle());
+        entity.setDescription(request.getDescription());
+        entity.setContent(request.getContent());
+        entity.setFileType(request.getFileType());
+        entity.setContentType(request.getContentType());
+
+        if (request.getFileType() == FileType.LINK) {
+            // LINK 타입은 fileUrl, thumbnailUrl 그대로 사용
+            entity.setFileUrl(request.getFileUrl());
+            entity.setThumbnailUrl(request.getThumbnailUrl());
+            entity.setExtension("link");
+        } else {
+
+            if (file != null) {
+                entity.setFileUrl(request.getFileUrl()); // 이미 업로드된 URL 사용
+                entity.setExtension(s3Uploader.getExtension(file.getOriginalFilename())); // 확장자 저장
+            }
+            if (thumbnail != null && !thumbnail.isEmpty()) {
+                entity.setThumbnailUrl(request.getThumbnailUrl()); // 이미 업로드된 URL 사용
+            }
+            // 일반 파일 업로드
+        /*
+            if (file != null) {
+                String fileUrl = s3Uploader.uploadFileToS3(request.getFileType(), request.getContentType(), file);
+                entity.setFileUrl(fileUrl);
+                entity.setExtension(s3Uploader.getExtension(file.getOriginalFilename()));
+            }
+
+            // 썸네일 업로드 (선택)
+            if (thumbnail != null && !thumbnail.isEmpty()) {
+                String thumbnailUrl = s3Uploader.uploadFileToS3(FileType.IMAGE, request.getContentType(), thumbnail);
+                entity.setThumbnailUrl(thumbnailUrl);
+            }
+         */
+
         }
 
         int nextDispSeq = repository.findMaxDispSeqByContentType(request.getContentType()) + 1;

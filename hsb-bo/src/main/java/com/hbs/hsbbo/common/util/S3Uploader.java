@@ -1,5 +1,7 @@
 package com.hbs.hsbbo.common.util;
 
+import com.hbs.hsbbo.admin.domain.type.ContentType;
+import com.hbs.hsbbo.admin.domain.type.FileType;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +19,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Component
 public class S3Uploader {
+
     @Value("${cloud.aws.credentials.access-key}")
     private String accessKey;
 
@@ -28,7 +31,7 @@ public class S3Uploader {
 
     private S3Client s3Client;
 
-    private final String bucketName = "my-hsb-uploads"; // 사용 중인 버킷 이름
+    private final String bucketName = "my-hsb-uploads"; // 버킷 이름
 
     @PostConstruct
     public void init() {
@@ -40,27 +43,27 @@ public class S3Uploader {
                 .build();
     }
 
-
-    /*
-     * S3 파일 업로드
+    /**
+     * FileType, ContentType에 따라 자동 폴더 분류 후 S3 업로드
      */
-
-    public String uploadFile(String folder, MultipartFile file) {
+    public String uploadFileToS3(FileType fileType, ContentType contentType, MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("업로드할 파일이 없습니다.");
         }
 
         try {
+            String folder = resolveS3Folder(fileType, contentType);
+
             String originalFilename = file.getOriginalFilename();
             String extension = getExtension(originalFilename);
             String uuidFileName = UUID.randomUUID() + (extension.isEmpty() ? "" : "." + extension);
 
-            String key = folder + "/" + uuidFileName; // 폴더 + 파일명
+            String key = folder + "/" + uuidFileName;
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
-                    .acl("public-read") // 퍼블릭 읽기 설정
+                    //.acl("public-read")
                     .contentType(file.getContentType())
                     .build();
 
@@ -74,16 +77,21 @@ public class S3Uploader {
         }
     }
 
-    // 확장자 얻어오는 메서드.
-    private String getExtension(String filename) {
+    /**
+     * S3 저장 폴더 결정
+     */
+    public String resolveS3Folder(FileType fileType, ContentType contentType) {
+        return switch (fileType) {
+            case VIDEO -> (contentType == ContentType.HBS) ? "video/hbs" : "video/etc";
+            case IMAGE -> "image";
+            case DOCUMENT -> "document/" + contentType.name().toLowerCase();
+            case LINK -> throw new IllegalArgumentException("LINK 타입은 파일 저장 대상이 아닙니다.");
+        };
+    }
+
+    public String getExtension(String filename) {
         if (filename == null) return "";
         int dotIndex = filename.lastIndexOf('.');
         return (dotIndex != -1) ? filename.substring(dotIndex + 1) : "";
     }
-    
 }
-
-
-
-
-

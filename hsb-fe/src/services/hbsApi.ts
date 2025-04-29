@@ -21,6 +21,14 @@ export const fetchHbsCreate = async (formData: FormData) => {
   return res.data;
 };
 
+// S3 콘텐츠 등록 및 업로드 api 요청
+export const fetchS3Create = async (formData: FormData) => {
+  const res = await api.post('/s3-upload', formData, { 
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+};
+
 // hbs 수정 api 요청
 export const fetchHbsUpdate = async (formData: FormData) => {
   const fileId = formData.get('fileId');
