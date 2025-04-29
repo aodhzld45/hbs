@@ -1,9 +1,11 @@
 // src/services/api.ts
 import axios from 'axios';
 
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 // 배포 서버
 const api = axios.create({
-  baseURL: 'http://43.203.62.30:8080/api', // ← 백엔드 주소에 맞게 수정
+  baseURL: `${REACT_APP_API_BASE_URL}/api`, // ← 백엔드 주소에 맞게 수정
   headers: {
     'Content-Type': 'application/json',
   },

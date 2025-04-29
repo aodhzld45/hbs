@@ -48,13 +48,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://43.203.62.30:3000"));
+        config.setAllowedOrigins(List.of("http://43.203.62.30:3000", "http://15.164.29.186:3000", "http://hbs-test1-1841060588.ap-northeast-2.elb.amazonaws.com:3000", "http://localhost:3000"));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
         src.registerCorsConfiguration("/api/**", config);
+        src.registerCorsConfiguration("/admin/**", config);
         return src;
     }
 
