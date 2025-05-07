@@ -1,13 +1,16 @@
 // src/components/Admin/AdminAccountCreateModal.tsx
 import React, { useState } from 'react';
 import { Admin } from '../../../types/Admin/Admin';
+import { RoleGroup } from '../../../types/Admin/RoleGroup';
 
 interface AdminAccountCreateModalProps {
   onSave: (newAdmin: Admin) => void;
   onCancel: () => void;
+  roleGroups: RoleGroup[]; 
 }
 
-const AdminAccountCreateModal: React.FC<AdminAccountCreateModalProps> = ({ onSave, onCancel }) => {
+const AdminAccountCreateModal: React.FC<AdminAccountCreateModalProps> = ({ onSave, onCancel, roleGroups }) => {
+  
   const [formData, setFormData] = useState<Admin>({
     id: '',
     name: '',
@@ -15,13 +18,16 @@ const AdminAccountCreateModal: React.FC<AdminAccountCreateModalProps> = ({ onSav
     password: '',
     tel: '',
     memo: '',
+    groupId : 0,
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: name === 'groupId' ? Number(value) : value,
     }));
   };
 
@@ -79,6 +85,20 @@ const AdminAccountCreateModal: React.FC<AdminAccountCreateModalProps> = ({ onSav
             onChange={handleChange}
             className="w-full px-3 py-2 border rounded mb-2"
           />
+          <select
+            name="groupId"
+            value={formData.groupId ?? ''}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border rounded mb-2"
+            required
+          >
+            <option value="">권한 그룹 선택</option>
+            {roleGroups.map(group => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
           <textarea
             name="memo"
             placeholder="메모 (옵션)"

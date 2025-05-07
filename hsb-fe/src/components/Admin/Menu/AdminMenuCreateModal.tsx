@@ -9,6 +9,7 @@ interface AdminMenuCreateModalProps {
 
 const AdminMenuCreateModal: React.FC<AdminMenuCreateModalProps> = ({ onSave, onCancel }) => {
   const [menuData, setMenuData] = useState<AdminMenu>({
+    id : 0,
     name: '',
     url: '',
     orderSequence: 1,

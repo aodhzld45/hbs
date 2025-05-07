@@ -1,9 +1,12 @@
 // src/pages/Admin/AdminAccountManagement.tsx
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/Layout/AdminLayout';  
 import { Admin } from '../../types/Admin/Admin';
+import { RoleGroup } from '../../types/Admin/RoleGroup'
 import { fetchAdminAccounts, registerAdmin  } from '../../services/Admin/adminApi';
+
+import { fetchRoleGroups } from '../../services/Admin/roleApi';
+
 import AdminAccountCreateModal from '../../components/Admin/Account/AdminAccountCreateModal';
 import AdminAccountEditModal from '../../components/Admin/Account/AdminAccountEditModal';
 
@@ -13,6 +16,7 @@ const AdminAccountManagement: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
+  const [roles, setRoles] = useState<RoleGroup[]>([]);
 
   useEffect(() => {
     const loadAdmins = async () => {
@@ -27,7 +31,19 @@ const AdminAccountManagement: React.FC = () => {
       }
     };
 
+    const loadRoles = async () => {
+      try {
+        const data = await fetchRoleGroups(); // 권한 그룹 목록 조회
+        console.log('관리자 권한 그룹 데이터 = ', data);
+        setRoles(data);
+      } catch (err) {
+        console.error(err);
+        setError('권한 그룹 목록을 불러오는 데 실패했습니다.');
+      }
+    };
+
     loadAdmins();
+    loadRoles();
   }, []);
 
   const handleSaveNewAdmin = async (newAdmin: Admin) => {
@@ -105,6 +121,7 @@ const AdminAccountManagement: React.FC = () => {
         <AdminAccountCreateModal
           onSave={handleSaveNewAdmin}
           onCancel={() => setShowCreateModal(false)}
+          roleGroups={roles}
         />
       )}
 
