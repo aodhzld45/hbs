@@ -1,11 +1,10 @@
 // src/components/Layout/AdminSidebar.tsx
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { Menu } from 'lucide-react';
-import { AdminMenu } from '../../types/Admin/AdminMenu';
-import { fetchAdminMenus } from '../../services/Admin/adminMenuApi';
-
+import { fetchRoleMenus } from "../../services/Admin/roleApi";
+import { useAuth } from '../../context/AuthContext';
+import { MenuPermission } from '../../types/Admin/RoleGroup';
 
 interface Props {
   isOpen: boolean;
@@ -13,53 +12,49 @@ interface Props {
 }
 
 const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
-  const [menus, setMenus] = useState<AdminMenu[]>([]);
+  const [permissions, setPermissions] = useState<MenuPermission[]>([]);
   const [selectedParent, setSelectedParent] = useState<number | null>(null);
   const location = useLocation();
+  const auth = useAuth();
 
+  // 권한 기반 메뉴 로딩
   useEffect(() => {
-    const loadMenus = async () => {
+    const loadData = async () => {
       try {
-        const data = await fetchAdminMenus();
-        setMenus(data);
+        if (auth.admin?.groupId) {
+          const roleMenuRes = await fetchRoleMenus(auth.admin.groupId);
+          const readPermissions = roleMenuRes.menuPermissions?.filter((m) => m.read) || [];
+          setPermissions(readPermissions);
+        }
       } catch (error) {
-        console.error('메뉴 로드 실패:', error);
+        console.error('사이드바 권한 메뉴 로드 실패:', error);
       }
     };
+    loadData();
+  }, [auth.admin?.groupId]);
 
-    loadMenus();
-  }, []);
+  // 현재 경로로부터 parentId 자동 설정
+  useEffect(() => {
+    const matched = permissions.find(
+      (menu) => menu.depth === 2 && menu.url === location.pathname
+    );
+    if (matched) {
+      setSelectedParent(matched.parentId ?? null);
+    }
+  }, [location.pathname, permissions]);
 
-    // 현재 경로에 따라 자동으로 selectedParent 설정
-    useEffect(() => {
-      const matched = menus.find(
-        (menu) => menu.depth === 2 && menu.url === location.pathname
-      );
-      if (matched) {
-        setSelectedParent(matched?.parentId ?? null);
-      }
-    }, [location.pathname, menus]);
-  
-  // 1뎁스 메뉴 필터링: depth가 1인 메뉴들
-  const topMenus = menus.filter(
-    (menu) => menu.depth === 1 && menu.useTf === 'Y' && menu.delTf === 'N'
-  );
+  // 1depth 메뉴 필터링
+  const topMenus = permissions.filter((menu) => menu.depth === 1);
 
-  // 선택된 1뎁스 메뉴의 id와 일치하는 2뎁스 메뉴들 필터링
-  const secondMenus = menus.filter(
-    (menu) =>
-      menu.depth === 2 &&
-      menu.parentId === selectedParent &&
-      menu.useTf === 'Y' &&
-      menu.delTf === 'N'
+  // 선택된 1depth의 2depth 메뉴 필터링
+  const secondMenus = permissions.filter(
+    (menu) => menu.depth === 2 && menu.parentId === selectedParent
   );
 
   return (
-    <aside
-      className={`transition-all duration-300 bg-gray-100 border-r h-full ${
-        isOpen ? 'w-64' : 'w-16'
-      } overflow-hidden`}
-    >
+    <aside className={`transition-all duration-300 bg-gray-100 border-r h-full ${
+      isOpen ? 'w-64' : 'w-16'
+    } overflow-hidden`}>
       <div className="p-4 flex justify-between items-center">
         <button onClick={toggleSidebar}>
           <Menu size={20} />
@@ -72,21 +67,21 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
       </div>
       <nav className="p-2 space-y-1">
         {topMenus.map((menu) => (
-          <div key={menu.id}>
+          <div key={menu.menuId}>
             <button
               onClick={() =>
-                setSelectedParent((prev) => (prev === menu.id ? null : menu.id ?? null))
-              }              
+                setSelectedParent((prev) => (prev === menu.menuId ? null : menu.menuId))
+              }
               className="border-2 border-solid block w-full text-left p-2 hover:bg-gray-200 rounded font-semibold"
             >
               {isOpen ? menu.name : menu.name.charAt(0)}
             </button>
-            {/* 선택된 1뎁스 메뉴에 대해 2뎁스 메뉴 렌더링 */}
-            {selectedParent === menu.id && isOpen && secondMenus.length > 0 && (
-              <div className="ml-4"> 
+
+            {selectedParent === menu.menuId && isOpen && (
+              <div className="ml-4">
                 {secondMenus.map((child) => (
                   <Link
-                    key={child.id}
+                    key={child.menuId}
                     to={child.url}
                     className={`block p-1 text-sm rounded border-b last:border-0 ${
                       location.pathname === child.url

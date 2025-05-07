@@ -26,21 +26,21 @@ public class AdminRoleMenuService {
     private final AdminRoleMenuRepository adminRoleMenuRepository;
 
     // 1. 권한 그룹의 메뉴 권한 전체 조회 (Response 반환용)
-    @Transactional(readOnly = true)
-    public RoleMenuResponse getRoleMenuPermissions(Long roleId) {
-        List<AdminRoleMenu> mappings = adminRoleMenuRepository.findByRoleId(roleId);
-
-        List<RoleMenuResponse.MenuPermission> permissions = mappings.stream()
-                .map(rm -> new RoleMenuResponse.MenuPermission(
-                        rm.getMenu().getId(),
-                        "Y".equalsIgnoreCase(rm.getReadTf()),
-                        "Y".equalsIgnoreCase(rm.getWriteTf()),
-                        "Y".equalsIgnoreCase(rm.getDeleteTf())
-                ))
-                .toList();
-
-        return new RoleMenuResponse(permissions);
-    }
+//    @Transactional(readOnly = true)
+//    public RoleMenuResponse getRoleMenuPermissions(Long roleId) {
+//        List<AdminRoleMenu> mappings = adminRoleMenuRepository.findByRoleId(roleId);
+//
+//        List<RoleMenuResponse.MenuPermission> permissions = mappings.stream()
+//                .map(rm -> new RoleMenuResponse.MenuPermission(
+//                        rm.getMenu().getId(),
+//                        "Y".equalsIgnoreCase(rm.getReadTf()),
+//                        "Y".equalsIgnoreCase(rm.getWriteTf()),
+//                        "Y".equalsIgnoreCase(rm.getDeleteTf())
+//                ))
+//                .toList();
+//
+//        return new RoleMenuResponse(permissions);
+//    }
 
     // 2. 권한 그룹에 대한 메뉴 권한 저장
     @Transactional
@@ -72,6 +72,30 @@ public class AdminRoleMenuService {
         }
 
         adminRoleMenuRepository.saveAll(mappings);
+    }
+
+    // 추가
+    @Transactional(readOnly = true)
+    public RoleMenuResponse getRoleMenuPermissions(Long roleId) {
+        List<AdminRoleMenu> mappings = adminRoleMenuRepository.findWithMenuByRoleId(roleId);
+
+        List<RoleMenuResponse.MenuPermission> permissions = mappings.stream()
+                .map(rm -> {
+                    AdminMenu menu = rm.getMenu();
+                    return new RoleMenuResponse.MenuPermission(
+                            menu.getId(),
+                            menu.getName(),
+                            menu.getUrl(),
+                            menu.getDepth(),
+                            menu.getParentId(),
+                            "Y".equalsIgnoreCase(rm.getReadTf()),
+                            "Y".equalsIgnoreCase(rm.getWriteTf()),
+                            "Y".equalsIgnoreCase(rm.getDeleteTf())
+                    );
+                })
+                .toList();
+
+        return new RoleMenuResponse(permissions);
     }
 
 }

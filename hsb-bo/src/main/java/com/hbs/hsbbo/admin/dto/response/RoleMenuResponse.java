@@ -15,6 +15,10 @@ public class RoleMenuResponse {
     @AllArgsConstructor
     public static class MenuPermission {
         private Long menuId;
+        private String name;
+        private String url;
+        private int depth;
+        private Integer parentId;
         private boolean read;
         private boolean write;
         private boolean delete;

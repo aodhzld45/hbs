@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { RoleGroup, MenuPermission } from '../../../types/Admin/RoleGroup';
+import { RoleGroup, MenuMapping } from '../../../types/Admin/RoleGroup';
 import {
   fetchRoleGroups,
   fetchMenus,
@@ -16,7 +16,7 @@ const RoleMenuMapping: React.FC = () => {
   const [roles, setRoles] = useState<RoleGroup[]>([]);
   const [menus, setMenus] = useState<AdminMenu[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
-  const [menuPermissions, setMenuPermissions] = useState<MenuPermission[]>([]);
+  const [menuMappings, setMenuMapping] = useState<MenuMapping[]>([]);
 
   // 1. 권한 그룹 + 전체 메뉴 로딩
   useEffect(() => {
@@ -43,7 +43,7 @@ const RoleMenuMapping: React.FC = () => {
       fetchRoleMenus(selectedRoleId).then((res) => {
         const existingPermissions = res.menuPermissions || [];
   
-        const initializedPermissions: MenuPermission[] = menus.map((menu) => {
+        const initializedPermissions: MenuMapping[] = menus.map((menu) => {
           const matched = existingPermissions.find((perm) => perm.menuId === menu.id);
           return matched || {
             menuId: menu.id,
@@ -53,7 +53,7 @@ const RoleMenuMapping: React.FC = () => {
           };
         });
   
-        setMenuPermissions(initializedPermissions);
+        setMenuMapping(initializedPermissions);
       });
     }
   }, [selectedRoleId, menus]);
@@ -61,9 +61,9 @@ const RoleMenuMapping: React.FC = () => {
   // 3. 권한 체크박스 토글
   const togglePermission = (
     menuId: number,
-    field: keyof Omit<MenuPermission, 'menuId'>
+    field: keyof Omit<MenuMapping, 'menuId'>
   ) => {
-    setMenuPermissions((prev) =>
+    setMenuMapping((prev) =>
       prev.map((item) =>
         item.menuId === menuId ? { ...item, [field]: !item[field] } : item
       )
@@ -75,7 +75,7 @@ const RoleMenuMapping: React.FC = () => {
     if (selectedRoleId === null) return;
 
     try {
-      await saveRoleMenus(selectedRoleId, menuPermissions);
+      await saveRoleMenus(selectedRoleId, menuMappings);
       alert('메뉴 권한이 저장되었습니다.');
     } catch (error) {
       console.error('저장 실패:', error);
@@ -122,7 +122,7 @@ const RoleMenuMapping: React.FC = () => {
         <tbody>
           {menus.map((menu) => {
             const permission =
-              menuPermissions.find((p) => p.menuId === menu.id) || {
+              menuMappings.find((p) => p.menuId === menu.id) || {
                 menuId: menu.id,
                 read: false,
                 write: false,
