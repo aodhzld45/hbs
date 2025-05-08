@@ -26,40 +26,45 @@ import HbsDetailPage from './pages/hbs/HbsDetailPage';
 // 관리자 Common imports
 import PrivateRoute from './components/Admin/PrivateRoute';
 import { AuthProvider } from './context/AuthContext';
+import { PermissionProvider } from './context/PermissionContext';
+
+
 
 function App() {
   return (
     // AuthProvider를 전체를 감싸서 전역 인증 상태를 모든 페이지에서 사용할 수 있도록 함
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* 사용자 공용 라우트 */}
-          <Route path="/" element={<MainPage />} />
-          <Route path="/hbs-list" element={<HbsCardList />} />
-          <Route path="/prom" element={<PromPage />} />
-          <Route path="/event" element={<EventPage />} />
-          <Route path="/media" element={<MediaPage />} />
-          <Route path="/content-files/:fileId" element={<HbsDetailPage />} />
+      <PermissionProvider>
+        <Router>
+          <Routes>
+            {/* 사용자 공용 라우트 */}
+            <Route path="/" element={<MainPage />} />
+            <Route path="/hbs-list" element={<HbsCardList />} />
+            <Route path="/prom" element={<PromPage />} />
+            <Route path="/event" element={<EventPage />} />
+            <Route path="/media" element={<MediaPage />} />
+            <Route path="/content-files/:fileId" element={<HbsDetailPage />} />
 
-          {/* 관리자 공용 라우트 (로그인 페이지) */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          
-          {/* 관리자 보호 라우트 */}
-          <Route element={<PrivateRoute />}>
-            <Route path="/admin/index" element={<AdminDashboard />} />
-            <Route path="/admin/content-manager" element={<ContentManager />} />
-            <Route path="/admin/admin-manager" element={<AdminList />} />
-            <Route path="/admin/auth-management" element={<AdminAuthManagement />} />
-            <Route path="/admin/admin-create" element={<AdminCreate />} />
-            <Route path="/admin/admin-menu" element={<AdminMenu />} />
-            <Route path="/admin/code-parent" element={<CodeParentManagement />} />
+            {/* 관리자 공용 라우트 (로그인 페이지) */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            
+            {/* 관리자 보호 라우트 */}
+            <Route element={<PrivateRoute />}>
+              <Route path="/admin/index" element={<AdminDashboard />} />
+              <Route path="/admin/content-manager" element={<ContentManager />} />
+              <Route path="/admin/admin-manager" element={<AdminList />} />
+              <Route path="/admin/auth-management" element={<AdminAuthManagement />} />
+              <Route path="/admin/admin-create" element={<AdminCreate />} />
+              <Route path="/admin/admin-menu" element={<AdminMenu />} />
+              <Route path="/admin/code-parent" element={<CodeParentManagement />} />
 
-          </Route>
-          <Route path="/admin/event-form" element={<EventForm />} />
-          
-          <Route path="/admin/hbs/:fileId" element={<ContentManagerDetail />} />
-        </Routes>
-      </Router>
+            </Route>
+            <Route path="/admin/event-form" element={<EventForm />} />
+            
+            <Route path="/admin/hbs/:fileId" element={<ContentManagerDetail />} />
+          </Routes>
+        </Router>
+      </PermissionProvider>
     </AuthProvider>
   );
 }

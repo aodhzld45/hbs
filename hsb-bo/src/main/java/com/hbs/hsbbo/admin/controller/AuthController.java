@@ -1,22 +1,22 @@
 package com.hbs.hsbbo.admin.controller;
 
+import com.hbs.hsbbo.admin.domain.entity.Admin;
 import com.hbs.hsbbo.admin.dto.request.LoginRequest;
 import com.hbs.hsbbo.admin.repository.AdminRepository;
-import com.hbs.hsbbo.admin.domain.entity.Admin;
-
-import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.List;
-
+import com.hbs.hsbbo.common.config.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -24,6 +24,9 @@ public class AuthController {
 
     @Autowired
     private AdminRepository adminRepository;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest,
@@ -35,17 +38,49 @@ public class AuthController {
             );
 
             if (adminOpt.isPresent()) {
-                // 인증 성공: 세션 생성
-                request.getSession(true);
-                HttpSession session = request.getSession(true);
-                session.setAttribute("admin", adminOpt.get());
                 Admin admin = adminOpt.get();
-                return ResponseEntity.ok(admin);
+
+                // JWT
+                String token = jwtTokenProvider.createToken(admin.getId(), "ADMIN");
+
+                // 응답으로 JWT 반환
+                return ResponseEntity.ok().body(Map.of(
+                        "token", token,
+                        "admin", admin
+                ));
+
+                // 인증 성공: 세션 생성
+//                request.getSession(true);
+//                HttpSession session = request.getSession(true);
+//                session.setAttribute("admin", adminOpt.get());
+//                Admin admin = adminOpt.get();
+//                return ResponseEntity.ok(admin);
             } else {
                 // 인증 실패: 적절한 실패 메시지 반환
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login 실패");
             }
     }
+
+    // 현재 로그인된 관리자 정보 반환 (JWT 인증 기반)
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentAdmin(@RequestAttribute(name = "admin", required = false) Admin admin,
+                                             HttpServletRequest request,
+                                             java.security.Principal principal) {
+        if (principal == null || !(principal instanceof Authentication)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("인증되지 않은 사용자입니다.");
+        }
+
+        Authentication authentication = (Authentication) principal;
+        Object principalObj = authentication.getPrincipal();
+
+        if (principalObj instanceof Admin currentAdmin) {
+            return ResponseEntity.ok(currentAdmin);
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("인증 정보가 올바르지 않습니다.");
+        }
+    }
+
+
 
     // 기존 로그인 API 외에 추가
     @PostMapping("/logout")

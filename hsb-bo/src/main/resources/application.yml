@@ -21,7 +21,9 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
-
+jwt:
+  secret: my-very-secret-key-for-hsb-jwt-signing
+  expiration: 3600000  # 1시간 (밀리초 단위)
 file:
   # 로컬
   #upload-path: C:/upload/hsb
@@ -33,9 +35,6 @@ server:
     session:
       timeout: 30m
 
-
-
-# 여기에 추가 ↓
 management:
   endpoints:
     web:

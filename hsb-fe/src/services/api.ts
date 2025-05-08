@@ -12,6 +12,18 @@ const api = axios.create({
   withCredentials: true, // 필요한 경우: 쿠키 포함 요청
 });
 
+// JWT 자동 첨부 인터셉터
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('jwtToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // 로컬 서버
 // const api = axios.create({
 //   baseURL: 'http://localhost:8080/api', // ← 백엔드 주소에 맞게 수정

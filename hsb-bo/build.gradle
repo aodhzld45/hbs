@@ -21,9 +21,17 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	
+
+	// SSO 관련 (OAuth2 클라이언트)
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
+	// JWT 발급 및 검증 관련
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'         // JWT API (인터페이스)
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'           // JWT 구현체 (서명 생성 및 검증 로직 포함)
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'        // Jackson 기반 JSON 직렬화/역직렬화 지원
+
 	//aws-actuator 로드밸런싱 관련
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 

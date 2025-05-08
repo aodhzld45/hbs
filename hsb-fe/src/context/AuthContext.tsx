@@ -1,14 +1,12 @@
-// src/context/AuthContext.tsx
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { Admin } from "../types/Admin/Admin";
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+import api from "../services/api"; // axios 인스턴스
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   admin?: Admin;
-  login: (admin: Admin) => void;
+  login: (admin: Admin, token: string) => void;
   logout: () => Promise<void>;
   checkSession: () => Promise<void>;
 }
@@ -26,61 +24,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [admin, setAdmin] = useState<Admin | undefined>(undefined);
 
-  // 앱 시작 시 세션 체크 (예시)
   useEffect(() => {
     checkSession();
   }, []);
 
   const checkSession = async () => {
+    const token = localStorage.getItem("jwtToken");
+    if (!token) {
+      setIsAuthenticated(false);
+      setAdmin(undefined);
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/session-check`, {
-        method: "GET",
-        credentials: "include",
-      });
-      if (response.ok) {
-        // 예시로, 세션이 유효하면 localStorage에 저장된 admin 정보를 가져올 수도 있음.
-        const storedAdmin = localStorage.getItem("admin");
-        if (storedAdmin) {
-          setAdmin(JSON.parse(storedAdmin));
-        }
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
+      const response = await api.get("/admin/me"); // JWT 포함 요청
+      setAdmin(response.data);
+      setIsAuthenticated(true);
     } catch (error) {
       console.error("세션 체크 실패:", error);
       setIsAuthenticated(false);
+      setAdmin(undefined);
+      localStorage.removeItem("jwtToken");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = (adminData: Admin) => {
+  const login = (adminData: Admin, token: string) => {
     setIsAuthenticated(true);
     setAdmin(adminData);
-    localStorage.setItem("admin", JSON.stringify(adminData));
-    localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("jwtToken", token);
   };
 
   const logout = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (response.ok) {
-        setIsAuthenticated(false);
-        setAdmin(undefined);
-        localStorage.removeItem("admin");
-        localStorage.removeItem("isAuthenticated");
-      }
-    } catch (error) {
-      console.error("로그아웃 실패:", error);
-    }
+    // JWT 기반이므로 서버에 요청 없이 클라이언트에서 로그아웃 처리
+    setIsAuthenticated(false);
+    setAdmin(undefined);
+    localStorage.removeItem("jwtToken");
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, admin, login, logout, checkSession }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, isLoading, admin, login, logout, checkSession }}
+    >
       {children}
     </AuthContext.Provider>
   );
