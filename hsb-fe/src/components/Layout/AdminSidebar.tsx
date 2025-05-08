@@ -6,6 +6,9 @@ import { fetchRoleMenus } from "../../services/Admin/roleApi";
 import { useAuth } from '../../context/AuthContext';
 import { MenuPermission } from '../../types/Admin/RoleGroup';
 
+import { usePermission } from '../../context/PermissionContext';
+//const { refreshToken } = usePermission(); // ✅
+
 interface Props {
   isOpen: boolean;
   toggleSidebar: () => void;
