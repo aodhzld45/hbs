@@ -14,11 +14,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final FileStorageProperties fileStorageProperties;
 
     // CORS 설정
-    // 배포서버
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins("http://43.203.62.30:3000", "http://15.164.29.186:3000", "http://hbs-test1-1841060588.ap-northeast-2.elb.amazonaws.com:3000", "http://localhost:3000")
+                .allowedOrigins("http://43.203.62.30:3000", "http://15.164.29.186:3000", "http://hbs-test1-1841060588.ap-northeast-2.elb.amazonaws.com:3000", "http://localhost:3000", "http://192.168.0.90:3000")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
