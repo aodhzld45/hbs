@@ -24,8 +24,11 @@ public class UserLogController {
             HttpServletRequest httpRequest
             ) {
 
-        // ip를 얻어오는 부분
-        String clientIp = httpRequest.getRemoteAddr();
+        // 공인 ip를 얻어오는 부분
+        String clientIp = httpRequest.getHeader("X-Forwarded-For");
+        if (clientIp == null || clientIp.isBlank()) {
+            clientIp = httpRequest.getRemoteAddr(); // 프록시 없을 경우
+        }
 
         UserLogResponse savedLog = userLogService.saveLog(request, clientIp);
         return ResponseEntity.ok(savedLog);

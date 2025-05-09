@@ -28,6 +28,17 @@ public class AuthController {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
+
+    @GetMapping("/login")
+    public ResponseEntity<?> getIp(HttpServletRequest request) {
+        String clientIp = request.getHeader("X-Forwarded-For");
+        if (clientIp == null || clientIp.isBlank()) {
+            clientIp = request.getRemoteAddr(); // 프록시 없을 경우
+        }
+
+        return ResponseEntity.ok(Map.of("ip", clientIp));
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest,
                                    HttpServletRequest request) {
