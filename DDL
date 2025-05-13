@@ -219,3 +219,203 @@ CREATE TABLE `admin_role_user` (
   CONSTRAINT `admin_role_user_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`),
   CONSTRAINT `admin_role_user_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `admin_role` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+-- 이전 테이블 백업 
+-- hbs.contentfile definition
+CREATE TABLE `contentfile` (
+  `fileId` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `fileType` enum('VIDEO','IMAGE','DOCUMENT','LINK') NOT NULL COMMENT '파일 종류: 영상, 이미지, 문서, 링크',
+  `contentType` enum('HBS','PROMO','MEDIA','CI_BI','YOUTUBE') NOT NULL COMMENT '소속 콘텐츠 유형',
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `fileUrl` varchar(500) NOT NULL,
+  `thumbnailUrl` varchar(500) DEFAULT NULL,
+  `extension` varchar(10) DEFAULT NULL,
+  `dispSeq` int(11) DEFAULT NULL,
+  `useTF` char(1) NOT NULL DEFAULT 'Y',
+  `delTF` char(1) NOT NULL DEFAULT 'N',
+  `regAdm` int(10) unsigned DEFAULT NULL,
+  `regDate` datetime DEFAULT NULL,
+  `modifyAdm` int(10) unsigned DEFAULT NULL,
+  `modifyDate` datetime DEFAULT NULL,
+  `delAdm` int(10) unsigned DEFAULT NULL,
+  `delDate` datetime DEFAULT NULL,
+  `content` LONGTEXT DEFAULT NULL COMMENT '에디터 본문 내용',
+  PRIMARY KEY (`fileId`)
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE admin (
+    id VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    group_id INT NULL,
+    email VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    name VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    password VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    tel VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    memo VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    password_length INT NULL,
+    access_fail_count INT DEFAULT 0,
+    is_deleted TINYINT(1) DEFAULT 0,
+    logged_at DATETIME NULL,
+    password_updated_at DATETIME NULL,
+    PRIMARY KEY (id)
+)ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--- adm_menu
+CREATE TABLE adm_menu (
+    id INT NOT NULL AUTO_INCREMENT,  -- 메뉴 고유 시퀀스값
+    name VARCHAR(100) NOT NULL,        -- 메뉴명
+    depth TINYINT NOT NULL,            -- 메뉴 뎁스 구분 (예: 1, 2, 3 등)
+    parent_id INT DEFAULT NULL,        -- 2뎁스 이상일 경우 상위 메뉴 id
+    description VARCHAR(255) DEFAULT NULL,  -- 메모(설명)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 생성일
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,  -- 수정일 (업데이트 시 자동 갱신)
+    url VARCHAR(200) NOT NULL,         -- 메뉴 클릭 시 이동할 주소
+    order_sequence INT NOT NULL,       -- 메뉴 표시 순서
+    use_tf VARCHAR(1) NOT NULL DEFAULT 1,  -- 사용 여부 (1: 사용, 0: 미사용)
+    del_tf VARCHAR(1) NOT NULL DEFAULT 0,  -- 삭제 여부 (논리 삭제: 1이면 삭제된 것으로 간주)
+    PRIMARY KEY (id),
+    INDEX idx_depth (depth),
+    INDEX idx_parent_id (parent_id),
+    INDEX idx_order_sequence (order_sequence),
+    CONSTRAINT fk_parent_menu FOREIGN KEY (parent_id)
+      REFERENCES adm_menu(id)
+      ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `TBL_CODE_PARENT` (
+  `PCODE_NO` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '대분류	코드 일련번호',
+  `SITE_NO` int(11) unsigned DEFAULT NULL COMMENT '사이트 일련번호',
+  `PCODE` varchar(50) NOT NULL COMMENT '대분류	코드',
+  `PCODE_NM` varchar(50) NOT NULL COMMENT '코드명',
+  `PCODE_MEMO` text DEFAULT NULL COMMENT '코드	메모',
+  `PCODE_SEQ_NO` int(11) DEFAULT NULL COMMENT '코드	전시 순번',
+  `USE_TF` char(1) NOT NULL DEFAULT 'Y' COMMENT '사용	여부 사용(Y),사용안함(N)',
+  `DEL_TF` char(1) NOT NULL DEFAULT 'N' COMMENT '삭제	여부 삭제(Y),사용(N)',
+  `REG_ADM` int(11) unsigned DEFAULT NULL COMMENT '등록	관리자 일련번호 TBL_ADMIN ADM_NO',
+  `REG_DATE` datetime DEFAULT NULL COMMENT '등록일',
+  `UP_ADM` int(11) unsigned DEFAULT NULL COMMENT '수정	관리자 일련번호 TBL_ADMIN ADM_NO',
+  `UP_DATE` datetime DEFAULT NULL COMMENT '수정일',
+  `DEL_ADM` int(11) unsigned DEFAULT NULL COMMENT '삭제	관리자 일련번호 TBL_ADMIN ADM_NO',
+  `DEL_DATE` datetime DEFAULT NULL COMMENT '삭제일',
+  PRIMARY KEY (`PCODE_NO`)
+) ENGINE=MyISAM AUTO_INCREMENT=52 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `TBL_CODE_DETAIL` (
+  `DCODE_NO` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '하위분류	일련번호',
+  `PCODE` varchar(50) NOT NULL COMMENT '대분류	코드 TBL_CODE_PARENT (FK)',
+  `DCODE` varchar(50) NOT NULL COMMENT '하위분류	코드',
+  `DCODE_NM` varchar(50) NOT NULL COMMENT '코드명',
+  `DCODE_EXT` varchar(255) NOT NULL,
+  `DCODE_SEQ_NO` int(11) DEFAULT NULL COMMENT '코드전시순번',
+  `USE_TF` char(1) NOT NULL DEFAULT 'Y' COMMENT '사용	여부 사용(Y),사용안함(N)',
+  `DEL_TF` char(1) NOT NULL DEFAULT 'N' COMMENT '삭제	여부 삭제(Y),사용(N)',
+  `REG_ADM` int(11) unsigned DEFAULT NULL COMMENT '등록	관리자 일련번호 TBL_ADMIN ADM_NO',
+  `REG_DATE` datetime DEFAULT NULL COMMENT '등록일',
+  `UP_ADM` int(11) unsigned DEFAULT NULL COMMENT '수정	관리자 일련번호 TBL_ADMIN ADM_NO',
+  `UP_DATE` datetime DEFAULT NULL COMMENT '수정일',
+  `DEL_ADM` int(11) unsigned DEFAULT NULL COMMENT '삭제	관리자 일련번호 TBL_ADMIN ADM_NO',
+  `DEL_DATE` datetime DEFAULT NULL COMMENT '삭제일',
+  `DCODE_INFO01` varchar(150) DEFAULT NULL,
+  `DCODE_INFO02` varchar(150) DEFAULT NULL,
+  `DCODE_INFO03` varchar(150) DEFAULT NULL,
+  PRIMARY KEY (`PCODE`,`DCODE_NO`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+---------------- 관리자 권한 관련 테이블 ----------------
+
+-- 1. admin_role (권한 그룹)
+CREATE TABLE `admin_role` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL COMMENT '권한 그룹명',
+  `description` text DEFAULT NULL COMMENT '설명',
+  `use_tf` char(1) NOT NULL DEFAULT 'Y',
+  `del_tf` char(1) NOT NULL DEFAULT 'N',
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 2. admin_role_menu (권한 그룹 ↔ 메뉴 매핑)
+CREATE TABLE `admin_role_menu` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `role_id` int(11) NOT NULL,
+  `menu_id` int(11) NOT NULL,
+  `read_tf` char(1) DEFAULT 'Y' COMMENT '조회 권한',
+  `write_tf` char(1) DEFAULT 'N' COMMENT '등록/수정 권한',
+  `delete_tf` char(1) DEFAULT 'N',
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `role_id` (`role_id`),
+  KEY `menu_id` (`menu_id`),
+  CONSTRAINT `admin_role_menu_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `admin_role` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `admin_role_menu_ibfk_2` FOREIGN KEY (`menu_id`) REFERENCES `adm_menu` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+-- 3. admin_role_user (관리자 ↔ 권한 그룹 매핑)
+CREATE TABLE `admin_role_user` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `admin_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role_id` int(11) NOT NULL,
+  `assigned_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `admin_id` (`admin_id`),
+  KEY `role_id` (`role_id`),
+  CONSTRAINT `admin_role_user_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`),
+  CONSTRAINT `admin_role_user_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `admin_role` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE userlog (
+  logId INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '로그 ID',
+  
+  sid VARCHAR(150) COMMENT '세션 ID',
+  ymd VARCHAR(10) COMMENT '년월일',
+  yyyy VARCHAR(4) COMMENT '년',
+  mm VARCHAR(2) COMMENT '월',
+  dd VARCHAR(2) COMMENT '일',
+  hh VARCHAR(2) COMMENT '시',
+  mi VARCHAR(2) COMMENT '분',
+  wk VARCHAR(2) COMMENT '요일 또는 주차',
+
+  depth01 VARCHAR(30) COMMENT '1차 메뉴',
+  depth02 VARCHAR(30) COMMENT '2차 메뉴',
+  depth03 VARCHAR(30) COMMENT '3차 메뉴',
+
+  url VARCHAR(150) COMMENT '요청 URL',
+  param01 VARCHAR(30),
+  param02 VARCHAR(30),
+  param03 VARCHAR(30),
+
+  pageType VARCHAR(30) COMMENT '페이지 유형',
+  diviceType VARCHAR(30) COMMENT '디바이스 종류',
+  referer VARCHAR(500) COMMENT '이전 페이지',
+  refIp VARCHAR(30) COMMENT '접속 IP',
+  logDate DATETIME COMMENT '로그 생성 일시',
+
+  -- 공통 CMS 컬럼
+  dispSeq INT(11),
+  useTF CHAR(1) NOT NULL DEFAULT 'Y',
+  delTF CHAR(1) NOT NULL DEFAULT 'N',
+  regAdm INT(11) UNSIGNED,
+  regDate DATETIME,
+  modifyAdm INT(11) UNSIGNED,
+  modifyDate DATETIME,
+  delAdm INT(11) UNSIGNED,
+  delDate DATETIME
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='사용자 로그 테이블 (세션 기반)';
+
+
+
+
+
+
+
+
+
