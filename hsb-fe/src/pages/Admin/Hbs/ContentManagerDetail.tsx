@@ -37,7 +37,10 @@ const ContentManagerDetail = () => {
         {/* 썸네일 or 파일명 표시 */}
         {content.contentType === 'HBS' && content.thumbnailUrl ? (
         <img
-            src={`${FILE_BASE_URL}${content.thumbnailUrl}`}
+            // UploadPath 활용
+            //src={`${FILE_BASE_URL}${content.thumbnailUrl}`}
+            // aws s3 활용
+            src={`${content.thumbnailUrl}`}
             alt={content.title}
             className="w-full h-40 object-cover"
         />
@@ -50,7 +53,10 @@ const ContentManagerDetail = () => {
 
         {content.fileType === 'VIDEO' && (
           <video
-            src={`${FILE_BASE_URL}${content.fileUrl}`}
+            // UploadPath 활용
+            //src={`${FILE_BASE_URL}${content.fileUrl}`}
+            // aws s3 활용
+            src={`${content.fileUrl}`}
             controls
             className="w-full mt-4 rounded shadow-lg"
           />
