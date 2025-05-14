@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // 관리자 페이지 imports
+import ContentManager from './pages/Admin/Hbs/ContentManager';
 import ContentManagerDetail from "./pages/Admin/Hbs/ContentManagerDetail";
 import AdminLogin from "./pages/Admin/Login";
 import AdminDashboard from "./pages/Admin";
@@ -10,11 +11,14 @@ import AdminList from "./pages/Admin/AdminAccountManagement";
 import AdminCreate from "./pages/Admin/AdminRegister";
 import AdminMenu from "./pages/Admin/Menu/AdminMenuManagement";
 import AdminAuthManagement from './pages/Admin/Role/AdminRoleManagement';
-
 import CodeParentManagement from "./pages/Admin/Code/CodeParentManagement";
 
+// 관리자 공통 게시판 관련 imports
+import BoardManager from './pages/Admin/Board/BoardManager';
+import BoardWrite from './pages/Admin/Board/BoardWrite';
+
+
 // 사용자 페이지 imports
-import ContentManager from './pages/Admin/Hbs/ContentManager';
 import EventForm from './pages/Admin/EventForm';
 import EventPage from './pages/EventPage';
 import MediaPage from './pages/MediaPage';
@@ -57,6 +61,9 @@ function App() {
               <Route path="/admin/admin-create" element={<AdminCreate />} />
               <Route path="/admin/admin-menu" element={<AdminMenu />} />
               <Route path="/admin/code-parent" element={<CodeParentManagement />} />
+              
+              <Route path="/admin/board/:boardType" element={<BoardManager />} />
+              <Route path="/admin/board/:boardType/write" element={<BoardWrite />} />
 
             </Route>
             <Route path="/admin/event-form" element={<EventForm />} />

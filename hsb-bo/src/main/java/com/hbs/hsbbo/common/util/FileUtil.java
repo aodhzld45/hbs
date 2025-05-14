@@ -58,7 +58,21 @@ public class FileUtil {
         return Paths.get(fileStorageProperties.getUploadPath(), subDir);
     }
 
+    /*
+    *  게시판용 Path 관련
+    */
 
+    public Path resolveBoardPath(String boardType) {
+        if (boardType == null || boardType.isBlank()) {
+            throw new IllegalArgumentException("boardType이 유효하지 않습니다.");
+        }
+        return Paths.get(fileStorageProperties.getUploadPath(), "board", boardType.toLowerCase());
+    }
+
+    /*
+    * 확장자 반환
+    */
+    
     public String getExtension(String name) {
         return name != null && name.contains(".")
                 ? name.substring(name.lastIndexOf('.') + 1)
