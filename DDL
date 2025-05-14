@@ -223,7 +223,7 @@ CREATE TABLE `admin_role_user` (
 
 
 -- 이전 테이블 백업 
--- hbs.contentfile definition
+-- 1. 통합 콘텐츠 테이블
 CREATE TABLE `contentfile` (
   `fileId` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `fileType` enum('VIDEO','IMAGE','DOCUMENT','LINK') NOT NULL COMMENT '파일 종류: 영상, 이미지, 문서, 링크',
@@ -264,7 +264,8 @@ CREATE TABLE admin (
     PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---- adm_menu
+
+--- 2. 관리자 메뉴 테이블
 CREATE TABLE adm_menu (
     id INT NOT NULL AUTO_INCREMENT,  -- 메뉴 고유 시퀀스값
     name VARCHAR(100) NOT NULL,        -- 메뉴명
@@ -286,6 +287,7 @@ CREATE TABLE adm_menu (
       ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--- 3. 대분류 코드 관리 테이블
 CREATE TABLE `TBL_CODE_PARENT` (
   `PCODE_NO` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '대분류	코드 일련번호',
   `SITE_NO` int(11) unsigned DEFAULT NULL COMMENT '사이트 일련번호',
@@ -304,6 +306,8 @@ CREATE TABLE `TBL_CODE_PARENT` (
   PRIMARY KEY (`PCODE_NO`)
 ) ENGINE=MyISAM AUTO_INCREMENT=52 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+
+--- 4. 하위 분류 코드 관리 테이블
 CREATE TABLE `TBL_CODE_DETAIL` (
   `DCODE_NO` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '하위분류	일련번호',
   `PCODE` varchar(50) NOT NULL COMMENT '대분류	코드 TBL_CODE_PARENT (FK)',
@@ -328,7 +332,7 @@ CREATE TABLE `TBL_CODE_DETAIL` (
 
 ---------------- 관리자 권한 관련 테이블 ----------------
 
--- 1. admin_role (권한 그룹)
+--- 5. 관리자 권한 그룹 테이블
 CREATE TABLE `admin_role` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL COMMENT '권한 그룹명',
@@ -340,7 +344,7 @@ CREATE TABLE `admin_role` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- 2. admin_role_menu (권한 그룹 ↔ 메뉴 매핑)
+--- 6.  관리자 권한 그룹 ↔ 메뉴 매핑 테이블
 CREATE TABLE `admin_role_menu` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `role_id` int(11) NOT NULL,
@@ -358,8 +362,7 @@ CREATE TABLE `admin_role_menu` (
 ) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
-
--- 3. admin_role_user (관리자 ↔ 권한 그룹 매핑)
+--- 7. 관리자 계정 ↔ 권한 그룹 매핑 테이블
 CREATE TABLE `admin_role_user` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `admin_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -372,6 +375,7 @@ CREATE TABLE `admin_role_user` (
   CONSTRAINT `admin_role_user_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `admin_role` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--- 8. 사용자 로그 테이블
 CREATE TABLE userlog (
   logId INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '로그 ID',
   
@@ -410,6 +414,52 @@ CREATE TABLE userlog (
   delAdm INT(11) UNSIGNED,
   delDate DATETIME
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='사용자 로그 테이블 (세션 기반)';
+
+---------------- 게시판 관련 테이블 ----------------
+
+
+--- 9. 공통 게시판 테이블
+CREATE TABLE board (
+    id INT PRIMARY KEY AUTO_INCREMENT COMMENT '게시글 ID',
+    board_type VARCHAR(50) NOT NULL COMMENT '게시판 유형 (notice, event 등)',
+    title VARCHAR(200) NOT NULL COMMENT '제목',
+    content TEXT COMMENT '본문',
+    writer_name VARCHAR(100) COMMENT '작성자 이름',
+    image_path VARCHAR(255) COMMENT '썸네일 이미지 경로 (이벤트용)',
+    start_date DATETIME COMMENT '시작일 (이벤트용)',
+    end_date DATETIME COMMENT '종료일 (이벤트용)',
+    view_count INT DEFAULT 0 COMMENT '조회수',
+    use_tf CHAR(1) DEFAULT 'Y' COMMENT '사용 여부 (Y/N)',
+    del_tf CHAR(1) DEFAULT 'N' COMMENT '삭제 여부 (Y/N)',
+    reg_adm VARCHAR(100) COMMENT '등록자 ID',
+    reg_date DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '등록일',
+    up_adm VARCHAR(100) COMMENT '수정자 ID',
+    up_date DATETIME COMMENT '수정일',
+    del_adm VARCHAR(100) COMMENT '삭제자 ID',
+    del_date DATETIME COMMENT '삭제일'
+);
+
+--- 10. 공통 게시판 파일 매핑 테이블
+CREATE TABLE board_file (
+    id INT  PRIMARY KEY AUTO_INCREMENT COMMENT '파일 ID',
+    board_id INT NOT NULL COMMENT '연결된 게시글 ID',
+    file_name VARCHAR(255) NOT NULL COMMENT '원본 파일 이름',
+    file_path VARCHAR(255) NOT NULL COMMENT '저장된 파일 경로 (/files/board/{board_type}/...)',
+    file_size BIGINT COMMENT '파일 크기 (byte)',
+    file_type VARCHAR(100) COMMENT '파일 MIME 타입',
+    disp_seq INT DEFAULT 1 COMMENT '파일 전시 순서',
+    use_tf CHAR(1) DEFAULT 'Y' COMMENT '사용 여부 (Y/N)',
+    del_tf CHAR(1) DEFAULT 'N' COMMENT '삭제 여부 (Y/N)',
+    reg_adm VARCHAR(100) COMMENT '등록자 ID',
+    reg_date DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '등록일',
+    up_adm VARCHAR(100) COMMENT '수정자 ID',
+    up_date DATETIME COMMENT '수정일',
+    del_adm VARCHAR(100) COMMENT '삭제자 ID',
+    del_date DATETIME COMMENT '삭제일',
+    
+    CONSTRAINT fk_board_file_board_id FOREIGN KEY (board_id)
+    REFERENCES board(id) ON DELETE CASCADE
+);
 
 /*
   기본 관리자 셋팅 관리자 정보, 메뉴, 권한 
