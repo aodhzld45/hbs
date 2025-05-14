@@ -21,7 +21,7 @@ import MediaPage from './pages/MediaPage';
 import MainPage from './pages/MainPage';
 import PromPage from './pages/PromPage';
 import HbsCardList from './components/Hbs/HbsCardList';
-import HbsDetailPage from './pages/hbs/HbsDetailPage';
+import HbsDetailPage from './pages/User/hbs/HbsDetailPage';
 
 // 관리자 Common imports
 import PrivateRoute from './components/Admin/PrivateRoute';

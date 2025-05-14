@@ -29,7 +29,7 @@ public class ContentFileService {
 
     // 콘텐츠 목록
     public List<ContentFileResponse> getContentFiles() {
-        List<ContentFile> files = repository.findByFileTypeAndContentTypeAndDelTFOrderByFileIdDesc(FileType.LINK, ContentType.YOUTUBE,'N');
+        List<ContentFile> files = repository.findByFileTypeAndContentTypeAndDelTFOrderByFileIdDesc(FileType.VIDEO, ContentType.HBS,'N');
 
         return files.stream()
                 .map(ContentFileResponse::fromEntity)

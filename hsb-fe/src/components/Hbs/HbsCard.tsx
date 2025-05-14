@@ -18,7 +18,8 @@ const HbsCard = ({ content }: Props) => {
     >
       <div className="relative">
         <img
-          src={`${FILE_BASE_URL}${content.thumbnailUrl}`}
+          //src={`${FILE_BASE_URL}${item.thumbnailUrl}`}
+          src={content.thumbnailUrl}
           alt={content.title}
           className="w-full h-48 object-cover"
         />

@@ -1,10 +1,10 @@
 // src/pages/hbs/HbsDetailPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { fetchHbsDetail } from '../../services/hbsApi'
-import { HbsContent } from '../../types/HbsContent';
-import { FILE_BASE_URL } from '../../config/config';
-import Layout from '../../components/Layout/Layout';
+import { fetchHbsDetail } from '../../../services/hbsApi'
+import { HbsContent } from '../../../types/HbsContent';
+import { FILE_BASE_URL } from '../../../config/config';
+import Layout from '../../../components/Layout/Layout';
 
 
 
@@ -28,7 +28,8 @@ const HbsDetailPage = () => {
                 <p className="text-gray-600 mb-6">{content.description}</p>
 
                 <video
-                src={`${FILE_BASE_URL}${content.fileUrl}`}
+                //src={`${FILE_BASE_URL}${content.fileUrl}`}
+                src={`${content.fileUrl}`}
                 controls
                 className="w-full rounded-lg shadow-lg border"
                 />

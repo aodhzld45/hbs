@@ -1,8 +1,8 @@
 // src/pages/hbs/HbsListPage.tsx
 import { useEffect, useState } from 'react';
-import { fetchHbsList } from '../../services/hbsApi';
-import { HbsContent } from '../../types/HbsContent';
-import HbsCardList from '../../components/Hbs/HbsCardList';
+import { fetchHbsList } from '../../../services/hbsApi';
+import { HbsContent } from '../../../types/HbsContent';
+import HbsCardList from '../../../components/Hbs/HbsCardList';
 
 const HbsListPage = () => {
   const [contents, setContents] = useState<HbsContent[]>([]);
