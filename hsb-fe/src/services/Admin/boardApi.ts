@@ -21,18 +21,19 @@ export const fetchBoardList = async (
 
 
 // 게시글 등록 API
-export const fetchBoardCreate = async (formData: FormData): Promise<void> => {
-    try {
-      await api.post('/board-create', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-    } catch (error) {
-      console.error('게시글 등록 실패:', error);
-      throw error;
-    }
-  };
+export const fetchBoardCreate = async (formData: FormData): Promise<string> => {
+  try {
+    const res = await api.post('/board/board-create', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data; // 반드시 문자열 반환
+  } catch (error) {
+    console.error('게시글 등록 실패:', error);
+    throw error;
+  }
+};
   
 
 

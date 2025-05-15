@@ -35,15 +35,21 @@ const BoardWrite = () => {
       formData.append('writerName', writerName);
       formData.append('useTf', useTf);
       files.forEach((file) => formData.append('files', file));
-
-      await fetchBoardCreate(formData);
-      alert('게시글이 등록되었습니다.');
-      navigate(`/admin/board/${safeBoardType}`);
+  
+      const response = await fetchBoardCreate(formData); // 응답값 받아오기
+  
+      if (typeof response === 'string' && response.includes('성공')) {
+        alert(response); 
+        navigate(`/admin/board/${safeBoardType}`);
+      } else {
+        alert(response || '등록 중 오류가 발생했습니다.');
+      }
     } catch (error) {
       console.error('등록 실패:', error);
       alert('게시글 등록 중 오류가 발생했습니다.');
     }
   };
+  
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
