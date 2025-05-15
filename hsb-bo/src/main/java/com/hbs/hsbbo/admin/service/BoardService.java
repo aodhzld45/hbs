@@ -1,6 +1,7 @@
 package com.hbs.hsbbo.admin.service;
 
 import com.hbs.hsbbo.admin.domain.entity.Board;
+import com.hbs.hsbbo.admin.domain.entity.BoardFile;
 import com.hbs.hsbbo.admin.domain.type.BoardType;
 import com.hbs.hsbbo.admin.dto.request.BoardRequest;
 import com.hbs.hsbbo.admin.repository.BoardFileRepository;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -34,46 +36,41 @@ public class BoardService {
         board.setWriterName(request.getWriterName());
         board.setUseTf(request.getUseTf());
 
+        Board saved = boardRepository.save(board);
+        System.out.println("저장된 게시글 ID: " + saved.getId());
 
+        // 2. 첨부파일 처리
         if (files != null && !files.isEmpty()) {
-            System.out.println("📎 첨부파일 목록:");
-            files.forEach(file -> {
-                String path = fileUtil.saveFile(fileUtil.resolveBoardPath(String.valueOf(board.getBoardType())), file);
+            List<BoardFile> fileEntities = new ArrayList<>();
+            int order = 1; // 첨부파일 순서
+
+            for (MultipartFile file : files) {
+                String path = fileUtil.saveFile(
+                        fileUtil.resolveBoardPath(String.valueOf(board.getBoardType())),
+                        file
+                );
                 String extension = fileUtil.getExtension(file.getOriginalFilename());
 
-                System.out.println(" - 파일명: " + file.getOriginalFilename());
-                System.out.println("   사이즈: " + file.getSize() + " bytes");
-                System.out.println("   경로 값: " + path);
-                System.out.println("   확장자: " + extension);
+                BoardFile boardFile = new BoardFile();
+                boardFile.setBoard(saved); // 외래키 연관관계 설정
+                boardFile.setFileName(file.getOriginalFilename());
+                boardFile.setFilePath(path);
+                boardFile.setFileType(String.valueOf(board.getBoardType()));
+                boardFile.setFileSize(file.getSize());
+                boardFile.setFileType(file.getContentType());
+                boardFile.setFileExtension(extension);
+                boardFile.setDispSeq(order++); // 순서 1, 2, 3...
 
-                System.out.println("   ContentType: " + file.getContentType());
-            });
+                // 공통 기본값
+                //boardFile.setRegAdm("SYSTEM"); // 실제 사용시 로그인 유저 정보 등으로 대체
+
+                fileEntities.add(boardFile);
+            }
+
+            boardFileRepository.saveAll(fileEntities);
+            System.out.println(" 첨부파일 저장 완료 (" + fileEntities.size() + "건)");
         } else {
-            System.out.println("📎 첨부파일 없음");
+            System.out.println("첨부파일 없음");
         }
-
-//        boardRepository.save(board);
-//        Board saved = boardRepository.save(board);
-//        System.out.println("저장된 ID: " + saved.getId());
-
-
-        // 2. 파일 저장
-//        if (files != null && !files.isEmpty()) {
-//            List<BoardFile> fileEntities = new ArrayList<>();
-//            for (MultipartFile file : files) {
-//                String path = fileUtil.saveFile(fileUtil.resolveBoardPath(String.valueOf(board.getBoardType())), file);
-//                BoardFile boardFile = new BoardFile();
-//                boardFile.setBoard(board);
-//                boardFile.setFilePath(path);
-//                boardFile.setFileName(file.getOriginalFilename());
-//                boardFile.setFileExtension(fileUtil.getExtension(file.getOriginalFilename()));
-//                fileEntities.add(boardFile);
-//            }
-//            boardFileRepository.saveAll(fileEntities);
-//        }
-
     }
-
-
-
 }

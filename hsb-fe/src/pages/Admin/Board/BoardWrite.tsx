@@ -17,6 +17,7 @@ const BoardWrite = () => {
   const [writerName, setWriterName] = useState('');
   const [useTf, setUseTf] = useState<'Y' | 'N'>('Y');
   const [files, setFiles] = useState<File[]>([]);
+  const [dragOver, setDragOver] = useState(false);
 
   const safeBoardType = (boardType?.toUpperCase() ?? 'NOTICE') as BoardType;
 
@@ -49,16 +50,43 @@ const BoardWrite = () => {
       alert('게시글 등록 중 오류가 발생했습니다.');
     }
   };
-  
 
+  // 파일 선택 핸들러
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const selectedFiles = Array.from(e.target.files);
+    updateFiles(selectedFiles);
+  };
+
+  // 파일 제거 핸들러
+  const handleRemoveFile = (index: number) => {
+    const updated = [...files];
+    updated.splice(index, 1);
+    setFiles(updated);
+  };
+
+  const updateFiles = (newFiles: File[]) => {
     setFiles((prev) => {
       const fileMap = new Map();
-      [...prev, ...selectedFiles].forEach((file) => fileMap.set(file.name, file));
+      [...prev, ...newFiles].forEach((file) => fileMap.set(file.name, file));
       return Array.from(fileMap.values()).slice(0, 3);
     });
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    updateFiles(droppedFiles);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setDragOver(false);
   };
 
   return (
@@ -101,21 +129,47 @@ const BoardWrite = () => {
 
           <div>
             <label className="block mb-1 font-semibold">첨부파일 (최대 3개)</label>
-            <input
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              className="border px-3 py-2 rounded"
-            />
-            <ul className="mt-2 text-sm text-gray-600">
+
+            {/* ✅ Drag & Drop 영역 */}
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              className={`border-2 border-dashed rounded px-4 py-6 text-center transition-colors ${
+                dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+              }`}
+            >
+              <input
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+                id="fileInput"
+              />
+              <label htmlFor="fileInput" className="cursor-pointer text-blue-600 underline">
+                파일 선택 또는 여기로 드래그하세요
+              </label>
+            </div>
+
+            {/* 파일 목록 */}
+            <ul className="mt-2 text-sm text-gray-700 space-y-1">
               {files.map((file, index) => (
-                <li key={index}>• {file.name}</li>
+                <li key={index} className="flex items-center justify-between">
+                  <span>• {file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFile(index)}
+                    className="text-red-500 text-sm hover:underline ml-2"
+                  >
+                    ❌
+                  </button>
+                </li>
               ))}
             </ul>
           </div>
 
           <div>
-          <label className="col-span-1 font-semibold">노출여부</label>
+            <label className="col-span-1 font-semibold">노출여부</label>
             <select
               value={useTf}
               onChange={(e) => setUseTf(e.target.value as 'Y' | 'N')}
