@@ -31,6 +31,7 @@ export interface BoardFileItem {
     id: number;
     boardId: number;
     fileName: string;
+    originalFileName: string;
     filePath: string;
     fileSize: number;
     fileType: string;

@@ -1,7 +1,10 @@
 package com.hbs.hsbbo.admin.controller;
 
 
+import com.hbs.hsbbo.admin.domain.type.BoardType;
 import com.hbs.hsbbo.admin.dto.request.BoardRequest;
+import com.hbs.hsbbo.admin.dto.response.BoardListResponse;
+import com.hbs.hsbbo.admin.dto.response.BoardResponse;
 import com.hbs.hsbbo.admin.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,26 @@ public class BoardController {
 
     @Autowired
     private final BoardService boardService;
+
+    @GetMapping("/board-list")
+    public ResponseEntity<BoardListResponse> getBoardList(
+            @RequestParam BoardType type,
+            @RequestParam(required = false, defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        BoardListResponse result = boardService.getBoardList(type, keyword, page, size);
+
+
+        return ResponseEntity.ok(result);
+    }
+
+    //  상세 조회 API
+    @GetMapping("/board-detail")
+    public ResponseEntity<BoardResponse> getBoardDetail(@RequestParam Long id) {
+        BoardResponse response = boardService.getBoardDetail(id);
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping("/board-create")
     public ResponseEntity<?> createBoard(

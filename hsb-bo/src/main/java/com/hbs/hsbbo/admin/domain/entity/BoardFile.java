@@ -27,6 +27,9 @@ public class BoardFile {
     @Column(name = "file_name", nullable = false)
     private String fileName;
 
+    @Column(name = "original_file_name", nullable = false)
+    private String originalFileName;
+
     @Column(name = "file_path", nullable = false)
     private String filePath;
 
