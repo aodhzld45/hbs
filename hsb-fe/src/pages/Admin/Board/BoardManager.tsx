@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../../components/Layout/AdminLayout';
+import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { BoardItem, BoardType, BoardTypeTitleMap } from '../../../types/Admin/BoardItem';
@@ -13,7 +14,7 @@ const BoardManager = () => {
     const [boards, setBoards] = useState<BoardItem[]>([]);
     const [keyword, setKeyword] = useState('');
     const [page, setPage] = useState(0);
-    const [size] = useState(10);
+    const [size] = useState(10); // 한 페이지에 보여줄 게시물 수 지정
     const [totalPages, setTotalPages] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
 
@@ -30,7 +31,7 @@ const BoardManager = () => {
             const res = await fetchBoardList(safeBoardType, keyword, page, size);
             setBoards(res.items);
             setTotalCount(res.totalCount);
-            //setTotalPages(res.totalPages);
+            setTotalPages(res.totalPages);
             
         } catch (err) {
             console.error('공지사항 조회 실패:', err);
@@ -39,8 +40,9 @@ const BoardManager = () => {
     };
 
     useEffect(() => {
-        loadBoardList();
-      }, [page]);
+      setPage(0); // 페이지 리셋
+      loadBoardList();
+    }, [safeBoardType,page]);
 
       return (
        <AdminLayout> 
@@ -70,7 +72,7 @@ const BoardManager = () => {
                 검색
               </button>
               <button           
-                onClick={() => navigate(`/admin/board/${safeBoardType}/write`)}
+                onClick={() => navigate(`/admin/board/${boardType}/write`)}
                 className="bg-blue-600 text-white px-4 rounded"
               >
                 등록
@@ -95,12 +97,14 @@ const BoardManager = () => {
                   <td className="border p-2">{totalCount - (page * size + idx)}</td>
                   <td
                     className="border p-2 text-left text-blue-600 cursor-pointer hover:underline"
-                    onClick={() => navigate(`/admin/board/NOTICE/edit/${board.id}`)}
+                    onClick={() => navigate(`/admin/board/${boardType}/detail/${board.id}`)}
                   >
                     {board.title}
                   </td>
                   <td className="border p-2">{board.writerName || '-'}</td>
-                  <td className="border p-2">{(new Date(board.regDate), 'yyyy-MM-dd')}</td>
+                  <td className="border p-2">
+                    {format(new Date(board.regDate), 'yyyy-MM-dd')}
+                  </td>
                   <td className="border p-2">{board.viewCount}</td>
                   <td className="border p-2 text-sm">
                     {board.useTf === 'Y' ? '보이기' : <span className="text-red-500">보이지 않기</span>}
