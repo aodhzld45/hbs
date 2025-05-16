@@ -8,7 +8,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Component
@@ -29,8 +32,9 @@ public class FileUtil {
         }
 
         try {
-            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            Path fullPath = baseDir.resolve(fileName);
+            String extension = getExtension(file.getOriginalFilename());
+            String uuidFileName = UUID.randomUUID() + (extension.isBlank() ? "" : "." + extension);
+            Path fullPath = baseDir.resolve(uuidFileName);
             Files.createDirectories(fullPath.getParent());
             Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
 
@@ -56,6 +60,26 @@ public class FileUtil {
         };
 
         return Paths.get(fileStorageProperties.getUploadPath(), subDir);
+    }
+
+    /**
+     * /files/ 경로를 실제 절대 경로로 변환
+     */
+    public Path resolveAbsolutePath(String filePath) {
+        if (filePath == null || filePath.isBlank()) {
+            throw new IllegalArgumentException("filePath가 유효하지 않습니다.");
+        }
+        String relative = filePath.replaceFirst("^/files/", "");
+        return Paths.get(fileStorageProperties.getUploadPath(), relative);
+    }
+
+
+    /**
+     * /files/... 경로에서 파일 이름만 추출 (UUID.확장자)
+     */
+    public String extractFileNameFromPath(String filePath) {
+        if (filePath == null || filePath.isBlank()) return "";
+        return Paths.get(filePath).getFileName().toString(); // uuid.jpg
     }
 
     /*

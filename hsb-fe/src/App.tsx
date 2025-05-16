@@ -16,6 +16,7 @@ import CodeParentManagement from "./pages/Admin/Code/CodeParentManagement";
 // 관리자 공통 게시판 관련 imports
 import BoardManager from './pages/Admin/Board/BoardManager';
 import BoardWrite from './pages/Admin/Board/BoardWrite';
+import BoardDetail from "./pages/Admin/Board/BoardDetail";
 
 
 // 사용자 페이지 imports
@@ -64,6 +65,7 @@ function App() {
               
               <Route path="/admin/board/:boardType" element={<BoardManager />} />
               <Route path="/admin/board/:boardType/write" element={<BoardWrite />} />
+              <Route path="/admin/board/:boardType/detail/:id" element={<BoardDetail />} />
 
             </Route>
             <Route path="/admin/event-form" element={<EventForm />} />

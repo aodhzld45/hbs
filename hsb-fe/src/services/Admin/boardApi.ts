@@ -1,6 +1,8 @@
 import api from '../api';
 import {BoardItem, BoardType} from '../../types/Admin/BoardItem'
 
+
+// 게시글 조회 API
 export const fetchBoardList = async (
     type: BoardType,
     keyword: string = '',
@@ -9,8 +11,8 @@ export const fetchBoardList = async (
     
   ): Promise<{ items: BoardItem[]; totalCount: number; totalPages: number; }> => {
     try {
-      const res = await api.get('/board-list', {
-        params: { type, keyword },
+      const res = await api.get('/board/board-list', {
+        params: { type, keyword, page, size },
       });
       return res.data;
     } catch (error) {
@@ -19,6 +21,11 @@ export const fetchBoardList = async (
     }
   };
 
+// 게시글 상세 API
+export const fetchBoardDetail = async (id: number): Promise<BoardItem> => {
+  const res = await api.get('/board/board-detail', { params: { id } });
+  return res.data;
+};
 
 // 게시글 등록 API
 export const fetchBoardCreate = async (formData: FormData): Promise<string> => {
@@ -33,6 +40,11 @@ export const fetchBoardCreate = async (formData: FormData): Promise<string> => {
     console.error('게시글 등록 실패:', error);
     throw error;
   }
+};
+
+// 게시글 삭제 API
+export const fetchBoardDelete = async (id: number): Promise<void> => {
+  await api.delete(`/board/${id}`);
 };
   
 
