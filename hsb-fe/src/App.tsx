@@ -65,6 +65,7 @@ function App() {
               
               <Route path="/admin/board/:boardType" element={<BoardManager />} />
               <Route path="/admin/board/:boardType/write" element={<BoardWrite />} />
+              <Route path="/admin/board/:boardType/edit/:id" element={<BoardWrite />} />
               <Route path="/admin/board/:boardType/detail/:id" element={<BoardDetail />} />
 
             </Route>

@@ -42,9 +42,25 @@ export const fetchBoardCreate = async (formData: FormData): Promise<string> => {
   }
 };
 
+// 게시글 수정 API
+export const fetchBoardUpdate = async (formData: FormData, id: number) : Promise<string> => {
+  try {
+    const res = await api.put(`/board/board-update/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data; // 반드시 문자열 반환
+  } catch (error) {
+    console.error('게시글 수정 실패:', error);
+    throw error;
+  }
+};
+
 // 게시글 삭제 API
 export const fetchBoardDelete = async (id: number): Promise<void> => {
-  await api.delete(`/board/${id}`);
+  const res = await api.delete(`/board/board-delete/${id}`);
+  return res.data;
 };
   
 
