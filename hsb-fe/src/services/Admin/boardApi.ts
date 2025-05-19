@@ -59,7 +59,7 @@ export const fetchBoardUpdate = async (formData: FormData, id: number) : Promise
 
 // 게시글 삭제 API
 export const fetchBoardDelete = async (id: number): Promise<void> => {
-  const res = await api.delete(`/board/board-delete/${id}`);
+  const res = await api.put(`/board/board-delete/${id}`);
   return res.data;
 };
   

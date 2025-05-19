@@ -196,4 +196,19 @@ public class BoardService {
         }
     }
 
+    @Transactional
+    public void deleteBoard(Long id) {
+        Board board = boardRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("게시글이 존재하지 않습니다."));
+
+        board.setDelTf("Y");
+        board.setDelDate(LocalDateTime.now());
+        //board.setDelAdm("SYSTEM"); // 로그인 사용자 ID로 대체 가능
+
+        boardRepository.save(board);
+
+        System.out.println(" 게시글 소프트 삭제 완료 - ID: " + id);
+    }
+
+
 }
