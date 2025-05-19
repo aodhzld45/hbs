@@ -35,7 +35,7 @@ const BoardDetail = () => {
       try {
         await fetchBoardDelete(Number(id));
         alert('삭제되었습니다.');
-        navigate(`/admin/board/${safeBoardType}`);
+        navigate(`/admin/board/${boardType}`);
       } catch (err) {
         alert('삭제 실패');
       }

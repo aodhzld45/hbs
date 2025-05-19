@@ -125,7 +125,7 @@ const BoardWrite = () => {
   
       if (typeof response === 'string' && response.includes('성공')) {
         alert(response);
-        navigate(`/admin/board/${safeBoardType}`);
+        navigate(`/admin/board/${boardType}`);
       } else {
         alert(response || (isEdit ? '수정 중 오류가 발생했습니다.' : '등록 중 오류가 발생했습니다.'));
       }
@@ -198,7 +198,6 @@ const BoardWrite = () => {
           <div>
             <label className="block mb-1 font-semibold">첨부파일 (최대 3개)</label>
             <div className="mb-2">
-              <p className="text-sm text-gray-600 font-semibold">기존 첨부파일</p>
               <ul className="text-sm text-gray-700 space-y-1">
                 {existingFiles.map((file, index) => (
                   <li key={file instanceof File ? index : file.id} className="flex items-center justify-between">

@@ -39,10 +39,15 @@ const BoardManager = () => {
         }        
     };
 
+    // 1. boardType이 변경될 때만 page 리셋
     useEffect(() => {
-      setPage(0); // 페이지 리셋
+      setPage(0);
+    }, [boardType]);
+
+    // 2. page나 keyword, safeBoardType이 바뀔 때 목록 재조회
+    useEffect(() => {
       loadBoardList();
-    }, [safeBoardType,page]);
+    }, [boardType, page]);
 
       return (
        <AdminLayout> 
