@@ -8,6 +8,7 @@ import com.hbs.hsbbo.admin.dto.response.BoardResponse;
 import com.hbs.hsbbo.admin.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -62,17 +63,43 @@ public class BoardController {
 //        System.out.println("요청 처리 정보: " + request.toString());
 
 //        if (files != null && !files.isEmpty()) {
-//            System.out.println("📎 첨부파일 목록:");
+//            System.out.println(" 첨부파일 목록:");
 //            files.forEach(file -> {
 //                System.out.println(" - 파일명: " + file.getOriginalFilename());
 //                System.out.println("   사이즈: " + file.getSize() + " bytes");
 //                System.out.println("   ContentType: " + file.getContentType());
 //            });
 //        } else {
-//            System.out.println("📎 첨부파일 없음");
+//            System.out.println(" 첨부파일 없음");
 //        }
     }
+    @PutMapping("/board-update/{id}")
+    public ResponseEntity<?> updateBoard(
+            @PathVariable Long id,
+            @ModelAttribute BoardRequest request,
+            @RequestPart(value = "files", required = false)List<MultipartFile> files
+    ) {
+//        System.out.println("요청 정보 id = " + id);
+//        System.out.println("요청 정보" +  request.toString());
+//
+//        if (files != null && !files.isEmpty()) {
+//            System.out.println("첨부파일 목록:");
+//            files.forEach(file -> {
+//                System.out.println(" - 파일명: " + file.getOriginalFilename());
+//                System.out.println("   사이즈: " + file.getSize() + " bytes");
+//                System.out.println("   ContentType: " + file.getContentType());
+//            });
+//        } else {
+//            System.out.println("첨부파일 없음");
+//        }
 
+        try {
+            boardService.updateBoard(id, request, files);
+            return ResponseEntity.ok("수정 성공");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("수정 실패");
+        }
+    }
 
 
 }

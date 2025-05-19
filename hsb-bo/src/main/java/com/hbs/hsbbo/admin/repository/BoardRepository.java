@@ -24,4 +24,5 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 
     Optional<Board> findByIdAndDelTf(Long id, String delTf);
 
+
 }
