@@ -62,6 +62,15 @@ export const fetchBoardDelete = async (id: number): Promise<void> => {
   const res = await api.put(`/board/board-delete/${id}`);
   return res.data;
 };
+
+// 게시글 자료 엑셀 다운로드 API
+export const fetchExcelDownload = async (type: string, keyword: string = '') => {
+  const response = await api.get('/board/export', {
+    params: { type, keyword },
+    responseType: 'blob', // 엑셀 다운로드용
+  });
+  return response;
+};
   
 
 

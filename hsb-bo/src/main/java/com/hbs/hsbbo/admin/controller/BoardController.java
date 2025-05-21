@@ -6,14 +6,24 @@ import com.hbs.hsbbo.admin.dto.request.BoardRequest;
 import com.hbs.hsbbo.admin.dto.response.BoardListResponse;
 import com.hbs.hsbbo.admin.dto.response.BoardResponse;
 import com.hbs.hsbbo.admin.service.BoardService;
+import com.hbs.hsbbo.common.util.ExcelUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 
 @RestController
 @RequiredArgsConstructor
@@ -111,5 +121,33 @@ public class BoardController {
         }
     }
 
+    @GetMapping("/export")
+    public ResponseEntity<Resource> getBoardExcel(
+            @RequestParam BoardType type,
+            @RequestParam(required = false) String keyword
+    ){
+        System.out.println(type);
+        BoardListResponse response = boardService.getBoardList(type, keyword, 0, 10);
 
+        List<BoardResponse> boards = response.getItems();
+
+        List<String> headers = List.of("ID", "제목", "작성자", "등록일", "조회수", "노출여부");
+        List<Function<BoardResponse, String>> extractors = List.of(
+                b -> String.valueOf(b.getId()),
+                BoardResponse::getTitle,
+                b -> Optional.ofNullable(b.getWriterName()).orElse("-"),
+                b -> b.getRegDate().toString(),
+                b -> String.valueOf(b.getViewCount()),
+                b -> "Y".equals(b.getUseTf()) ? "보이기" : "숨김"
+        );
+
+
+        ByteArrayInputStream excelStream = ExcelUtil.generateExcel(boards, headers, extractors);
+        String filename = URLEncoder.encode(type.name() + "_게시판.xlsx", StandardCharsets.UTF_8);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(new InputStreamResource(excelStream));
+    }
 }

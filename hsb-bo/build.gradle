@@ -46,6 +46,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'com.mysql:mysql-connector-j'
 
+	// Excel다운로드를 위한 라이브러리
+	implementation 'org.apache.poi:poi-ooxml:5.2.3'
+	implementation 'org.apache.poi:poi:5.2.3'
+
 	// Aws s3 파일 관련 의존성 추가
 	implementation 'software.amazon.awssdk:s3:2.20.0'
 	// Spring Cloud AWS Starter (올바른 artifactId)

@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { BoardItem, BoardType, BoardTypeTitleMap } from '../../../types/Admin/BoardItem';
-import { fetchBoardList } from '../../../services/Admin/boardApi';
+import { fetchBoardList, fetchExcelDownload } from '../../../services/Admin/boardApi';
 import Pagination from '../../../components/Common/Pagination';
 
 const BoardManager = () => {
@@ -38,6 +38,28 @@ const BoardManager = () => {
             alert('공지사항 목록을 불러오지 못했습니다.');
         }        
     };
+
+    // 엑셀 다운로드 이벤트 핸들러 추가
+    const handleExcelDownload = async () => {
+      try {
+        const res = await fetchExcelDownload(safeBoardType, keyword);
+    
+        const blob = new Blob([res.data], {
+          type: res.headers['content-type'],
+        });
+    
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${safeBoardType}_게시판.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        alert('엑셀 다운로드 실패');
+        console.error(err);
+      }
+    };
+    
 
     // 1. boardType이 변경될 때만 page 리셋
     useEffect(() => {
@@ -76,12 +98,19 @@ const BoardManager = () => {
               >
                 검색
               </button>
+
+              {/* <button
+                onClick={handleExcelDownload}
+                className="bg-green-600 text-white px-4 rounded"
+              >
+                엑셀 다운로드
+              </button>
               <button           
                 onClick={() => navigate(`/admin/board/${boardType}/write`)}
                 className="bg-blue-600 text-white px-4 rounded"
               >
                 등록
-              </button>
+              </button> */}
             </div>
           </div>
     
@@ -118,6 +147,22 @@ const BoardManager = () => {
               ))}
             </tbody>
           </table>
+
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              onClick={handleExcelDownload}
+              className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+              엑셀 다운로드
+            </button>
+
+            <button
+              onClick={() => navigate(`/admin/board/${boardType}/write`)}
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              등록
+            </button>
+          </div>
     
           <Pagination
             currentPage={page}
