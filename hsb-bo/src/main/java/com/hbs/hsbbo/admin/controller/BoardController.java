@@ -21,6 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -126,10 +128,13 @@ public class BoardController {
             @RequestParam BoardType type,
             @RequestParam(required = false) String keyword
     ){
-        System.out.println(type);
         BoardListResponse response = boardService.getBoardList(type, keyword, 0, 10);
 
         List<BoardResponse> boards = response.getItems();
+
+        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String sheetName = type.getDisplayName() + " 리스트";
+        String title = "[" + type.getDisplayName() + "] 리스트_" + today;
 
         List<String> headers = List.of("ID", "제목", "작성자", "등록일", "조회수", "노출여부");
         List<Function<BoardResponse, String>> extractors = List.of(
@@ -142,11 +147,12 @@ public class BoardController {
         );
 
 
-        ByteArrayInputStream excelStream = ExcelUtil.generateExcel(boards, headers, extractors);
-        String filename = URLEncoder.encode(type.name() + "_게시판.xlsx", StandardCharsets.UTF_8);
-
+        ByteArrayInputStream excelStream = ExcelUtil.generateExcel(sheetName, boards, headers, extractors);
+        String filename = URLEncoder.encode(title + ".xlsx", StandardCharsets.UTF_8)
+                .replaceAll("\\+", "%20");
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + filename + "\"; filename*=UTF-8''" + filename)
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(new InputStreamResource(excelStream));
     }

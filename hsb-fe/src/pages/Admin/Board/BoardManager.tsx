@@ -22,8 +22,8 @@ const BoardManager = () => {
     const safeBoardType = (boardType?.toUpperCase() ?? 'NOTICE') as BoardType;
 
     useEffect(() => {
-      console.log('현재 boardType:', boardType);
-      console.log('safeBoardType (대문자):', safeBoardType);
+      //console.log('현재 boardType:', boardType);
+      //console.log('safeBoardType (대문자):', safeBoardType);
     }, [boardType]);
 
     const loadBoardList = async () => {
@@ -39,7 +39,7 @@ const BoardManager = () => {
         }        
     };
 
-    // 엑셀 다운로드 이벤트 핸들러 추가
+    //엑셀 다운로드 핸들러
     const handleExcelDownload = async () => {
       try {
         const res = await fetchExcelDownload(safeBoardType, keyword);
@@ -48,12 +48,36 @@ const BoardManager = () => {
           type: res.headers['content-type'],
         });
     
+        //  Content-Disposition 헤더에서 filename 추출
+        const rawHeader = res.headers['content-disposition'];
+        const filename = (() => {
+          if (!rawHeader) return 'download.xlsx';
+    
+          try {
+            // 1. UTF-8 형식 우선
+            const utf8Match = rawHeader.match(/filename\*=UTF-8''([^;]+)/i);
+            if (utf8Match?.[1]) return decodeURIComponent(utf8Match[1]);
+    
+            // 2. 일반 형식 fallback
+            const fallbackMatch = rawHeader.match(/filename="?([^"]+)"?/);
+            if (fallbackMatch?.[1]) return decodeURIComponent(fallbackMatch[1]);
+    
+          } catch (e) {
+            console.warn(' 파일명 디코딩 실패:', e);
+          }
+    
+          // 3. 최종 fallback – 이론상 거의 도달하지 않음
+          return 'download.xlsx';
+        })();
+    
+        //  다운로드 트리거
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${safeBoardType}_게시판.xlsx`;
+        link.download = filename;
         link.click();
         window.URL.revokeObjectURL(url);
+    
       } catch (err) {
         alert('엑셀 다운로드 실패');
         console.error(err);
@@ -99,18 +123,6 @@ const BoardManager = () => {
                 검색
               </button>
 
-              {/* <button
-                onClick={handleExcelDownload}
-                className="bg-green-600 text-white px-4 rounded"
-              >
-                엑셀 다운로드
-              </button>
-              <button           
-                onClick={() => navigate(`/admin/board/${boardType}/write`)}
-                className="bg-blue-600 text-white px-4 rounded"
-              >
-                등록
-              </button> */}
             </div>
           </div>
     
@@ -153,7 +165,7 @@ const BoardManager = () => {
               onClick={handleExcelDownload}
               className="bg-green-600 text-white px-4 py-2 rounded"
             >
-              엑셀 다운로드
+              검색한 자료 엑셀로 받기
             </button>
 
             <button
