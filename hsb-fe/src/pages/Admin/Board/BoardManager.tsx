@@ -17,6 +17,7 @@ const BoardManager = () => {
     const [size] = useState(10); // 한 페이지에 보여줄 게시물 수 지정
     const [totalPages, setTotalPages] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
 
     // 소문자 파라미터를 BoardItem에 맞추어 대문자로 변경 ex) notice -> NOTICE
     const safeBoardType = (boardType?.toUpperCase() ?? 'NOTICE') as BoardType;
@@ -28,6 +29,8 @@ const BoardManager = () => {
 
     const loadBoardList = async () => {
         try {
+            setIsLoading(true); //  로딩 시작
+
             const res = await fetchBoardList(safeBoardType, keyword, page, size);
             setBoards(res.items);
             setTotalCount(res.totalCount);
@@ -36,7 +39,9 @@ const BoardManager = () => {
         } catch (err) {
             console.error('공지사항 조회 실패:', err);
             alert('공지사항 목록을 불러오지 못했습니다.');
-        }        
+        } finally {
+          setIsLoading(false);  // 로딩 종료
+        }          
     };
 
     //엑셀 다운로드 핸들러
@@ -144,7 +149,20 @@ const BoardManager = () => {
               </tr>
             </thead>
             <tbody>
-              {boards.map((board, idx) => (
+            {isLoading ? (
+                <tr>
+                <td colSpan={5} className="py-8 text-center text-gray-500">
+                    데이터를 불러오는 중입니다...
+                </td>
+                </tr>
+            ) : boards.length === 0 ? (
+                <tr>
+                <td colSpan={5} className="py-8 text-center text-gray-400">
+                    표시할 게시물이 없습니다.
+                </td>
+                </tr>
+            ) : (  
+              boards.map((board, idx) => (
                 <tr key={board.id} className="text-center hover:bg-gray-50">
                   <td className="border p-2">{totalCount - (page * size + idx)}</td>
                   <td
@@ -162,7 +180,8 @@ const BoardManager = () => {
                     {board.useTf === 'Y' ? '보이기' : <span className="text-red-500">보이지 않기</span>}
                   </td>
                 </tr>
-              ))}
+              ))
+            )}
             </tbody>
           </table>
 

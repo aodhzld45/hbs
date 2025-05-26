@@ -15,10 +15,13 @@ const BoardList = () => {
     const [size] = useState(10);
     const [totalPages, setTotalPages] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
-  
+    const [isLoading, setIsLoading] = useState(false);
+
     const safeBoardType = (boardType?.toUpperCase() ?? 'NOTICE') as BoardType;
     const loadBoardList = async () => {
         try {
+            setIsLoading(true); //  로딩 시작
+
             const res = await fetchBoardList(safeBoardType, keyword, page, size);
             setBoards(res.items);
             setTotalCount(res.totalCount);
@@ -27,6 +30,8 @@ const BoardList = () => {
         } catch (err) {
             console.error('공지사항 조회 실패:', err);
             alert('공지사항 목록을 불러오지 못했습니다.');
+        } finally {
+            setIsLoading(false);  // 로딩 종료
         }        
     };
 
@@ -91,7 +96,20 @@ const BoardList = () => {
                 </tr>
             </thead>
             <tbody>
-            {boards.map((board, idx) => (
+            {isLoading ? (
+                <tr>
+                <td colSpan={5} className="py-8 text-center text-gray-500">
+                    데이터를 불러오는 중입니다...
+                </td>
+                </tr>
+            ) : boards.length === 0 ? (
+                <tr>
+                <td colSpan={5} className="py-8 text-center text-gray-400">
+                    표시할 게시물이 없습니다.
+                </td>
+                </tr>
+            ) : (            
+              boards.map((board, idx) => (
                 <tr key={board.id} className="border-t hover:bg-gray-50">
                 <td className="py-3">{Math.max(0, totalCount - (page * size + idx))}</td>
 
@@ -112,7 +130,8 @@ const BoardList = () => {
 
                 <td className="py-3">{board.viewCount}</td>
                 </tr>
-            ))}
+                ))
+             )}
             </tbody>
             </table>
 
