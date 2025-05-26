@@ -21,7 +21,6 @@ import BoardDetail from "./pages/Admin/Board/BoardDetail";
 
 // 사용자 페이지 imports
 import EventForm from './pages/Admin/EventForm';
-import EventPage from './pages/EventPage';
 import MediaPage from './pages/MediaPage';
 import MainPage from './pages/MainPage';
 import PromPage from './pages/PromPage';
@@ -48,7 +47,6 @@ function App() {
             <Route path="/:boardType/board-list" element={<BoardList />} />
             <Route path="/hbs-list" element={<HbsCardList />} />
             <Route path="/prom" element={<PromPage />} />
-            <Route path="/event" element={<EventPage />} />
             <Route path="/media" element={<MediaPage />} />
             <Route path="/content-files/:fileId" element={<HbsDetailPage />} />
 

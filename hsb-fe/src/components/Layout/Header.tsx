@@ -17,7 +17,7 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between">
         {/* 좌측 로고 */}
         <div className="text-2xl font-bold mb-2 sm:mb-0">
-          <Link to={"/"}>HYOSUNG</Link>
+          <Link to={"/"}>HBS</Link>
 
         </div>
 
@@ -26,7 +26,7 @@ const Header = () => {
           <Link to="/notice/board-list" className="hover:text-yellow-300">공지사항</Link>
           <Link to="/hbs-list" className="hover:text-yellow-300">뉴스</Link>
           <Link to="/prom" className="hover:text-yellow-300">홍보자료</Link>
-          <Link to="/event" className="hover:text-yellow-300">이벤트</Link>
+          <Link to="/event/board-list" className="hover:text-yellow-300">이벤트</Link>
           <Link to="/media" className="hover:text-yellow-300">미디어</Link>
         </nav>
 

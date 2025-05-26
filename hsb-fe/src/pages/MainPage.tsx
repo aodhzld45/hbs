@@ -7,7 +7,7 @@ const MainPage = () => {
     <Layout>
       <div className="bg-white w-full text-center py-16 px-4 md:px-8">
         <h1 className="text-4xl md:text-5xl font-extrabold text-[#003366] mb-4">
-          효성 사내 콘텐츠 플랫폼
+          현석 비즈니스 시스템 (HBS)
         </h1>
         <p className="text-gray-600 text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
           효성인의 소통과 협업을 위한 디지털 허브입니다. 공지사항, 홍보자료, 이벤트, 콘텐츠를 통합 관리하세요.
