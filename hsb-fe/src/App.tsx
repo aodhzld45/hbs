@@ -25,6 +25,7 @@ import EventPage from './pages/EventPage';
 import MediaPage from './pages/MediaPage';
 import MainPage from './pages/MainPage';
 import PromPage from './pages/PromPage';
+import BoardList from './components/Board/BoardList';
 import HbsCardList from './components/Hbs/HbsCardList';
 import HbsDetailPage from './pages/User/hbs/HbsDetailPage';
 
@@ -44,6 +45,7 @@ function App() {
           <Routes>
             {/* 사용자 공용 라우트 */}
             <Route path="/" element={<MainPage />} />
+            <Route path="/:boardType/board-list" element={<BoardList />} />
             <Route path="/hbs-list" element={<HbsCardList />} />
             <Route path="/prom" element={<PromPage />} />
             <Route path="/event" element={<EventPage />} />
