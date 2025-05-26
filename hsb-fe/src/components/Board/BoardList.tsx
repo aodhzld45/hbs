@@ -17,11 +17,6 @@ const BoardList = () => {
     const [totalCount, setTotalCount] = useState(0);
   
     const safeBoardType = (boardType?.toUpperCase() ?? 'NOTICE') as BoardType;
-
-    console.log(boardType);
-    console.log(safeBoardType);
-
-
     const loadBoardList = async () => {
         try {
             const res = await fetchBoardList(safeBoardType, keyword, page, size);
@@ -29,8 +24,6 @@ const BoardList = () => {
             setTotalCount(res.totalCount);
             setTotalPages(res.totalPages);
 
-            console.log('가져온 데이터 =', res);
-            
         } catch (err) {
             console.error('공지사항 조회 실패:', err);
             alert('공지사항 목록을 불러오지 못했습니다.');
@@ -61,11 +54,17 @@ const BoardList = () => {
                     <option>전체</option>
                     </select>
                     <input
-                    type="text"
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    placeholder="검색어를 입력해주세요."
-                    className="border px-3 py-2 rounded text-sm"
+                        type="text"
+                        value={keyword}
+                        onChange={(e) => setKeyword(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                setPage(0);
+                                loadBoardList();
+                            }
+                        }}
+                        placeholder="검색어를 입력해주세요."
+                        className="border px-3 py-2 rounded text-sm"
                     />
                     <button
                     onClick={() => {
@@ -118,9 +117,9 @@ const BoardList = () => {
             </table>
 
             <Pagination
-            currentPage={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
             />
         </div>
     </Layout>

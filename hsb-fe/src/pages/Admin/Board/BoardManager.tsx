@@ -110,6 +110,12 @@ const BoardManager = () => {
                 type="text"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                      setPage(0);
+                      loadBoardList();
+                  }
+                }}
                 placeholder="검색어 입력"
                 className="border px-3 py-2 rounded"
               />
