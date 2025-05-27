@@ -14,10 +14,5 @@
 
 <hr>
 
-# Toast UI Editor 라이브러리
-### ! 현재 Toast UI 라이브러리 모듈이 react 17까지 지원. -> 현재 버전은 19버전
-### npm install @toast-ui/react-editor @toast-ui/editor
-### -> 해당 install로 설치가 안될시 npm install @toast-ui/react-editor @toast-ui/editor --legacy-peer-deps 적용
-### npm install codemirror
 
 
