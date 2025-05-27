@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 const Header = () => {
   const [keyword, setKeyword] = useState('');
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -14,54 +15,87 @@ const Header = () => {
 
   return (
     <header className="bg-blue-600 text-white shadow-md">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between">
+      <div className="max-w-9xl mx-auto px-5 py-5 flex items-center justify-between">
         {/* 좌측 로고 */}
-        <div className="text-2xl font-bold mb-2 sm:mb-0">
-          <Link to={"/"}>HBS</Link>
-
+        <div className="text-2xl font-bold">
+          <Link to="/">HBS</Link>
         </div>
 
-        {/* 가운데 메뉴 */}
-        <nav className="flex-1 text-center space-x-4 text-sm sm:text-lg mb-2 sm:mb-0">
-          <Link to="/notice/board-list" className="hover:text-yellow-300">공지사항</Link>
-          <Link to="/hbs-list" className="hover:text-yellow-300">뉴스</Link>
+        {/* 햄버거 메뉴 (모바일용) */}
+        <div className="sm:hidden">
+          <button onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}>
+            <img
+              src="/image/Hamburger_icon.svg.png"
+              alt="메뉴"
+              className="h-6 w-6"
+            />
+          </button>
+        </div>
+
+        {/* 가운데 메뉴 (PC 전용) */}
+        <nav className="hidden sm:flex space-x-6 text-sm sm:text-base">
+          <Link to="/notice/board-list" className="hover:text-yellow-300">커뮤니티</Link>
+          <Link to="/hbs-list" className="hover:text-yellow-300">HBS</Link>
           <Link to="/prom" className="hover:text-yellow-300">홍보자료</Link>
           <Link to="/event/board-list" className="hover:text-yellow-300">이벤트</Link>
           <Link to="/media" className="hover:text-yellow-300">미디어</Link>
         </nav>
 
-        {/* 우측 검색창 */}
+        {/* 우측 검색창 (PC 전용) */}
         <form
           onSubmit={handleSearch}
-          className="flex items-center space-x-2"
+          className="hidden sm:flex items-center space-x-2"
         >
           <input
             type="text"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="검색어 입력"
-            className="px-3 py-1 rounded text-black w-28 sm:w-40"
+            className="px-3 py-1 rounded text-black w-40"
           />
           <button
             type="submit"
-            className="bg-black hover:bg-gray-800 text-white p-2 rounded"
+            className="p-1 rounded hover:opacity-80"
             title="검색"
           >
-            {/* 🔍 돋보기 아이콘 (Heroicons 기반 SVG) */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z"
-              />
-            </svg>
+            <img
+              src="/image/search-light.png"
+              alt="검색"
+              className="w-6 h-6"
+            />
           </button>
         </form>
       </div>
+
+      {/* 모바일 메뉴 */}
+      {isMobileMenuOpen && (
+        <nav className="sm:hidden bg-blue-700 text-white px-4 py-3">
+          <div className="flex flex-col gap-3">
+            {/* 메뉴 영역 */}
+            <div className="flex flex-wrap gap-4">
+              <Link to="/notice/board-list" className="hover:text-yellow-300">공지사항</Link>
+              <Link to="/hbs-list" className="hover:text-yellow-300">뉴스</Link>
+              <Link to="/prom" className="hover:text-yellow-300">홍보자료</Link>
+              <Link to="/event/board-list" className="hover:text-yellow-300">이벤트</Link>
+              <Link to="/media" className="hover:text-yellow-300">미디어</Link>
+            </div>
+
+            {/* 검색창 우측 정렬 */}
+            <div className="flex justify-center mt-2">
+              <form onSubmit={handleSearch} className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder="검색어"
+                  className="px-2 py-1 rounded text-black"
+                />
+                <button type="submit" className="bg-black px-2 py-1 rounded">검색</button>
+              </form>
+            </div>
+          </div>
+        </nav>
+      )}
     </header>
   );
 };
