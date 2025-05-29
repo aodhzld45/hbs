@@ -11,6 +11,8 @@ import com.hbs.hsbbo.admin.repository.BoardFileRepository;
 import com.hbs.hsbbo.admin.repository.BoardRepository;
 import com.hbs.hsbbo.common.util.FileUtil;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +74,19 @@ public class BoardService {
         dto.setFiles(files.stream().map(BoardFileResponse::from).toList());
 
         return dto;
+    }
+
+    @Transactional
+    public BoardResponse getBoardDetailWithViewCount(Long id, HttpServletRequest request) {
+        // 조회수 증가 (세션 중복 방지 포함)
+        String sessionKey = "viewed_board_" + id;
+        HttpSession session = request.getSession();
+        if (session.getAttribute(sessionKey) == null) {
+            boardRepository.incrementViewCount(id);
+            session.setAttribute(sessionKey, true);
+        }
+
+        return getBoardDetail(id); // 기존 조회 로직 재사용
     }
 
     public void createBoard(BoardRequest request, List<MultipartFile> files) {

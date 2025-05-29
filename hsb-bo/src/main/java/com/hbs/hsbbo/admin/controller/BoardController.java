@@ -7,6 +7,7 @@ import com.hbs.hsbbo.admin.dto.response.BoardListResponse;
 import com.hbs.hsbbo.admin.dto.response.BoardResponse;
 import com.hbs.hsbbo.admin.service.BoardService;
 import com.hbs.hsbbo.common.util.ExcelUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
@@ -50,8 +51,18 @@ public class BoardController {
 
     //  상세 조회 API
     @GetMapping("/board-detail")
-    public ResponseEntity<BoardResponse> getBoardDetail(@RequestParam Long id) {
-        BoardResponse response = boardService.getBoardDetail(id);
+    public ResponseEntity<BoardResponse> getBoardDetail(
+            @RequestParam Long id,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            HttpServletRequest request
+    ) {
+        // JWT 토큰이 없다면 일반 사용자라고 판단
+        boolean isAdmin = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "));
+
+        BoardResponse response = isAdmin
+                ? boardService.getBoardDetail(id) // 관리자: 조회수 증가 없음
+                : boardService.getBoardDetailWithViewCount(id, request); // 사용자: 조회수 증가 포함
+
         return ResponseEntity.ok(response);
     }
 
