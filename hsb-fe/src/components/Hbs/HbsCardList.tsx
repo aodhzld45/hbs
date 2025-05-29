@@ -13,9 +13,6 @@ const HbsCardList = () => {
       try {
         const data = await fetchHbsList();
         setContents(data);
-        console.log(data);
-
-
       } catch (error) {
         console.error('콘텐츠 불러오기 실패:', error);
       }
