@@ -116,7 +116,7 @@ const BoardList = () => {
                 <td
                     className="text-left px-6 py-3 text-blue-700 hover:underline cursor-pointer"
                     onClick={() =>
-                    navigate(`/${boardType}/board-detail?id=${board.id}`)
+                    navigate(`/${boardType}/board-detail/${board.id}`)
                     }
                 >
                     {board.title}
