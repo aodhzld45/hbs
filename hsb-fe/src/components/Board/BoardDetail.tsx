@@ -5,12 +5,35 @@ import { BoardType, BoardItem, BoardFileItem, BoardTypeTitleMap } from '../../ty
 import { fetchBoardDetail } from '../../services/Admin/boardApi';
 import { FILE_BASE_URL } from '../../config/config';
 
+import {
+  fetchCommentList,
+  fetchCommentCreate,
+  fetchUpdateComment,
+  fetchDeleteComment,
+  fetchPasswordConfirm
+} from '../../services/Common/CommentApi';
+import { CommentItem } from '../../types/Common/CommentItem';
+import PasswordModal from '../Common/PasswordModal';
+import EditCommentModal from '../Common/EditCommentModal';
+
 const BoardDetail = () => {
   const { boardType, id } = useParams();
   const navigate = useNavigate();
   const [board, setBoard] = useState<BoardItem | null>(null);
   const safeBoardType = (boardType?.toUpperCase() ?? 'NOTICE') as BoardType;
   const [loading, setLoading] = useState(true);
+
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [commentWriterName, setcommentWriterName] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [selectedCommentId, setSelectedCommentId] = useState<number | null>(null);
+  const [actionType, setActionType] = useState<'edit' | 'delete' | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editTargetComment, setEditTargetComment] = useState<CommentItem | null>(null);
 
   useEffect(() => {
     const loadDetail = async () => {
@@ -26,6 +49,92 @@ const BoardDetail = () => {
 
     if (id) loadDetail();
   }, [id]);
+
+  // 댓글 목록 불러오기
+  useEffect(() => {
+    const loadComments = async () => {
+      try {
+        if (id) {
+          const res = await fetchCommentList('BOARD', Number(id));
+          setComments(res);
+        }
+      } catch (err) {
+        console.error('댓글 로딩 실패', err);
+      }
+    };
+
+    loadComments();
+  }, [id]);
+
+  // 댓글 등록
+  const handleCommentSubmit = async () => {
+    if (!newComment.trim()) return;
+
+    try {
+      await fetchCommentCreate({
+        targetType: 'BOARD',
+        targetId: Number(id),
+        parentId: null,
+        writerName: commentWriterName, // 사용자 이름
+        password : password,
+        content: newComment,
+      });
+
+      setNewComment('');
+      const updated = await fetchCommentList('BOARD', Number(id));
+      setComments(updated);
+    } catch (err) {
+      console.error('댓글 등록 실패', err);
+      alert('댓글 등록 실패');
+    }
+  };
+
+  const handleClickAction = (id: number, action: 'edit' | 'delete') => {
+    setSelectedCommentId(id);
+    setActionType(action);
+    setShowPasswordModal(true);
+  };
+  
+  const handlePasswordConfirm = async (password: string) => {
+    if (!selectedCommentId || !actionType) return;
+  
+    try {
+      // 비밀번호 검증
+      const verified = await fetchPasswordConfirm(selectedCommentId, password);
+      
+      if (verified) {
+        if (actionType === 'delete') {
+          await fetchDeleteComment(selectedCommentId);
+          const updated = await fetchCommentList('BOARD', Number(id));
+          setComments(updated);
+        } else if (actionType === 'edit') {
+          const target = comments.find((c) => c.id === selectedCommentId);
+          if (target) {
+            setEditTargetComment(target);
+            setShowEditModal(true);
+          }
+        }
+      } else {
+        alert('비밀번호가 일치하지 않습니다.');
+      }
+    } catch (err) {
+      alert('댓글 등록시 비밀번호를 다시 확인해주세요.');
+    } finally {
+      setShowPasswordModal(false);
+      setSelectedCommentId(null);
+      setActionType(null);
+    }
+  };
+
+  const handleSaveEditedComment = async (newContent: string) => {
+    if (!editTargetComment) return;
+  
+    await fetchUpdateComment(editTargetComment.id, newContent);
+    const updated = await fetchCommentList('BOARD', Number(id));
+    setComments(updated);
+    setShowEditModal(false);
+    setEditTargetComment(null);
+  };
 
   if (loading) {
     return (
@@ -96,7 +205,81 @@ const BoardDetail = () => {
           className="prose prose-sm sm:prose lg:prose-lg max-w-none mb-10"
           dangerouslySetInnerHTML={{ __html: board.content }}
         />
-  
+
+        {/* 댓글 영역 */}
+        <div className="mt-10">
+          <h3 className="text-lg font-semibold mb-2">💬 댓글</h3>
+
+          {/* 댓글 입력창 */}
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              placeholder="작성자"
+              className="border rounded px-3 py-2 text-sm sm:w-40"
+              value={commentWriterName}
+              onChange={(e) => setcommentWriterName(e.target.value)}
+            />
+              <input
+              type="password"
+              placeholder="비밀번호"
+              className="border rounded px-3 py-2 text-sm sm:w-32"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <input
+              type="text"
+              placeholder="댓글을 입력하세요"
+              className="flex-1 border rounded px-3 py-2 text-sm"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+            />
+            <button
+              onClick={handleCommentSubmit}
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              등록
+            </button>
+          </div>
+
+          {/* 댓글 목록 */}
+          <ul className="space-y-2">
+            {comments.length === 0 && (
+              <li className="text-sm text-gray-500">댓글이 없습니다.</li>
+            )}
+            {comments.map((comment) => (
+              <li key={comment.id} className="border border-gray-200 rounded px-4 py-2 text-sm bg-gray-50">
+              <div className="flex justify-between items-center">
+                <div className="font-medium text-gray-700">{comment.writerName}</div>
+                <div className="flex gap-2 text-xs">
+                  <button onClick={() => handleClickAction(comment.id, 'edit')} className="text-blue-500 hover:underline">수정</button>
+                  <button onClick={() => handleClickAction(comment.id, 'delete')} className="text-red-500 hover:underline">삭제</button>
+                </div>
+              </div>
+              <div className="text-gray-800">{comment.content}</div>
+              <div className="text-xs text-gray-400 mt-1">
+                {new Date(comment.regDate).toLocaleString()}
+              </div>
+            </li>
+            ))}
+          </ul>
+        </div>
+
+        {showPasswordModal && actionType && (
+          <PasswordModal
+            action={actionType}
+            onClose={() => setShowPasswordModal(false)}
+            onConfirm={handlePasswordConfirm}
+          />
+        )}
+
+        {showEditModal && editTargetComment && (
+          <EditCommentModal
+            initialContent={editTargetComment.content}
+            onClose={() => setShowEditModal(false)}
+            onSave={handleSaveEditedComment}
+          />
+        )}
+
         {/* 목록으로 */}
         <div className="flex justify-end">
           <button
