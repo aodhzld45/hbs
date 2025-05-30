@@ -153,8 +153,8 @@ const BoardDetail = () => {
   }
 
   return (
-    <Layout>
-      <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-gray-800">
+    <Layout>  
+      <div className="w-full max-w-none px-4 py-10 text-gray-800">
         {/* 제목 */}
         <h1 className="text-4xl font-bold text-center mb-6 leading-snug">
           {board.title}
@@ -192,7 +192,6 @@ const BoardDetail = () => {
                     rel="noopener noreferrer"
                     className="hover:underline"
                 >
-                    
                   {file.originalFileName}
                 </a>
               </div>
@@ -210,36 +209,43 @@ const BoardDetail = () => {
         <div className="mt-10">
           <h3 className="text-lg font-semibold mb-2">💬 댓글</h3>
 
-          {/* 댓글 입력창 */}
-          <div className="flex gap-2 mb-4">
+        {/* 댓글 입력창 */}
+        <div className="mb-6 space-y-3">
+          {/* 작성자 + 비밀번호 */}
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               placeholder="작성자"
-              className="border rounded px-3 py-2 text-sm sm:w-40"
+              className="border rounded px-3 py-2 text-sm sm:w-40 w-full"
               value={commentWriterName}
               onChange={(e) => setcommentWriterName(e.target.value)}
             />
-              <input
+            <input
               type="password"
               placeholder="비밀번호"
-              className="border rounded px-3 py-2 text-sm sm:w-32"
+              className="border rounded px-3 py-2 text-sm sm:w-40 w-full"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+          </div>
+
+          {/* 댓글 + 등록 버튼 */}
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               placeholder="댓글을 입력하세요"
-              className="flex-1 border rounded px-3 py-2 text-sm"
+              className="border rounded px-3 py-2 text-sm flex-1 w-full"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
             />
             <button
               onClick={handleCommentSubmit}
-              className="bg-blue-600 text-white px-4 py-2 rounded"
+              className="bg-blue-600 text-white px-4 py-2 rounded sm:w-auto w-full"
             >
               등록
             </button>
           </div>
+        </div>
 
           {/* 댓글 목록 */}
           <ul className="space-y-2">
