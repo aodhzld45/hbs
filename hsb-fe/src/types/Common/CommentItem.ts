@@ -11,5 +11,10 @@ export interface CommentItem {
     regDate: string;
     upDate: string;
     delDate: string;
+
+    isReply?: boolean; // 대댓글 여부 (UI용)
+    replies?: CommentItem[]; //  nested replies를 담고 싶은 경우
+
+
   }
   
