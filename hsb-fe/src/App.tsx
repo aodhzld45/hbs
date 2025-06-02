@@ -47,7 +47,7 @@ function App() {
             <Route path="/" element={<MainPage />} />
             <Route path="/:boardType/board-list" element={<BoardList />} />
             <Route path="/:boardType/board-detail/:id" element={<UserBoardDetail />} />
-            <Route path="/hbs-list" element={<HbsCardList />} />
+            <Route path="/:fileType/:contentType/list" element={<HbsCardList />} />
             <Route path="/prom" element={<PromPage />} />
             <Route path="/media" element={<MediaPage />} />
             <Route path="/content-files/:fileId" element={<HbsDetailPage />} />
@@ -59,6 +59,7 @@ function App() {
             <Route element={<PrivateRoute />}>
               <Route path="/admin/index" element={<AdminDashboard />} />
               <Route path="/admin/content-manager" element={<ContentManager />} />
+              <Route path="/admin/content-manager/:fileId" element={<ContentManagerDetail />} />
               <Route path="/admin/admin-manager" element={<AdminList />} />
               <Route path="/admin/auth-management" element={<AdminAuthManagement />} />
               <Route path="/admin/admin-create" element={<AdminCreate />} />

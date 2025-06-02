@@ -35,8 +35,8 @@ const Header = () => {
         {/* 가운데 메뉴 (PC 전용) */}
         <nav className="hidden sm:flex space-x-6 text-sm sm:text-base">
           <Link to="/notice/board-list" className="hover:text-yellow-300">커뮤니티</Link>
-          <Link to="/hbs-list" className="hover:text-yellow-300">HBS</Link>
-          <Link to="/prom" className="hover:text-yellow-300">홍보자료</Link>
+          <Link to="/video/hbs/list" className="hover:text-yellow-300">HBS</Link>
+          <Link to="/link/youtube/list" className="hover:text-yellow-300">유튜브 홍보영상</Link>
           <Link to="/event/board-list" className="hover:text-yellow-300">이벤트</Link>
           <Link to="/media" className="hover:text-yellow-300">미디어</Link>
         </nav>
@@ -74,8 +74,8 @@ const Header = () => {
             {/* 메뉴 영역 */}
             <div className="flex flex-wrap gap-4">
               <Link to="/notice/board-list" className="hover:text-yellow-300">공지사항</Link>
-              <Link to="/hbs-list" className="hover:text-yellow-300">뉴스</Link>
-              <Link to="/prom" className="hover:text-yellow-300">홍보자료</Link>
+              <Link to="/video/hbs/list" className="hover:text-yellow-300">HBS</Link>
+              <Link to="/link/youtube/list" className="hover:text-yellow-300">유튜브 홍보영상</Link>
               <Link to="/event/board-list" className="hover:text-yellow-300">이벤트</Link>
               <Link to="/media" className="hover:text-yellow-300">미디어</Link>
             </div>
