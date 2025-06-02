@@ -46,14 +46,14 @@ const BoardDetail = () => {
 
   return (
     <Layout>  
-      <div className="w-full max-w-none px-4 py-10 text-gray-800">
+      <div className="w-full max-w-none px-4 py-10 text-gray-800 dark:text-gray-300">
         {/* 제목 */}
-        <h1 className="text-4xl font-bold text-center mb-6 leading-snug">
+        <h1 className="text-4xl font-bold text-center mb-6 leading-snug text-gray-900 dark:text-white">
           {board.title}
         </h1>
   
         {/* 작성 정보 */}
-        <div className="flex justify-center text-sm text-gray-500 mb-8 space-x-2">
+        <div className="flex justify-center text-sm text-gray-500 dark:text-gray-400 mb-8 space-x-2">
           <span>{new Date(board.regDate).toLocaleDateString()}</span>
           <span>•</span>
           <span>{board.writerName}</span>
@@ -69,10 +69,10 @@ const BoardDetail = () => {
             {board.files.map((file) => (
               <div
                 key={file.id}
-                className="flex items-center space-x-2 text-sm text-blue-700 mb-2"
+                className="flex items-center space-x-2 text-sm text-blue-700 dark:text-blue-400 mb-2"
               >
                 <svg
-                  className="w-4 h-4 text-gray-500"
+                  className="w-4 h-4 text-gray-500 dark:text-gray-400"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -93,7 +93,7 @@ const BoardDetail = () => {
   
         {/* 본문 */}
         <div
-          className="prose prose-sm sm:prose lg:prose-lg max-w-none mb-10"
+          className="prose prose-sm sm:prose lg:prose-lg max-w-none mb-10 dark:prose-invert"
           dangerouslySetInnerHTML={{ __html: board.content }}
         />
 

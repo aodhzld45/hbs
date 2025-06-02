@@ -48,11 +48,11 @@ const BoardList = () => {
     return (
     <Layout>
         <div className="w-full max-w-screen-xl mx-auto px-6 py-10">
-            <h1 className="text-3xl font-bold text-center mb-8">{BoardTypeTitleMap[safeBoardType]}</h1>
+            <h1 className="text-3xl font-bold text-center mb-8 dark:text-gray-400">{BoardTypeTitleMap[safeBoardType]}</h1>
 
             <div className="flex justify-between mb-4">
                 <div>
-                    <span className="text-sm text-gray-600">전체 {totalCount}건</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">전체 {totalCount}건</span>
                 </div>
                 <div className="flex gap-2">
                     <select className="border px-3 py-2 rounded text-sm">
@@ -84,37 +84,38 @@ const BoardList = () => {
             </div>
 
             <table className="w-full table-fixed border-t border-b text-center">
-            <thead className="bg-gray-50">
-                <tr className="text-sm">
-                <th className="py-3 w-[5%]">No.</th>
-                <th className="py-3 px-4 w-[45%] text-center font-bold text-[15px] leading-snug text-gray-900">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+                
+                <tr className="text-sm text-gray-900 dark:text-gray-100">
+                <th className="py-3 w-[5%] dark:text-gray-400">No.</th>
+                <th className="py-3 px-4 w-[45%] text-center font-bold text-[15px] leading-snug text-gray-900 dark:text-gray-400">
                     제목
                 </th>
-                <th className="py-3 w-[15%]">작성자</th>
-                <th className="py-3 w-[20%]">등록일</th>
-                <th className="py-3 w-[10%]">조회수</th>
+                <th className="py-3 w-[15%] dark:text-gray-400">작성자</th>
+                <th className="py-3 w-[20%] dark:text-gray-400">등록일</th>
+                <th className="py-3 w-[10%] dark:text-gray-400">조회수</th>
                 </tr>
             </thead>
             <tbody>
             {isLoading ? (
                 <tr>
-                <td colSpan={5} className="py-8 text-center text-gray-500">
+                <td colSpan={5} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     데이터를 불러오는 중입니다...
                 </td>
                 </tr>
             ) : boards.length === 0 ? (
                 <tr>
-                <td colSpan={5} className="py-8 text-center text-gray-400">
+                <td colSpan={5} className="py-8 text-center text-gray-400 dark:text-gray-400">
                     표시할 게시물이 없습니다.
                 </td>
                 </tr>
             ) : (            
               boards.map((board, idx) => (
-                <tr key={board.id} className="border-t hover:bg-gray-50">
+                <tr key={board.id} className="border-t hover:bg-gray-50 dark:text-gray-400">
                 <td className="py-3">{Math.max(0, totalCount - (page * size + idx))}</td>
 
                 <td
-                    className="text-left px-6 py-3 text-blue-700 hover:underline cursor-pointer"
+                    className="text-left px-6 py-3 text-blue-700 hover:underline cursor-pointer dark:text-yellow-400"
                     onClick={() =>
                     navigate(`/${boardType}/board-detail/${board.id}`)
                     }
@@ -139,6 +140,7 @@ const BoardList = () => {
                 currentPage={page}
                 totalPages={totalPages}
                 onPageChange={setPage}
+                className='dark:text-gray-400'
             />
         </div>
     </Layout>

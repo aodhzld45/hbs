@@ -9,7 +9,11 @@ interface LayoutProps {
 }
 
 const Layout = ({ children }: LayoutProps) => {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    // 최초 렌더링 시 localStorage에서 불러오기
+    const stored = localStorage.getItem('dark-mode');
+    return stored === 'true'; // 'true'이면 true
+  });
 
   useEffect(() => {
     if (isDark) {
@@ -17,6 +21,9 @@ const Layout = ({ children }: LayoutProps) => {
     } else {
       document.documentElement.classList.remove('dark');
     }
+
+    localStorage.setItem('dark-mode', String(isDark));
+
   }, [isDark]);
 
   usePageLogger();
