@@ -1,13 +1,8 @@
 spring:
   datasource:
-  #    이지민의 저장공간
-    url: jdbc:mysql://158.179.168.106:3306/hbs
-    username: admin
-    password: 2134
-  #    로컬
-  #    url: jdbc:mysql://192.168.0.67:3306/hbs
-  #    username: HBS
-  #    password: ucp87411!
+    url: jdbc:mysql://{DB서버 URL}:3306/{DB명}
+    username: { DB계정 }
+    password: { DB암호 }
   jpa:
     hibernate:
       ddl-auto: none
@@ -21,14 +16,18 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
+
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 jwt:
   secret: my-very-secret-key-for-hsb-jwt-signing
   expiration: 3600000  # 1시간 (밀리초 단위)
 file:
   # 로컬
-  #upload-path: C:/upload/hsb
-  # 서버
-  upload-path: /home/upload/hbs
+  upload-path: C:/upload/hsb
 
 server:
   servlet:
@@ -47,13 +46,9 @@ management:
 cloud:
   aws:
     credentials:
-      # 로컬용
-      # access-key: AKIAU4LPN2FWUNER2GCM
-      # secret-key: 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
-
-      # 배포용
-      access-key: AKIAU4LPN2FW627IC2TI
-      secret-key: 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
+      # aws s3 발급 접근 키
+      access-key: { 접근 키 }
+      secret-key: { 시크릿 키}
 
     region:
       static: ap-northeast-2
