@@ -109,8 +109,8 @@ function ContentManager() {
     }
 
     try {
-      //await fetchHbsCreate(formData);
-      await fetchS3Create(formData);
+      await fetchHbsCreate(formData);
+      //await fetchS3Create(formData);
       alert('등록 완료');
       setTitle('');
       setDescription('');
@@ -296,7 +296,7 @@ function ContentManager() {
           {contents.map((item) => (
             <div
               key={item.fileId}
-              onClick={() => navigate(`/admin/hbs/${item.fileId}`)}
+              onClick={() => navigate(`/admin/content-manager/${item.fileId}`)}
               className="cursor-pointer border rounded overflow-hidden shadow hover:shadow-lg transition"
             >
               {/* 콘텐츠 타입별 미리보기 */}
@@ -312,8 +312,8 @@ function ContentManager() {
                 ></iframe>
               ) : item.thumbnailUrl ? (
                 <img
-                  //src={`${FILE_BASE_URL}${item.thumbnailUrl}`}
-                  src={item.thumbnailUrl}
+                  src={`${FILE_BASE_URL}${item.thumbnailUrl}`}
+                  //src={item.thumbnailUrl}
                   alt={item.title}
                   className="w-full h-40 object-cover"
                 />

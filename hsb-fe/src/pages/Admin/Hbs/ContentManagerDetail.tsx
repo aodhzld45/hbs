@@ -8,7 +8,7 @@ import { fetchHbsDelete } from '../../../services/hbsApi';
 import { HbsContent } from '../../../types/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
 
-import Layout from '../../../components/Layout/Layout';
+import AdminLayout from '../../../components/Layout/AdminLayout';
 import EditContentModal from '../Hbs/EditContentModal';
 
 // 에디터용 import
@@ -30,7 +30,7 @@ const ContentManagerDetail = () => {
   if (!content) return <div>로딩 중...</div>;
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="max-w-3xl mx-auto p-6">
         <h2 className="text-2xl font-bold mb-4">콘텐츠 관리</h2>
 
@@ -38,9 +38,9 @@ const ContentManagerDetail = () => {
         {content.contentType === 'HBS' && content.thumbnailUrl ? (
         <img
             // UploadPath 활용
-            //src={`${FILE_BASE_URL}${content.thumbnailUrl}`}
+            src={`${FILE_BASE_URL}${content.thumbnailUrl}`}
             // aws s3 활용
-            src={`${content.thumbnailUrl}`}
+            //src={`${content.thumbnailUrl}`}
             alt={content.title}
             className="w-full h-40 object-cover"
         />
@@ -54,9 +54,9 @@ const ContentManagerDetail = () => {
         {content.fileType === 'VIDEO' && (
           <video
             // UploadPath 활용
-            //src={`${FILE_BASE_URL}${content.fileUrl}`}
+            src={`${FILE_BASE_URL}${content.fileUrl}`}
             // aws s3 활용
-            src={`${content.fileUrl}`}
+            //src={`${content.fileUrl}`}
             controls
             className="w-full mt-4 rounded shadow-lg"
           />
@@ -100,9 +100,6 @@ const ContentManagerDetail = () => {
             삭제
             </button>
 
-
-
-
           <button
             className="ml-auto px-4 py-2 bg-gray-500 text-white rounded"
             onClick={() => navigate('/admin/content-manager')}
@@ -129,7 +126,7 @@ const ContentManagerDetail = () => {
             />
         )}
       
-    </Layout>
+    </AdminLayout>
   );
 };
 
