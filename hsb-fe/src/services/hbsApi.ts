@@ -7,10 +7,25 @@ export const fetchHbsList = async (): Promise<HbsContent[]> => {
   return res.data;
 };
 
+// 콘텐츠 필터 목록 api 요청
+export const fetchFilteredContents = async (
+  fileType: string,
+  contentType: string
+): Promise<HbsContent[]> => {
+
+  const res = await api.get(`/contents`, {
+    params: {
+      fileType,
+      contentType,
+    },
+  });
+  return res.data;
+};
+
 // hbs 상세 api 요청 
 export const fetchHbsDetail = async (fileId: number): Promise<HbsContent> => {
-  const response = await api.get(`/content-files/${fileId}`);
-  return response.data;
+  const res = await api.get(`/content-files/${fileId}`);
+  return res.data;
 };
 
 // hbs 등록 api 요청
