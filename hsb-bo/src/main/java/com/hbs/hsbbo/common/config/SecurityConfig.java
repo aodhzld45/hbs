@@ -59,11 +59,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-                "http://43.203.62.30:3000",
-                "http://15.164.29.186:3000",
-                "http://hbs-test1-1841060588.ap-northeast-2.elb.amazonaws.com:3000",
-                "http://localhost:3000",
-                "http://192.168.0.90:3000"
+                {배포서버 ip},
+                "http://localhost:3000"
         ));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("*", "Authorization")); // Authorization 명시 추가
