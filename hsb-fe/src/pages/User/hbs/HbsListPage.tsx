@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { fetchHbsList } from '../../../services/hbsApi';
 import { HbsContent } from '../../../types/HbsContent';
-import HbsCardList from '../../../components/Hbs/HbsCardList';
+// import HbsCardList from '../../../components/Contents/HbsCardList';
 
 const HbsListPage = () => {
   const [contents, setContents] = useState<HbsContent[]>([]);

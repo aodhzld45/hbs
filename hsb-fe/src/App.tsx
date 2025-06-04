@@ -21,12 +21,10 @@ import BoardDetail from "./pages/Admin/Board/BoardDetail";
 
 // 사용자 페이지 imports
 import EventForm from './pages/Admin/EventForm';
-import MediaPage from './pages/MediaPage';
 import MainPage from './pages/MainPage';
-import PromPage from './pages/PromPage';
 import BoardList from './components/Board/BoardList';
 import UserBoardDetail from './components/Board/BoardDetail';
-import HbsCardList from './components/Hbs/HbsCardList';
+import ContentsList from './components/Contents/ContentsList';
 import HbsDetailPage from './pages/User/hbs/HbsDetailPage';
 
 // 관리자 Common imports
@@ -47,10 +45,8 @@ function App() {
             <Route path="/" element={<MainPage />} />
             <Route path="/:boardType/board-list" element={<BoardList />} />
             <Route path="/:boardType/board-detail/:id" element={<UserBoardDetail />} />
-            <Route path="/:fileType/:contentType/list" element={<HbsCardList />} />
-            <Route path="/prom" element={<PromPage />} />
-            <Route path="/media" element={<MediaPage />} />
-            <Route path="/content-files/:fileId" element={<HbsDetailPage />} />
+            <Route path="/:fileType/:contentType/list" element={<ContentsList />} />
+            <Route path="/:fileType/:contentType/detail/:fileId" element={<HbsDetailPage />} />
 
             {/* 관리자 공용 라우트 (로그인 페이지) */}
             <Route path="/admin/login" element={<AdminLogin />} />

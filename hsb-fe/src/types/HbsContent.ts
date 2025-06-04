@@ -22,4 +22,13 @@ export interface HbsContent {
     fileType: FileType;
     contentType : ContentType
   }
+
+// 콘텐츠 유형별 한글 이름 매핑
+export const ContentTypeTitleMap: Record<ContentType, string> = {
+  HBS: 'HBS',
+  YOUTUBE: '유튜브 홍보영상',
+  PROMO: '홍보',
+  MEDIA: '미디어',
+  CI_BI: 'CI/BI 자료'
+};
   
