@@ -25,7 +25,7 @@ import MainPage from './pages/MainPage';
 import BoardList from './components/Board/BoardList';
 import UserBoardDetail from './components/Board/BoardDetail';
 import ContentsList from './components/Contents/ContentsList';
-import HbsDetailPage from './pages/User/hbs/HbsDetailPage';
+import ContentDetail from './components/Contents/ContentDetail';
 
 // 관리자 Common imports
 import PrivateRoute from './components/Admin/PrivateRoute';
@@ -46,7 +46,7 @@ function App() {
             <Route path="/:boardType/board-list" element={<BoardList />} />
             <Route path="/:boardType/board-detail/:id" element={<UserBoardDetail />} />
             <Route path="/:fileType/:contentType/list" element={<ContentsList />} />
-            <Route path="/:fileType/:contentType/detail/:fileId" element={<HbsDetailPage />} />
+            <Route path="/:fileType/:contentType/detail/:fileId" element={<ContentDetail />} />
 
             {/* 관리자 공용 라우트 (로그인 페이지) */}
             <Route path="/admin/login" element={<AdminLogin />} />

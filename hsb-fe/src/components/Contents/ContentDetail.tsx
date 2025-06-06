@@ -1,14 +1,14 @@
 // src/pages/hbs/HbsDetailPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { fetchHbsDetail } from '../../../services/hbsApi'
-import { HbsContent } from '../../../types/HbsContent';
-import { FILE_BASE_URL } from '../../../config/config';
-import Layout from '../../../components/Layout/Layout';
+import { fetchHbsDetail } from '../../services/hbsApi'
+import { HbsContent } from '../../types/HbsContent';
+import { FILE_BASE_URL } from '../../config/config';
+import Layout from '../Layout/Layout';
 
 
 
-const HbsDetailPage = () => {
+const ContentDetail = () => {
     const { fileId } = useParams<{ fileId: string }>();
     const [content, setContent] = useState<HbsContent | null>(null);
 
@@ -24,9 +24,12 @@ const HbsDetailPage = () => {
     return (
         <Layout>
           <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8 bg-white rounded shadow">
-            <h2 className="text-3xl font-bold mb-2">{content.title}</h2>
-            <p className="text-gray-600 mb-6">{content.description}</p>
+          <h2 className="text-3xl font-bold mb-2">{content.title}</h2>
+          <p className="text-gray-600 mb-2">{content.description}</p>
 
+          <div className="w-full text-sm text-gray-500 flex justify-end items-center gap-4 mb-6">
+            <span>👁️ 조회수 {content.viewCount?.toLocaleString()}회</span>
+          </div>
             {/* YouTube 링크인 경우 */}
             {content.fileType === 'LINK' && content.contentType === 'YOUTUBE' ? (
               <iframe
@@ -82,4 +85,4 @@ const HbsDetailPage = () => {
     );
 }
 
-export default HbsDetailPage;
+export default ContentDetail;

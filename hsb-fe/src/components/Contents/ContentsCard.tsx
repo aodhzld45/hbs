@@ -42,9 +42,15 @@ const ContentsCard = ({ content, fileType, contentType }: Props) => {
           <img src="/play.png" alt="Play" className="w-12 opacity-75" />
         </div>
       </div>
+
       <div className="p-4">
         <h3 className="text-lg font-bold">{content.title}</h3>
-        <p className="text-sm text-gray-500">{content.regDate?.slice(0,10)}</p>
+
+        {/* 작성일 + 조회수 수평 정렬 */}
+        <div className="flex justify-between items-center text-sm text-gray-500 mt-1">
+          <span>등록일 : 📅 {content.regDate?.slice(0, 10)}</span>
+          <span>👁️ 조회수 {content.viewCount?.toLocaleString()}회</span>
+        </div>
       </div>
     </div>
   );

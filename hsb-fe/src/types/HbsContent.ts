@@ -13,6 +13,7 @@ export interface HbsContent {
     fileUrl: string;            // 파일 경로
     thumbnailUrl: string;       // 썸네일 경로
     extension : string;         // 확장자
+    viewCount : number;         // 조회수
     dispSeq : number;           // 순서
     useTF: 'Y' | 'N';           // 사용여부
     delTF: 'Y' | 'N';           // 삭제여부
