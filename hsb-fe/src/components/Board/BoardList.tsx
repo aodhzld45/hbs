@@ -41,7 +41,7 @@ const BoardList = () => {
     }, [boardType]);
     
     // 2. page나 keyword, safeBoardType이 바뀔 때 목록 재조회
-        useEffect(() => {
+    useEffect(() => {
         loadBoardList();
     }, [boardType, page]);
 

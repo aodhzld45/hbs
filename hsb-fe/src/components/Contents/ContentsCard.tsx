@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ContentType, FileType, HbsContent } from '../../types/HbsContent';
 import { useNavigate } from 'react-router-dom';
 import { FILE_BASE_URL } from '../../config/config';
+import Pagination from '../Common/Pagination';
 
 
 interface Props {

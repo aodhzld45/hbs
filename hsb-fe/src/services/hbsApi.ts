@@ -10,13 +10,19 @@ export const fetchHbsList = async (): Promise<HbsContent[]> => {
 // 콘텐츠 필터 목록 api 요청
 export const fetchFilteredContents = async (
   fileType: string,
-  contentType: string
-): Promise<HbsContent[]> => {
+  contentType: string,
+  keyword: string = '',
+  page: number,
+  size: number
+): Promise<{ items: HbsContent[]; totalCount: number; totalPages: number; }> => {
 
   const res = await api.get(`/contents`, {
     params: {
       fileType,
       contentType,
+      keyword,
+      page,
+      size
     },
   });
   return res.data;
