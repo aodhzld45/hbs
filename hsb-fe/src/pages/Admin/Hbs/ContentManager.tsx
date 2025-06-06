@@ -301,15 +301,12 @@ function ContentManager() {
             >
               {/* 콘텐츠 타입별 미리보기 */}
               {item.fileType === 'LINK' && item.contentType === 'YOUTUBE' ? (
-                <iframe
-                  width="100%"
-                  height="200"
-                  src={item.fileUrl}
-                  title={item.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                ></iframe>
+                <img
+                src={`${item.thumbnailUrl}`}
+                //src={item.thumbnailUrl}
+                alt={item.title}
+                className="w-full h-40 object-cover"
+              />
               ) : item.thumbnailUrl ? (
                 <img
                   src={`${FILE_BASE_URL}${item.thumbnailUrl}`}
@@ -320,7 +317,7 @@ function ContentManager() {
               ) : (
                 <div className="w-full h-40 bg-gray-100 flex items-center justify-center px-2 text-sm text-gray-700 text-center">
                   등록된 파일명:<br />
-                  <strong>{item.fileUrl?.split('/').pop()}</strong>
+                  <strong>📄{item.fileUrl?.split('/').pop()}</strong>
                 </div>
               )}
 

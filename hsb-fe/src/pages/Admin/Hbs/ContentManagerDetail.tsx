@@ -44,10 +44,21 @@ const ContentManagerDetail = () => {
             alt={content.title}
             className="w-full h-40 object-cover"
         />
-        ) : (
+        ) : content.fileType === 'LINK' && content.contentType === 'YOUTUBE' ? (
+          <iframe
+          width="100%"
+          height="360"
+          src={content.fileUrl}
+          title={content.title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerPolicy="strict-origin-when-cross-origin"
+          allowFullScreen
+          ></iframe>
+        ) :
+        (
         <div className="w-full h-40 bg-gray-100 flex items-center justify-center px-2 text-sm text-gray-700 text-center">
             등록된 파일명:<br />
-            <strong>{content.fileUrl.split('/').pop()}</strong>
+            <strong>📄{content.fileUrl.split('/').pop()}</strong>
         </div>
         )}
 
