@@ -1,17 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../../components/Layout/AdminLayout';
-import api from '../../../services/api';
 import { FileType, ContentType, HbsContent } from '../../../types/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
 import { useNavigate } from 'react-router-dom';
-import { fetchHbsCreate, fetchS3Create } from '../../../services/hbsApi';
+import { fetchHbsCreate, fetchS3Create, fetchFilteredContents } from '../../../services/hbsApi';
 // 에디터용 import
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { Base64UploadAdapterPlugin } from "../../../types/Common/ckeditor";
+import Pagination from '../../../components/Common/Pagination';
 
 function ContentManager() {
   const navigate = useNavigate();
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(0);
+  const [size] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [fileType, setFileType] = useState<FileType>('VIDEO');
@@ -50,34 +55,35 @@ function ContentManager() {
     setContentType(type === 'LINK' ? 'YOUTUBE' : 'HBS');
   };
 
-  const loadContents = async () => {
-    try {
-      const res = await api.get('/content-files');
-      setContents(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  // const loadContents = async () => {
+  //   try {
+  //     const res = await api.get('/content-files');
+  //     setContents(res.data);
+  //   } catch (err) {
+  //     console.error(err);
+  //   }
+  // };
 
-  // 테스트 필터링용 함수
-  const fetchFilteredContents = async (fileType: FileType | '', contentType: ContentType | '') => {
+  const loadContents = async (
+    fileType: FileType | '',
+    contentType: ContentType | '',
+    keyword: string,
+    page: number,
+    size: number
+  ) => {
     try {
-      const res = await api.get('/contents', {
-        params: {
-          fileType: fileType || undefined,
-          contentType: contentType || undefined,
-        },
-      });
-      setContents(res.data);
-    } catch (err) {
-      console.error(err);
-      alert('콘텐츠 불러오기 실패');
+      const res = await fetchFilteredContents(fileType, contentType, keyword, page, size);
+      setContents(res.items);
+      setTotalCount(res.totalCount);
+      setTotalPages(res.totalPages);
+    } catch (e) {
+      console.error(e);
+      alert('콘텐츠 로드 실패');
     }
   };
 
   useEffect(() => {
-    fetchFilteredContents('',''); // 초기 로딩시 전체 목록
-    loadContents();
+    loadContents(filterFileType, filterContentType, keyword, page, size);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,8 +126,66 @@ function ContentManager() {
       setYoutubeEmbedUrl('');
       setYoutubeImgUrl('');
       setYoutubeId('');
-      loadContents();
-    } catch (err) {
+      const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+      
+        if (!title || !description || !content) {
+          alert('제목과 설명을 입력해주세요.');
+          return;
+        }
+      
+        if (fileType === 'LINK') {
+          if (!fileUrl || !youtubeEmbedUrl) {
+            alert('유튜브 링크를 입력해주세요.');
+            return;
+          }
+        } else {
+          if (!mainFile || (fileType === 'VIDEO' && !thumbnailFile)) {
+            alert('필수 파일을 선택해주세요.');
+            return;
+          }
+        }
+      
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('fileType', fileType);
+        formData.append('contentType', contentType);
+        formData.append('content', content);
+      
+        if (fileType === 'LINK') {
+          formData.append('fileUrl', youtubeEmbedUrl);
+          formData.append('thumbnailUrl', youtubeImgUrl);
+        } else {
+          formData.append('file', mainFile as Blob);
+          if (fileType === 'VIDEO') {
+            formData.append('thumbnail', thumbnailFile as Blob);
+          }
+        }
+      
+        try {
+          await fetchHbsCreate(formData);
+          alert('등록 완료');
+      
+          // 입력값 초기화
+          setTitle('');
+          setDescription('');
+          setMainFile(null);
+          setThumbnailFile(null);
+          setFileUrl('');
+          setYoutubeEmbedUrl('');
+          setYoutubeImgUrl('');
+          setYoutubeId('');
+          setContent('');
+      
+          // 콘텐츠 리스트 재로딩 (현재 필터 조건 유지)
+          loadContents(filterFileType, filterContentType, keyword, page, size);
+        } catch (err) {
+          console.error(err);
+          alert('등록 실패');
+        }
+      };
+          } catch (err) {
       console.error(err);
       alert('등록 실패');
     }
@@ -260,7 +324,8 @@ function ContentManager() {
             onChange={(e) => {
               const value = e.target.value as FileType | '';
               setFilterFileType(value);
-              fetchFilteredContents(value, filterContentType);
+              setPage(0);
+              loadContents(value, filterContentType, keyword, 0, size); // ← 수정
             }}
             className="border px-3 py-2 rounded"
           >
@@ -276,7 +341,8 @@ function ContentManager() {
             onChange={(e) => {
               const value = e.target.value as ContentType | '';
               setFilterContentType(value);
-              fetchFilteredContents(filterFileType, value);
+              setPage(0);
+              loadContents(filterFileType, value, keyword, 0, size);
             }}
             className="border px-3 py-2 rounded"
           >
@@ -287,11 +353,40 @@ function ContentManager() {
             <option value="CI_BI">CI_BI</option>
             <option value="YOUTUBE">YOUTUBE</option>
           </select>
+          
+          <input
+            type="text"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                    setPage(0);
+                    loadContents(filterFileType, filterContentType, keyword, 0, size);
+                  }
+            }}
+            placeholder="검색어를 입력해주세요."
+            className="border px-3 py-2 rounded text-sm"
+        />
+        <button
+        onClick={() => {
+            setPage(0);
+            loadContents(filterFileType, filterContentType, keyword, 0, size);
+          }}
+        className="bg-gray-700 text-white px-4 py-2 rounded text-sm"
+        >
+        검색
+        </button>
+
         </div>
 
-        <h3 className="text-xl font-bold mb-4">등록된 콘텐츠</h3>
+      {/* 콘텐츠 목록 출력 */}
+      <h3 className="text-xl font-bold mb-4">등록된 콘텐츠</h3>
 
-        {/* 콘텐츠 목록 출력 */}
+      {contents.length === 0 ? (
+        <div className="text-center text-gray-500 py-10">
+          등록된 콘텐츠가 없습니다.
+        </div>
+      ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {contents.map((item) => (
             <div
@@ -302,19 +397,23 @@ function ContentManager() {
               {/* 콘텐츠 타입별 미리보기 */}
               {item.fileType === 'LINK' && item.contentType === 'YOUTUBE' ? (
                 <img
-                src={`${item.thumbnailUrl}`}
-                //src={item.thumbnailUrl}
-                alt={item.title}
-                className="w-full h-40 object-cover"
-              />
-              ) : item.thumbnailUrl ? (
-                <img
-                  src={`${FILE_BASE_URL}${item.thumbnailUrl}`}
-                  //src={item.thumbnailUrl}
+                  src={item.thumbnailUrl}
                   alt={item.title}
                   className="w-full h-40 object-cover"
                 />
-              ) : (
+              ) : item.thumbnailUrl ? (
+                <img
+                  src={`${FILE_BASE_URL}${item.thumbnailUrl}`}
+                  alt={item.title}
+                  className="w-full h-40 object-cover"
+                />
+              ) : item.fileType === 'IMAGE' ? (
+                <img
+                src={`${FILE_BASE_URL}${item.fileUrl}`}
+                alt={item.title}
+                className="w-full h-40 object-cover"
+              />
+              ):(
                 <div className="w-full h-40 bg-gray-100 flex items-center justify-center px-2 text-sm text-gray-700 text-center">
                   등록된 파일명:<br />
                   <strong>📄{item.fileUrl?.split('/').pop()}</strong>
@@ -328,12 +427,8 @@ function ContentManager() {
             </div>
           ))}
         </div>
+      )}
       </div>
-
-   
-
-
-     
     </AdminLayout>
   );
 }
