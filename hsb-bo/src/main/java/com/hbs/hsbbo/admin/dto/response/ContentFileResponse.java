@@ -22,6 +22,7 @@ public class ContentFileResponse {
     private String fileUrl;
     private String thumbnailUrl;
     private String extension;
+    private Integer viewCount;
     private String fileType;
     private String contentType;
     private LocalDateTime regDate;
@@ -36,6 +37,7 @@ public class ContentFileResponse {
                 entity.getFileUrl(),
                 entity.getThumbnailUrl(),
                 entity.getExtension(),
+                entity.getViewCount(),
                 entity.getFileType().name(),
                 entity.getContentType().name(),
                 entity.getRegDate()

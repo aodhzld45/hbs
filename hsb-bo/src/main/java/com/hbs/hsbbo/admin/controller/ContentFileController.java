@@ -8,6 +8,7 @@ import com.hbs.hsbbo.admin.dto.request.ContentFileRequest;
 import com.hbs.hsbbo.admin.dto.response.ContentFileListResponse;
 import com.hbs.hsbbo.admin.dto.response.ContentFileResponse;
 import com.hbs.hsbbo.admin.service.ContentFileService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +49,18 @@ public class ContentFileController {
     
     // 콘텐츠 상세
     @GetMapping("/content-files/{id}")
-    public ResponseEntity<ContentFileResponse> getContentsDetail(@PathVariable Long id) {
+    public ResponseEntity<ContentFileResponse> getContentsDetail(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            HttpServletRequest request
+            ) {
+
+        boolean isAdmin = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "));
+
+        ContentFileResponse response = isAdmin
+                ? contentFileService.getContentsDetail(id)
+                : contentFileService.getContentDetailWithViewCount(id, request);
+
         return ResponseEntity.ok(contentFileService.getContentsDetail(id));
     }
     

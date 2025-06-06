@@ -9,6 +9,8 @@ import com.hbs.hsbbo.admin.dto.response.ContentFileResponse;
 import com.hbs.hsbbo.admin.repository.ContentFileRepository;
 import com.hbs.hsbbo.common.util.FileUtil;
 import com.hbs.hsbbo.common.util.S3Uploader;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -71,6 +73,19 @@ public class ContentFileService {
                 .orElseThrow(() -> new IllegalArgumentException("콘텐츠를 찾을 수 없습니다. ID = " + id));
 
         return ContentFileResponse.fromEntity(detailContent);
+    }
+
+    @Transactional
+    public ContentFileResponse getContentDetailWithViewCount(Long id, HttpServletRequest request) {
+        // 조회수 증가 (세션 중복 방지 포함)
+        String sessionKey = "viewed_content_" + id;
+        HttpSession session = request.getSession();
+        if (session.getAttribute(sessionKey) == null) {
+            repository.incrementViewCount(id);
+            session.setAttribute(sessionKey, true);
+        }
+
+        return getContentsDetail(id); // 기존 조회 로직 재사용
     }
 
     // 통합 콘텐츠 등록

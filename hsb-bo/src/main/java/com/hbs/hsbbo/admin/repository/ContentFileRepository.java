@@ -6,6 +6,7 @@ import com.hbs.hsbbo.admin.domain.type.FileType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -44,5 +45,10 @@ public interface ContentFileRepository extends JpaRepository<ContentFile, Long> 
 
     // 상세 조회
     Optional<ContentFile> findByFileIdAndDelTF(Long fileId, char delTF);
-
+    
+    // 조회수 증가
+    @Modifying
+    @Query("UPDATE ContentFile c SET c.viewCount = c.viewCount + 1 WHERE c.fileId = :id")
+    void incrementViewCount(@Param("id") Long id);
+    
 }

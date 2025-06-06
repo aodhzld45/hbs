@@ -34,6 +34,8 @@ public class ContentFile {
 
     private String fileUrl;
     private String thumbnailUrl;
+    @Column(name = "view_count")
+    private Integer viewCount = 0;
     private String extension;
     private Integer dispSeq;
 
