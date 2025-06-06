@@ -1,11 +1,12 @@
 package com.hbs.hsbbo.admin.controller;
 
 
-import com.hbs.hsbbo.admin.dto.request.ContentFileRequest;
-import com.hbs.hsbbo.admin.dto.response.ContentFileResponse;
 import com.hbs.hsbbo.admin.domain.entity.ContentFile;
 import com.hbs.hsbbo.admin.domain.type.ContentType;
 import com.hbs.hsbbo.admin.domain.type.FileType;
+import com.hbs.hsbbo.admin.dto.request.ContentFileRequest;
+import com.hbs.hsbbo.admin.dto.response.ContentFileListResponse;
+import com.hbs.hsbbo.admin.dto.response.ContentFileResponse;
 import com.hbs.hsbbo.admin.service.ContentFileService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -14,8 +15,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @RequiredArgsConstructor
 @RequestMapping("/api")
@@ -26,21 +25,24 @@ public class ContentFileController {
     private static final Logger log = LoggerFactory.getLogger(ContentFileController.class);
 
     // 콘텐츠 목록
-    @GetMapping("/content-files")
-    public ResponseEntity<List<ContentFileResponse>> getContentFiles() {
-        List<ContentFileResponse> contents = contentFileService.getContentFiles();
-        return ResponseEntity.ok(contents);
-    }
+//    @GetMapping("/content-files")
+//    public ResponseEntity<List<ContentFileResponse>> getContentFiles() {
+//        List<ContentFileResponse> contents = contentFileService.getContentFiles();
+//        return ResponseEntity.ok(contents);
+//    }
 
     // 콘텐츠 목록 필터링 추가
     @GetMapping("/contents")
-    public ResponseEntity<List<ContentFileResponse>> getContents(
+    public ResponseEntity<ContentFileListResponse> getContents(
             @RequestParam(value = "fileType", required = false) FileType fileType,
-            @RequestParam(value = "contentType", required = false) ContentType contentType
+            @RequestParam(value = "contentType", required = false) ContentType contentType,
+            @RequestParam(required = false, defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
-        List<ContentFileResponse> contents = contentFileService.getContents(fileType, contentType);
+        ContentFileListResponse result = contentFileService.getContents(fileType, contentType, keyword, page, size);
 
-        return ResponseEntity.ok(contents);
+        return ResponseEntity.ok(result);
 
     }
     

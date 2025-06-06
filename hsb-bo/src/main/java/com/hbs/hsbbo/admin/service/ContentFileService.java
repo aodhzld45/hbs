@@ -1,22 +1,26 @@
 package com.hbs.hsbbo.admin.service;
 
-import com.hbs.hsbbo.common.util.FileUtil;
-import com.hbs.hsbbo.admin.dto.request.ContentFileRequest;
-import com.hbs.hsbbo.admin.dto.response.ContentFileResponse;
 import com.hbs.hsbbo.admin.domain.entity.ContentFile;
 import com.hbs.hsbbo.admin.domain.type.ContentType;
 import com.hbs.hsbbo.admin.domain.type.FileType;
+import com.hbs.hsbbo.admin.dto.request.ContentFileRequest;
+import com.hbs.hsbbo.admin.dto.response.ContentFileListResponse;
+import com.hbs.hsbbo.admin.dto.response.ContentFileResponse;
 import com.hbs.hsbbo.admin.repository.ContentFileRepository;
+import com.hbs.hsbbo.common.util.FileUtil;
 import com.hbs.hsbbo.common.util.S3Uploader;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -28,31 +32,37 @@ public class ContentFileService {
 
 
     // 콘텐츠 목록
-    public List<ContentFileResponse> getContentFiles() {
-        List<ContentFile> files = repository.findByFileTypeAndContentTypeAndDelTFOrderByFileIdDesc(FileType.VIDEO, ContentType.HBS,'N');
-
-        return files.stream()
-                .map(ContentFileResponse::fromEntity)
-                .collect(Collectors.toList());
-    }
+//    public List<ContentFileResponse> getContentFiles() {
+//        List<ContentFile> files = repository.findByFileTypeAndContentTypeAndDelTFOrderByFileIdDesc(FileType.VIDEO, ContentType.HBS,'N');
+//
+//        return files.stream()
+//                .map(ContentFileResponse::fromEntity)
+//                .collect(Collectors.toList());
+//    }
 
     // 콘텐츠 목록 필터링 추가
-    public List<ContentFileResponse> getContents(FileType fileType, ContentType contentType) {
-        List<ContentFile> files;
+    public ContentFileListResponse getContents(FileType fileType, ContentType contentType, String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fileId"));
 
-        if (fileType != null && contentType != null) {
-            files = repository.findByFileTypeAndContentTypeAndDelTFOrderByFileIdDesc(fileType, contentType, 'N');
+        Page<ContentFile> contentPage;
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            contentPage = repository.searchWithFilters(fileType, contentType, keyword.trim(), pageable);
+        } else if (fileType != null && contentType != null) {
+            contentPage = repository.findByFileTypeAndContentTypeAndDelTFOrderByFileIdDesc(fileType, contentType, 'N', pageable);
         } else if (fileType != null) {
-            files = repository.findByFileTypeAndDelTFOrderByFileIdDesc(fileType, 'N');
+            contentPage = repository.findByFileTypeAndDelTFOrderByFileIdDesc(fileType, 'N', pageable);
         } else if (contentType != null) {
-            files = repository.findByContentTypeAndDelTFOrderByFileIdDesc(contentType, 'N');
+            contentPage = repository.findByContentTypeAndDelTFOrderByFileIdDesc(contentType, 'N', pageable);
         } else {
-            files = repository.findByDelTFOrderByFileIdDesc('N');
+            contentPage = repository.findByDelTF('N', pageable);
         }
 
-        return files.stream()
+        List<ContentFileResponse> items = contentPage.stream()
                 .map(ContentFileResponse::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
+
+        return new ContentFileListResponse(items, contentPage.getTotalElements(), contentPage.getTotalPages());
     }
 
     // 콘텐츠 상세
