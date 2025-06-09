@@ -1,0 +1,26 @@
+import api from '../api';
+import { ContactItem } from '../../types/Common/ContactItem'; 
+
+// 문의 등록
+export const fetchContactCreate = async(data: ContactItem) => {
+    const formData = new FormData();
+    formData.append('companyName', data.companyName);
+    formData.append('contactName', data.contactName);
+    formData.append('email', data.email);
+    formData.append('phone', data.phone);
+    formData.append('title', data.title);
+    formData.append('message', data.message);
+
+    if (data.projectType) formData.append('projectType', data.projectType);
+    if (data.replyMethod) formData.append('replyMethod', data.replyMethod);
+    if (data.file) formData.append('file', data.file);
+    formData.append('agreeTf', data.agreeTf ? 'Y' : 'N');
+
+    const res = await api.post('/api/contact', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return res.data;
+};
+
