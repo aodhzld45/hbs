@@ -93,6 +93,13 @@ public class FileUtil {
         return Paths.get(fileStorageProperties.getUploadPath(), "board", boardType.toLowerCase());
     }
 
+    public Path resolveContactPath(String contactType) {
+        if (contactType == null || contactType.isBlank()) {
+            throw new IllegalArgumentException("contactType이 유효하지 않습니다.");
+        }
+        return Paths.get(fileStorageProperties.getUploadPath(), "contact", contactType.toLowerCase());
+    }
+
     /*
     * 확장자 반환
     */
