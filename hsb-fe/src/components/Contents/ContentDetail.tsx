@@ -1,16 +1,18 @@
 // src/pages/hbs/HbsDetailPage.tsx
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate,useParams } from 'react-router-dom';
 import { fetchHbsDetail } from '../../services/hbsApi'
-import { HbsContent } from '../../types/HbsContent';
+import { HbsContent, ContentType } from '../../types/HbsContent';
 import { FILE_BASE_URL } from '../../config/config';
 import Layout from '../Layout/Layout';
-
+import CommentSection from '../Common/CommentSection';
 
 
 const ContentDetail = () => {
-    const { fileId } = useParams<{ fileId: string }>();
+    const { fileType, contentType, fileId } = useParams<{ fileId?: string; fileType?: string; contentType?: string }>();
     const [content, setContent] = useState<HbsContent | null>(null);
+    const navigate = useNavigate();
+    const safeContentType = (contentType?.toUpperCase() ?? 'NONE') as ContentType;
 
     useEffect(() => {
         if (fileId) {
@@ -78,6 +80,20 @@ const ContentDetail = () => {
             <div className="mt-6 text-sm text-gray-400">
               등록일: {new Date(content.regDate).toISOString().slice(0, 16).replace('T', ' ')}
             </div>
+            {/* 댓글 영역  */}
+            <CommentSection targetId={Number(fileId)} targetType={safeContentType} />      
+            {/* 목록으로 */}
+            <div className="flex justify-end mt-10">
+              <button
+                onClick={() => navigate(`/${fileType}/${contentType}/list`)}
+                className="bg-gray-800 text-white px-5 py-2 rounded hover:bg-gray-700"
+              >
+                목록으로
+              </button>
+            </div>
+
+
+
           </div>
 
             
