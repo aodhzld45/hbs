@@ -20,12 +20,13 @@ import BoardDetail from "./pages/Admin/Board/BoardDetail";
 
 
 // 사용자 페이지 imports
-import EventForm from './pages/Admin/EventForm';
 import MainPage from './pages/MainPage';
 import BoardList from './components/Board/BoardList';
 import UserBoardDetail from './components/Board/BoardDetail';
 import ContentsList from './components/Contents/ContentsList';
 import ContentDetail from './components/Contents/ContentDetail';
+import ContactForm from './components/Contact/ContactForm';
+
 
 // 관리자 Common imports
 import PrivateRoute from './components/Admin/PrivateRoute';
@@ -47,6 +48,7 @@ function App() {
             <Route path="/:boardType/board-detail/:id" element={<UserBoardDetail />} />
             <Route path="/:fileType/:contentType/list" element={<ContentsList />} />
             <Route path="/:fileType/:contentType/detail/:fileId" element={<ContentDetail />} />
+            <Route path="/contact" element={<ContactForm />} />
 
             {/* 관리자 공용 라우트 (로그인 페이지) */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -68,7 +70,6 @@ function App() {
               <Route path="/admin/board/:boardType/detail/:id" element={<BoardDetail />} />
 
             </Route>
-            <Route path="/admin/event-form" element={<EventForm />} />
             
             <Route path="/admin/hbs/:fileId" element={<ContentManagerDetail />} />
           </Routes>

@@ -38,7 +38,7 @@ const Header = () => {
           <Link to="/video/hbs/list" className="hover:text-yellow-300">HBS</Link>
           <Link to="/link/youtube/list" className="hover:text-yellow-300">유튜브 홍보영상</Link>
           <Link to="/event/board-list" className="hover:text-yellow-300">이벤트</Link>
-          <Link to="/media" className="hover:text-yellow-300">문의하기</Link>
+          <Link to="/contact" className="hover:text-yellow-300">문의하기</Link>
         </nav>
 
         {/* 우측 검색창 (PC 전용) */}

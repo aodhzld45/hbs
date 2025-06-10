@@ -16,7 +16,7 @@ export const fetchContactCreate = async(data: ContactItem) => {
     if (data.file) formData.append('file', data.file);
     formData.append('agreeTf', data.agreeTf ? 'Y' : 'N');
 
-    const res = await api.post('/api/contact', formData, {
+    const res = await api.post('/contact', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
