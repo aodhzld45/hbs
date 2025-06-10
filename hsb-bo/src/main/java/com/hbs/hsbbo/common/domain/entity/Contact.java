@@ -5,7 +5,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "CONTACT")
+@Table(name = "contact")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -44,7 +44,7 @@ public class Contact {
     @Column(name = "file_path", length = 255)
     private String filePath;
 
-    @Column(name = "originalFileName", length = 255)
+    @Column(name = "original_file_name", length = 255)
     private String originalFileName;
 
     @Column(name = "agree_tf", length = 1)

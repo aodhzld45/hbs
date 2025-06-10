@@ -97,7 +97,7 @@ public class FileUtil {
         if (contactType == null || contactType.isBlank()) {
             throw new IllegalArgumentException("contactType이 유효하지 않습니다.");
         }
-        return Paths.get(fileStorageProperties.getUploadPath(), "contact", contactType.toLowerCase());
+        return Paths.get(fileStorageProperties.getUploadPath(), contactType.toLowerCase());
     }
 
     /*
