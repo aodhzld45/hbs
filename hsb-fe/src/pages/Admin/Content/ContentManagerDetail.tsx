@@ -1,19 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-import { fetchHbsDetail } from '../../../services/hbsApi';
-import { fetchHbsUpdate } from '../../../services/hbsApi';
-import { fetchHbsDelete } from '../../../services/hbsApi';
+import { fetchHbsDetail, fetchHbsUpdate, fetchHbsDelete } from '../../../services/hbsApi';
 
 import { HbsContent } from '../../../types/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
 
 import AdminLayout from '../../../components/Layout/AdminLayout';
-import EditContentModal from '../Hbs/EditContentModal';
-
-// 에디터용 import
-// import { CKEditor } from '@ckeditor/ckeditor5-react';
-// import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import EditContentModal from './EditContentModal';
 
 const ContentManagerDetail = () => {
   const { fileId } = useParams<{ fileId: string }>();
