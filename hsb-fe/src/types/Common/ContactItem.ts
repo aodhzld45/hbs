@@ -1,5 +1,5 @@
 export interface ContactItem {
-    //id : number;
+    id? : number;
     companyName: string;
     contactName: string;
     email: string;
@@ -9,5 +9,12 @@ export interface ContactItem {
     projectType?: string;
     replyMethod?: string;
     file?: File | null;
+    filePath?: string;
     agreeTf: boolean; // Y/N로 바꿔서 보내줄 것
+
+    regDate?: string;
+    useTf?: 'Y' | 'N';
+    delTf?: 'Y' | 'N';
+    replyTf?: 'Y' | 'N';
+
   }

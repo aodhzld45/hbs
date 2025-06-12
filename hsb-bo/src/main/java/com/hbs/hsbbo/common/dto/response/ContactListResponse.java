@@ -9,6 +9,6 @@ import java.util.List;
 @AllArgsConstructor
 public class ContactListResponse {
     private List<ContactResponse> items;
-    private long totalElements;
+    private long totalCount;
     private int totalPages;
 }

@@ -7,7 +7,7 @@ export const fetchContactList = async (
   keyword: string = '',
   page: number,
   size: number
-): Promise<{ items: ContactItem[]; totalCount: number; totalPages: number; }> => {
+): Promise<{ items: ContactItem[]; totalCount: number; totalPages: number; message: string; }> => {
 
   const res = await api.get(`/contact`, {
     params: {
@@ -16,7 +16,13 @@ export const fetchContactList = async (
       size
     },
   });
-  return res.data;
+
+  return {
+    items: res.data.res.items,
+    totalCount: res.data.res.totalCount,
+    totalPages: res.data.res.totalPages,
+    message: res.data.message,
+  };
 };
 
 
