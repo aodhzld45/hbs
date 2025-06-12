@@ -123,7 +123,7 @@ const ContactManager = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="text-center p-4 text-gray-500">
+                  <td colSpan={8} className="text-center p-4 text-gray-500">
                     등록된 문의가 없습니다.
                   </td>
                 </tr>

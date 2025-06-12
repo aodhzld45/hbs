@@ -18,9 +18,9 @@ export const fetchContactList = async (
   });
 
   return {
-    items: res.data.res.items,
-    totalCount: res.data.res.totalCount,
-    totalPages: res.data.res.totalPages,
+    items: res.data.data.items,
+    totalCount: res.data.data.totalCount,
+    totalPages: res.data.data.totalPages,
     message: res.data.message,
   };
 };
