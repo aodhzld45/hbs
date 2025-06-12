@@ -3,8 +3,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // 관리자 페이지 imports
-import ContentManager from './pages/Admin/Hbs/ContentManager';
-import ContentManagerDetail from "./pages/Admin/Hbs/ContentManagerDetail";
+import ContentManager from './pages/Admin/Content/ContentManager';
+import ContentManagerDetail from "./pages/Admin/Content/ContentManagerDetail";
 import AdminLogin from "./pages/Admin/Login";
 import AdminDashboard from "./pages/Admin";
 import AdminList from "./pages/Admin/AdminAccountManagement";
@@ -12,6 +12,7 @@ import AdminCreate from "./pages/Admin/AdminRegister";
 import AdminMenu from "./pages/Admin/Menu/AdminMenuManagement";
 import AdminAuthManagement from './pages/Admin/Role/AdminRoleManagement';
 import CodeParentManagement from "./pages/Admin/Code/CodeParentManagement";
+import ContactManager from "./pages/Admin/Contact/ContactManager";
 
 // 관리자 공통 게시판 관련 imports
 import BoardManager from './pages/Admin/Board/BoardManager';
@@ -68,6 +69,8 @@ function App() {
               <Route path="/admin/board/:boardType/write" element={<BoardWrite />} />
               <Route path="/admin/board/:boardType/edit/:id" element={<BoardWrite />} />
               <Route path="/admin/board/:boardType/detail/:id" element={<BoardDetail />} />
+
+              <Route path="/admin/contact" element={<ContactManager />} />
 
             </Route>
             

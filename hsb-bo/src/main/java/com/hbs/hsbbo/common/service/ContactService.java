@@ -2,15 +2,21 @@ package com.hbs.hsbbo.common.service;
 
 import com.hbs.hsbbo.common.domain.entity.Contact;
 import com.hbs.hsbbo.common.dto.request.ContactRequest;
+import com.hbs.hsbbo.common.dto.response.ContactListResponse;
 import com.hbs.hsbbo.common.dto.response.ContactResponse;
 import com.hbs.hsbbo.common.repository.ContactRepository;
 import com.hbs.hsbbo.common.util.FileUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +26,26 @@ public class ContactService {
 
     @Autowired
     private final FileUtil fileUtil;
+
+    // 문의 관리 리스트 (페이징 + 키워드 필터)
+    public ContactListResponse getContactList(String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+
+        Page<Contact> contactPage;
+        if (keyword != null && !keyword.isBlank()) {
+            contactPage = contactRepository.findByKeyword(keyword, pageable);
+        } else {
+            contactPage = contactRepository.findByDelTf("N", pageable);
+        }
+
+        List<ContactResponse> items = contactPage.getContent().stream()
+                .map(ContactResponse::from)
+                .toList();
+
+        return new ContactListResponse(items, contactPage.getTotalElements(), contactPage.getTotalPages());
+    }
+
+
 
     // 문의 등록
     public ContactResponse createContact(ContactRequest request, MultipartFile file) {

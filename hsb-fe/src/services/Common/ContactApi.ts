@@ -1,6 +1,25 @@
 import api from '../api';
 import { ContactItem } from '../../types/Common/ContactItem'; 
 
+
+// 문의 관리 목록 조회
+export const fetchContactList = async (
+  keyword: string = '',
+  page: number,
+  size: number
+): Promise<{ items: ContactItem[]; totalCount: number; totalPages: number; }> => {
+
+  const res = await api.get(`/contact`, {
+    params: {
+      keyword,
+      page,
+      size
+    },
+  });
+  return res.data;
+};
+
+
 // 문의 등록
 export const fetchContactCreate = async(data: ContactItem) => {
     const formData = new FormData();
