@@ -25,6 +25,12 @@ export const fetchContactList = async (
   };
 };
 
+// 문의 관리 상세 API
+export const fetchContactDetail = async (id: number): Promise<ContactItem> => {
+  const res = await api.get('/contact/detail', { params: { id } });
+  return res.data;
+};
+
 
 // 문의 등록
 export const fetchContactCreate = async(data: ContactItem) => {

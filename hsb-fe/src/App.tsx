@@ -13,6 +13,7 @@ import AdminMenu from "./pages/Admin/Menu/AdminMenuManagement";
 import AdminAuthManagement from './pages/Admin/Role/AdminRoleManagement';
 import CodeParentManagement from "./pages/Admin/Code/CodeParentManagement";
 import ContactManager from "./pages/Admin/Contact/ContactManager";
+import ContactDetail from "./pages/Admin/Contact/ContactDetail";
 
 // 관리자 공통 게시판 관련 imports
 import BoardManager from './pages/Admin/Board/BoardManager';
@@ -71,6 +72,7 @@ function App() {
               <Route path="/admin/board/:boardType/detail/:id" element={<BoardDetail />} />
 
               <Route path="/admin/contact" element={<ContactManager />} />
+              <Route path="/admin/contact/detail/:id" element={<ContactDetail />} />
 
             </Route>
             

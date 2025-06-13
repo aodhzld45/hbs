@@ -10,6 +10,7 @@ export interface ContactItem {
     replyMethod?: string;
     file?: File | null;
     filePath?: string;
+    originalFileName? : string;
     agreeTf: boolean; // Y/N로 바꿔서 보내줄 것
 
     regDate?: string;

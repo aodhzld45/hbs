@@ -90,7 +90,12 @@ const ContactManager = () => {
                 contents.map((item, index) => (
                   <tr key={item.id} className="text-center">
                     <td className="border p-2">{totalCount - (page * size + index)}</td> {/* 최신순 번호 부여 */}
-                    <td className="border p-2">{item.companyName}</td>
+                    <td
+                      className="border p-2 text-left text-blue-600 cursor-pointer hover:underline"
+                      onClick={() => navigate(`/contact/detail/${item.id}`)}
+                    >
+                      {item.companyName}
+                    </td>
                     <td className="border p-2">{item.contactName}</td>
                     <td className="border p-2">{item.title}</td>
 
