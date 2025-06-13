@@ -6,6 +6,7 @@ import com.hbs.hsbbo.common.dto.response.ContactListResponse;
 import com.hbs.hsbbo.common.dto.response.ContactResponse;
 import com.hbs.hsbbo.common.repository.ContactRepository;
 import com.hbs.hsbbo.common.util.FileUtil;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -43,6 +44,16 @@ public class ContactService {
                 .toList();
 
         return new ContactListResponse(items, contactPage.getTotalElements(), contactPage.getTotalPages());
+    }
+
+    // 문의 관리 상세
+    public ContactResponse getContactDetail(Long id) {
+        Contact contact = contactRepository.findByIdAndDelTf(id, "N")
+                .orElseThrow(() -> new EntityNotFoundException("문의글이 존재하지 않거나 삭제되었습니다."));
+
+        ContactResponse dto = ContactResponse.from(contact);
+
+        return dto;
     }
 
 

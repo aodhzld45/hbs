@@ -34,7 +34,15 @@ public class ContactController {
         response.put("message", "문의 목록이 정상적으로 조회되었습니다.");
 
         return ResponseEntity.ok(response);
+    }
 
+    @GetMapping("/detail")
+    public ResponseEntity<ContactResponse> getContactDetail(
+            @RequestParam Long id
+    ) {
+        ContactResponse result = contactService.getContactDetail(id);
+
+        return ResponseEntity.ok(result);
     }
 
 
