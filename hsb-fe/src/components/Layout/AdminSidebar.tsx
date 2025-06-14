@@ -38,9 +38,10 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
 
   // 현재 경로로부터 parentId 자동 설정
   useEffect(() => {
-    const matched = permissions.find(
-      (menu) => menu.depth === 2 && menu.url === location.pathname
-    );
+    const matched = permissions
+      .filter((menu) => menu.depth === 2 && location.pathname.startsWith(menu.url))
+      .sort((a, b) => b.url.length - a.url.length)[0];
+  
     if (matched) {
       setSelectedParent(matched.parentId ?? null);
     }
@@ -69,36 +70,42 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
         )}
       </div>
       <nav className="p-2 space-y-1">
-        {topMenus.map((menu) => (
-          <div key={menu.menuId}>
-            <button
-              onClick={() =>
-                setSelectedParent((prev) => (prev === menu.menuId ? null : menu.menuId))
-              }
-              className="border-2 border-solid block w-full text-left p-2 hover:bg-gray-200 rounded font-semibold"
-            >
-              {isOpen ? menu.name : menu.name.charAt(0)}
-            </button>
-
-            {selectedParent === menu.menuId && isOpen && (
-              <div className="ml-4">
-                {secondMenus.map((child) => (
-                  <Link
-                    key={child.menuId}
-                    to={child.url}
-                    className={`block p-1 text-sm rounded border-b last:border-0 ${
-                      location.pathname === child.url
-                        ? 'bg-blue-100 text-blue-600 font-bold'
-                        : 'hover:bg-gray-200'
-                    }`}
-                  >
-                    └ {child.name}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+        {topMenus.map((menu) => {
+          const isSelected = selectedParent === menu.menuId;
+  
+          return (
+            <div key={menu.menuId}>
+              <button
+                onClick={() =>
+                  setSelectedParent((prev) => (prev === menu.menuId ? null : menu.menuId))
+                }
+                className={`border block w-full text-left p-2 rounded font-semibold
+                  ${isSelected ? 'bg-blue-100 text-blue-600 font-bold' : 'hover:bg-gray-200'}
+                `}
+              >
+                {isOpen ? menu.name : menu.name.charAt(0)}
+              </button>
+  
+              {isSelected && isOpen && (
+                <div className="ml-4">
+                  {secondMenus.map((child) => (
+                    <Link
+                      key={child.menuId}
+                      to={child.url}
+                      className={`block p-1 text-sm rounded border-b last:border-0 ${
+                        location.pathname.startsWith(child.url)
+                          ? 'bg-blue-100 text-blue-600 font-bold'
+                          : 'hover:bg-gray-200'
+                      }`}
+                    >
+                      └ {child.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
     </aside>
   );
