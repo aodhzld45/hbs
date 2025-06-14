@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ContactItem } from '../../../types/Common/ContactItem';
-import { fetchContactDetail, fetchContactReply } from '../../../services/Common/ContactApi';
+import { fetchContactDetail, fetchContactReply, fetchContactDelete } from '../../../services/Common/ContactApi';
 import AdminLayout from '../../../components/Layout/AdminLayout';
 import { FILE_BASE_URL } from '../../../config/config';
 
@@ -42,6 +42,14 @@ const ContactDetail = () => {
       return;
     }
 
+    // 이미 답변된 경우  처리
+    if (contents?.replyTf === 'Y') {
+      let msg = '이미 답변하신 내용입니다, 재 회신하시겠습니까?';
+      const confirmed = window.confirm(msg);
+
+      if (!confirmed) return; // 취소 시 중단
+    }
+
     try {
       const res = await fetchContactReply({
         id: Number(id),
@@ -60,6 +68,19 @@ const ContactDetail = () => {
     } catch (error) {
       alert('답변 저장에 실패했습니다.');
       console.error(error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+    if (window.confirm('정말 삭제하시겠습니까?')) {
+      try {
+        await fetchContactDelete(Number(id));
+        alert('문의 글이 삭제되었습니다.');
+        navigate(`/admin/contact`);
+      } catch (err) {
+        alert('삭제 실패');
+      }
     }
   };
   
@@ -132,7 +153,13 @@ const ContactDetail = () => {
             답변 저장 및 메일 발송
         </button>
 
-        <div className="flex justify-end mt-10">
+        <div className="flex justify-end mt-10 gap-3">
+          <button
+              className="bg-red-600 text-white px-4 py-2 rounded"
+              onClick={handleDelete}
+          >
+            삭제
+          </button>
           <button
             onClick={() => navigate(`/admin/contact`)}
             className="bg-gray-800 text-white px-5 py-2 rounded hover:bg-gray-700"

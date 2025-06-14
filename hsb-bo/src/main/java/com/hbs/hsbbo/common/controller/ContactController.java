@@ -7,6 +7,7 @@ import com.hbs.hsbbo.common.dto.response.ContactResponse;
 import com.hbs.hsbbo.common.service.ContactService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -98,6 +99,16 @@ public class ContactController {
         response.put("message", message);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/delete/{id}")
+    public ResponseEntity<?> deleteContact(@PathVariable Long id) {
+        try {
+            contactService.deleteContact(id);
+            return ResponseEntity.ok("삭제 성공");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("삭제 실패");
+        }
     }
 
 }

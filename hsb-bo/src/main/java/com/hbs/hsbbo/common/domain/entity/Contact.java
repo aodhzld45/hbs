@@ -66,4 +66,7 @@ public class Contact {
 
     @Column(name = "reply_date")
     private LocalDateTime replyDate;
+
+    @Column(name = "del_date")
+    private LocalDateTime delDate;
 }

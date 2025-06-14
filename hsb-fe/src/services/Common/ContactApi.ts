@@ -65,3 +65,8 @@ export const fetchContactReply = async (data: {
   return res.data;
 };
 
+export const fetchContactDelete = async (id: number): Promise<void> => {
+  const res = await api.put(`/contact/delete/${id}`);
+  return res.data;
+};
+

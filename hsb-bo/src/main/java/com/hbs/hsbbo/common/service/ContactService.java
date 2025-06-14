@@ -9,6 +9,7 @@ import com.hbs.hsbbo.common.mail.MailService;
 import com.hbs.hsbbo.common.repository.ContactRepository;
 import com.hbs.hsbbo.common.util.FileUtil;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -125,6 +126,19 @@ public class ContactService {
 
         // 2. SMS 문자 발송의 경우는 추가 예정.
 
+    }
+
+    @Transactional
+    public void deleteContact(Long id) {
+        Contact contact = contactRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("문의글이 존재하지 않습니다."));
+
+        contact.setDelTf("Y");
+        contact.setDelDate(LocalDateTime.now());
+
+        contactRepository.save(contact);
+
+        System.out.println(" 문의글 소프트 삭제 완료 - ID: " + id);
     }
 
 
