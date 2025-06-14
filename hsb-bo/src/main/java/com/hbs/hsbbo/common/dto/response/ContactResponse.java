@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class ContactResponse {
@@ -41,6 +42,7 @@ public class ContactResponse {
         response.setProjectType(entity.getProjectType());
         response.setReplyMethod(entity.getReplyMethod());
         response.setFilePath(entity.getFilePath());
+        response.setOriginalFileName(entity.getOriginalFileName());
         response.setAgreeTf(entity.getAgreeTf());
         response.setReplyContent(entity.getReplyContent());
         response.setReplyTf(entity.getReplyTf());

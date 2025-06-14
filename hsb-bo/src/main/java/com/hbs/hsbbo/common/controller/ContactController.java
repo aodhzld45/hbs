@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.common.controller;
 
+import com.hbs.hsbbo.common.dto.request.ContactReplyRequest;
 import com.hbs.hsbbo.common.dto.request.ContactRequest;
 import com.hbs.hsbbo.common.dto.response.ContactListResponse;
 import com.hbs.hsbbo.common.dto.response.ContactResponse;
@@ -45,7 +46,6 @@ public class ContactController {
         return ResponseEntity.ok(result);
     }
 
-
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, Object>> createContact(
             @RequestPart("companyName") String companyName,
@@ -75,6 +75,28 @@ public class ContactController {
         Map<String, Object> response = new HashMap<>();
         response.put("res", result);
         response.put("message", "문의가 등록되었습니다. 빠른 시일 내 답변드리겠습니다.");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reply")
+    public ResponseEntity<Map<String, Object>> replyToContact(@RequestBody ContactReplyRequest request) {
+        contactService.replyToContact(request);
+
+        String method = request.getReplyMethod();
+        String message;
+
+        if ("EMAIL".equalsIgnoreCase(method)) {
+            message = "문의에 대한 답변이 저장되었으며, 해당 이메일로 회신되었습니다.";
+        } else if ("SMS".equalsIgnoreCase(method)) {
+            message = "문의에 대한 답변이 저장되었으며, 등록된 연락처로 문자(SMS)로 회신되었습니다.";
+        } else {
+            message = "문의에 대한 답변이 저장되었습니다.";
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("message", message);
+
         return ResponseEntity.ok(response);
     }
 

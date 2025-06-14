@@ -2,7 +2,7 @@ import api from '../api';
 import { ContactItem } from '../../types/Common/ContactItem'; 
 
 
-// 문의 관리 목록 조회
+// 문의 관리 목록 조회 API 요청
 export const fetchContactList = async (
   keyword: string = '',
   page: number,
@@ -25,14 +25,14 @@ export const fetchContactList = async (
   };
 };
 
-// 문의 관리 상세 API
+// 문의 관리 상세 API 요청
 export const fetchContactDetail = async (id: number): Promise<ContactItem> => {
   const res = await api.get('/contact/detail', { params: { id } });
   return res.data;
 };
 
 
-// 문의 등록
+// 문의 등록 API 요청
 export const fetchContactCreate = async(data: ContactItem) => {
     const formData = new FormData();
     formData.append('companyName', data.companyName);
@@ -53,5 +53,15 @@ export const fetchContactCreate = async(data: ContactItem) => {
         },
       });
       return res.data;
+};
+
+// 문의 답변 API 요청
+export const fetchContactReply = async (data: {
+  id: number;
+  replyContent: string;
+  replyMethod: string; // "EMAIL", "PHONE"
+}) => {
+  const res = await api.post('/contact/reply', data);
+  return res.data;
 };
 
