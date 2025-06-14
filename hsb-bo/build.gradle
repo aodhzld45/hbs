@@ -23,6 +23,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+	// 템플릿 용 타임리프 의존성 추가.
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
 	// SSO 관련 (OAuth2 클라이언트)
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -58,6 +61,9 @@ dependencies {
 	implementation 'software.amazon.awssdk:s3'
 	// → 또는 S3 전용만 쓰려면:
 	// implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.0.2'
+
+	// mailSender 관련
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
