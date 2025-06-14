@@ -20,6 +20,10 @@ const ContactDetail = () => {
       try {
         const data = await fetchContactDetail(Number(id));
         setContents(data);
+        // 이미 답변이 있는 경우 초기값 세팅
+        if (data.replyTf === 'Y') {
+          setReply(data.replyContent || '');
+        }
       } catch (error) {
         alert('문의글을 불러오지 못했습니다.');
       } finally {
@@ -39,6 +43,12 @@ const ContactDetail = () => {
     if (!reply.trim()) {
       alert('답변 내용을 입력해주세요.');
       replyRef.current?.focus(); // 포커스
+      return;
+    }
+
+    // 기존 답변과 동일한 경우
+    if (contents?.replyTf === 'Y' && contents.replyContent === reply) {
+      alert('기존 답변 내용과 동일하여 재회신되지 않았습니다.');
       return;
     }
 

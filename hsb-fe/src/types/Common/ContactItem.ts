@@ -8,6 +8,7 @@ export interface ContactItem {
     message: string;
     projectType?: string;
     replyMethod?: string;
+    replyContent?: string;
     file?: File | null;
     filePath?: string;
     originalFileName? : string;
