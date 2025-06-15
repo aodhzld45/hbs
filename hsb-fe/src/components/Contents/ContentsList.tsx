@@ -41,40 +41,44 @@ const ContentsList = () => {
     <Layout>
       <div className="w-full max-w-screen-xl mx-auto px-6 py-10">
         <h1 className="text-3xl font-bold text-center mb-8 dark:text-gray-400"> {ContentTypeTitleMap[safeContentType as ContentType]}</h1>
-        <div className="flex justify-between mb-4">
+
+        {/* 검색 영역 + 전체 수 */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           {/* 총 게시글 수 */}
-          <div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">전체 {totalCount}건</span>
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            전체 <span className="font-medium">{totalCount}</span>건
           </div>
-          {/* 검색 영역 */}
-          <div className="flex gap-2">
-            <select className="border px-3 py-2 rounded text-sm">
+
+          {/* 검색 필터 */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+            <select className="border px-3 py-2 rounded text-sm w-full sm:w-auto">
               <option>콘텐츠명</option>
             </select>
-                    <input
-                        type="text"
-                        value={keyword}
-                        onChange={(e) => setKeyword(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                setPage(0);
-                                loadContents();
-                            }
-                        }}
-                        placeholder="검색어를 입력해주세요."
-                        className="border px-3 py-2 rounded text-sm"
-                    />
-                    <button
-                    onClick={() => {
-                        setPage(0);
-                        loadContents();
-                    }}
-                    className="bg-gray-700 text-white px-4 py-2 rounded text-sm"
-                    >
-                    검색
-                    </button>
-                </div>
-          {/* 검색 영역 */}
+
+            <input
+              type="text"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setPage(0);
+                  loadContents();
+                }
+              }}
+              placeholder="검색어를 입력해주세요."
+              className="border px-3 py-2 rounded text-sm w-full sm:w-60"
+            />
+
+            <button
+              onClick={() => {
+                setPage(0);
+                loadContents();
+              }}
+              className="bg-gray-700 text-white px-4 py-2 rounded text-sm w-full sm:w-auto"
+            >
+              검색
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
