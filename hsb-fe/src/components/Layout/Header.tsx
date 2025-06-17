@@ -1,10 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { UserMenuNode } from '../../types/Admin/UserMenuNode';
+import { fetchUserMenuTree } from '../../services/Admin/userMenuApi';
 
 const Header = () => {
+  
+  const [menuTree, setMenuTree] = useState<UserMenuNode[]>([]);
   const [keyword, setKeyword] = useState('');
   const [isOverlayOpen, setOverlayOpen] = useState(false);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  const loadTree = async () => {
+    try {
+      const data = await fetchUserMenuTree();
+      setMenuTree(data);
+    } catch (err) {
+      console.error('메뉴 트리 조회 실패:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+
+    loadTree();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,11 +48,17 @@ const Header = () => {
 
           {/* 가운데 메뉴 (PC 전용) */}
           <nav className="hidden sm:flex space-x-6 text-sm sm:text-base">
-            <Link to="/notice/board-list" className="hover:text-yellow-300">커뮤니티</Link>
-            <Link to="/video/hbs/list" className="hover:text-yellow-300">HBS</Link>
-            <Link to="/link/youtube/list" className="hover:text-yellow-300">유튜브 홍보영상</Link>
-            <Link to="/event/board-list" className="hover:text-yellow-300">이벤트</Link>
-            <Link to="/contact" className="hover:text-yellow-300">문의하기</Link>
+            {menuTree.map((menu1) =>
+              menu1.depth === 0 ? (
+                <Link
+                  key={menu1.id}
+                  to={menu1.url || '#'}
+                  className="hover:text-yellow-300"
+                >
+                  {menu1.name}
+                </Link>
+              ) : null
+            )}
           </nav>
 
           {/* 검색창 (PC 전용) */}
@@ -70,14 +97,14 @@ const Header = () => {
 
       {/* 우측 슬라이드 메뉴 */}
       {isOverlayOpen && (
-      <div
-        className="fixed inset-0 bg-black/30 z-50"
-        onClick={() => setOverlayOpen(false)}
-      >
-      <div
-          className="absolute right-0 top-0 w-4/5 sm:w-full h-full bg-white shadow-lg flex flex-col transition-all duration-300"
-          onClick={(e) => e.stopPropagation()}
-      >
+          <div
+            className="fixed inset-0 bg-black/30 z-50"
+            onClick={() => setOverlayOpen(false)}
+          >
+          <div
+              className="absolute right-0 top-0 w-4/5 sm:w-full h-full bg-white shadow-lg flex flex-col transition-all duration-300"
+              onClick={(e) => e.stopPropagation()}
+          >
           {/* 상단 헤더 */}
           <div className="flex items-start justify-between p-4 border-b border-gray-200 bg-blue-600 text-white">
             <button
