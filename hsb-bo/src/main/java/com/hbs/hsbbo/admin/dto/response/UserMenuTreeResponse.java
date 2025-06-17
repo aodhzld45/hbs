@@ -17,6 +17,8 @@ public class UserMenuTreeResponse {
     private Long id;
     private String name;
     private String url;
+    private int orderSeq;
+    private int depth;
     private List<UserMenuTreeResponse> children;
 
     public static UserMenuTreeResponse fromEntity(UserMenu menu) {
@@ -24,6 +26,8 @@ public class UserMenuTreeResponse {
                 menu.getId(),
                 menu.getName(),
                 menu.getUrl(),
+                menu.getOrderSeq(),
+                menu.getDepth(),
                 new ArrayList<>()
         );
     }
