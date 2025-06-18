@@ -87,6 +87,7 @@ public class AdminRoleMenuService {
                             menu.getName(),
                             menu.getUrl(),
                             menu.getDepth(),
+                            menu.getOrderSequence(),
                             menu.getParentId(),
                             "Y".equalsIgnoreCase(rm.getReadTf()),
                             "Y".equalsIgnoreCase(rm.getWriteTf()),

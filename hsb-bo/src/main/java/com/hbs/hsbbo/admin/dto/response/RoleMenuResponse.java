@@ -18,6 +18,7 @@ public class RoleMenuResponse {
         private String name;
         private String url;
         private int depth;
+        private Integer orderSequence;
         private Integer parentId;
         private boolean read;
         private boolean write;
