@@ -17,6 +17,7 @@ export interface MenuPermission {
   name: string;
   url: string;
   depth: number;
+  orderSequence: number;
   parentId: number | null;
   read: boolean;
   write: boolean;
@@ -26,12 +27,7 @@ export interface MenuPermission {
 export interface RoleMenuResponse {
   menuPermissions: MenuPermission[];
   menuMappings: MenuMapping[];
-  //menuPermissions2: MenuPermission2[];
 }
-
-// export interface RoleMenuResponse2 {
-//   menuPermissions2: MenuPermission2[];
-// }
 
 export interface UserRoleAssign {
   adminId: string;

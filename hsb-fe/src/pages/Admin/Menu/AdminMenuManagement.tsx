@@ -2,21 +2,22 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../../components/Layout/AdminLayout';
 import { AdminMenu } from '../../../types/Admin/AdminMenu';
-import { 
-  fetchAdminMenus, 
-  createAdminMenu, 
-  updateAdminMenu, 
-  deleteAdminMenu 
+import {
+  fetchAdminMenus,
+  createAdminMenu,
+  updateAdminMenu,
+  deleteAdminMenu
 } from '../../../services/Admin/adminMenuApi';
 import AdminMenuCreateModal from '../../../components/Admin/Menu/AdminMenuCreateModal';
 import AdminMenuEditModal from '../../../components/Admin/Menu/AdminMenuEditModal';
+import { flattenMenuTree, FlattenedMenuOption } from '../../../utils/menuTreeFlattener';
+import { buildMenuTree } from '../../../utils/buildMenuTree';
 
 const AdminMenuManagement: React.FC = () => {
-  const [menus, setMenus] = useState<AdminMenu[]>([]);
+  const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
-  // 수정할 메뉴 상태 (모달이 열리면 해당 메뉴 데이터를 저장)
   const [editingMenu, setEditingMenu] = useState<AdminMenu | null>(null);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
 
@@ -24,7 +25,17 @@ const AdminMenuManagement: React.FC = () => {
     const loadMenus = async () => {
       try {
         const data = await fetchAdminMenus();
-        setMenus(data);
+
+        const tree = buildMenuTree(data);
+        const flattened = flattenMenuTree(tree as { id: number; name: string; children?: any[] }[]);
+
+        const menuMap = new Map(data.map(menu => [menu.id, menu]));
+        const merged = flattened.map(f => ({
+          ...menuMap.get(f.id),
+          label: f.label
+        }));
+
+        setMenus(merged as (AdminMenu & { label?: string })[]);
       } catch (err) {
         console.error(err);
         setError('메뉴 목록을 불러오는데 실패했습니다.');
@@ -38,7 +49,7 @@ const AdminMenuManagement: React.FC = () => {
   const handleSaveNewMenu = async (newMenu: AdminMenu) => {
     try {
       const created = await createAdminMenu(newMenu);
-      setMenus(prev => [...prev, created]);
+      setMenus(prev => [...prev, created]); // reloadMenus로 대체하는 것도 고려 가능
       setShowCreateModal(false);
     } catch (err) {
       console.error(err);
@@ -57,7 +68,6 @@ const AdminMenuManagement: React.FC = () => {
     }
   };
 
-  // 수정 모달에서 "저장" 버튼 클릭 시 호출될 함수
   const handleUpdateMenu = async (updatedMenu: AdminMenu) => {
     try {
       const result = await updateAdminMenu(updatedMenu.id as number, updatedMenu);
@@ -75,16 +85,16 @@ const AdminMenuManagement: React.FC = () => {
   return (
     <AdminLayout>
       <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold mb-6">관리자 메뉴 관리</h1>
-        <button
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold mb-6">관리자 메뉴 관리</h1>
+          <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
             메뉴 등록
           </button>
-          </div>
+        </div>
 
-        {/* 메뉴 목록 테이블 */}
         <div className="overflow-x-auto">
           <table className="min-w-full border divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -103,7 +113,7 @@ const AdminMenuManagement: React.FC = () => {
               {menus.map(menu => (
                 <tr key={menu.id}>
                   <td className="px-4 py-2 text-sm">{menu.id}</td>
-                  <td className="px-4 py-2 text-sm">{menu.name}</td>
+                  <td className="px-4 py-2 text-sm whitespace-nowrap">{menu.label ?? menu.name}</td>
                   <td className="px-4 py-2 text-sm">{menu.url}</td>
                   <td className="px-4 py-2 text-sm">{menu.orderSequence}</td>
                   <td className="px-4 py-2 text-sm">{menu.depth}</td>
@@ -139,7 +149,6 @@ const AdminMenuManagement: React.FC = () => {
         </div>
       </div>
 
-
       {showCreateModal && (
         <AdminMenuCreateModal
           onSave={handleSaveNewMenu}
@@ -147,7 +156,6 @@ const AdminMenuManagement: React.FC = () => {
         />
       )}
 
-      {/* 수정 모달: editingMenu가 존재하면 AdminMenuEditModal 컴포넌트 렌더링 */}
       {editingMenu && (
         <AdminMenuEditModal
           menu={editingMenu}

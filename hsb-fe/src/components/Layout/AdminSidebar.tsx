@@ -47,13 +47,15 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
     }
   }, [location.pathname, permissions]);
 
-  // 1depth 메뉴 필터링
-  const topMenus = permissions.filter((menu) => menu.depth === 1);
+  // 1depth 메뉴 필터링 + 정렬
+  const topMenus = permissions
+    .filter((menu) => menu.depth === 1)
+    .sort((a, b) => (a.orderSequence ?? 0) - (b.orderSequence ?? 0));
 
-  // 선택된 1depth의 2depth 메뉴 필터링
-  const secondMenus = permissions.filter(
-    (menu) => menu.depth === 2 && menu.parentId === selectedParent
-  );
+  // 선택된 1depth의 2depth 메뉴 필터링 + 정렬
+  const secondMenus = permissions
+    .filter((menu) => menu.depth === 2 && menu.parentId === selectedParent)
+    .sort((a, b) => (a.orderSequence ?? 0) - (b.orderSequence ?? 0));
 
   return (
     <aside className={`transition-all duration-300 bg-gray-100 border-r h-full ${
