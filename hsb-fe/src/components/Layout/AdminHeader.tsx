@@ -15,7 +15,9 @@ const AdminHeader: React.FC = () => {
   return (
     <header className="bg-blue-600 text-white py-4 px-8 flex items-center justify-between">
       {/* 좌측: HBS 텍스트 */}
-      <div className="text-xl font-bold">HBS</div>
+      <div className="text-xl font-bold">
+        <Link to="/admin/index">HBS</Link>
+      </div>
 
       {/* 우측: 관리자 이름, 내 정보 조회, 로그아웃, 홈페이지 링크 */}
       <div className="flex items-center space-x-4">
