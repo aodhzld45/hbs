@@ -16,13 +16,13 @@ public class StatsRepositoryImpl implements StatsRepository {
     // 월별 콘텐츠 등록 건수 집계 (예: "2025-06", 15건)
     @Override
     public List<Object[]> countContentMonthly(LocalDateTime start, LocalDateTime end) {
-        return em.createQuery("""
-                SELECT FUNCTION('DATE_FORMAT', c.regDate, '%Y-%m'), COUNT(c)
-                FROM contentfile c
-                WHERE c.regDate BETWEEN :start AND :end
-                GROUP BY FUNCTION('DATE_FORMAT', c.regDate, '%Y-%m')
-                ORDER BY 1
-            """, Object[].class)
+        return em.createNativeQuery("""
+            SELECT DATE_FORMAT(c.regDate, '%Y-%m') AS month, COUNT(*) AS count
+            FROM contentfile c
+            WHERE c.regDate BETWEEN :start AND :end
+            GROUP BY month
+            ORDER BY month
+        """)
                 .setParameter("start", start)
                 .setParameter("end", end)
                 .getResultList();
@@ -31,11 +31,11 @@ public class StatsRepositoryImpl implements StatsRepository {
     // 콘텐츠 유형별 비율 집계 (예: 영상: 10, 이미지: 5)
     @Override
     public List<Object[]> countContentTypeRatio(LocalDateTime start, LocalDateTime end) {
-        return em.createQuery("""
-                SELECT c.contentType, COUNT(c)
-                FROM contentfile c
-                WHERE c.regDate BETWEEN :start AND :end
-                GROUP BY c.contentType
+        return em.createNativeQuery("""
+            SELECT contentType, COUNT(*) AS count
+            FROM contentfile
+            WHERE regDate BETWEEN :start AND :end            
+            GROUP BY contentType;
             """, Object[].class)
                 .setParameter("start", start)
                 .setParameter("end", end)

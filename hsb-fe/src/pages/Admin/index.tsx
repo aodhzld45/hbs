@@ -18,8 +18,8 @@ import {
   Legend,
 } from 'chart.js';
 import dayjs from 'dayjs';
-//import { fetchDashboardStats } from '../../services/Admin/statApi';
-
+import { fetchContentStats } from '../../services/Admin/statsApi';
+//import { fetchDashboardStats } from '../../services/Admin/statApi'; 
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -37,34 +37,44 @@ const AdminIndex = () => {
 
   const [startDate, setStartDate] = useState<Date>(dayjs().subtract(30, 'day').toDate());
   const [endDate, setEndDate] = useState<Date>(new Date());
-
+  // 콘텐츠 통계 상태 값
+  const [monthlyLabels, setMonthlyLabels] = useState<string[]>([]);
   const [contentStats, setContentStats] = useState<number[]>([]);
+  
+  const [typeLabels, setTypeLabels] = useState<string[]>([]);
   const [typeRatio, setTypeRatio] = useState<number[]>([]);
+  //
   const [popularViews, setPopularViews] = useState<number[]>([]);
   const [commentStats, setCommentStats] = useState<number[]>([]);
   const [visitorStats, setVisitorStats] = useState<number[]>([]);
 
-  // const loadStats = async () => {
-  //   try {
-  //     const res = await fetchDashboardStats(startDate, endDate);
-  //     setContentStats(res.contentStats);
-  //     setTypeRatio(res.typeRatio);
-  //     setPopularViews(res.popularViews);
-  //     setCommentStats(res.commentStats);
-  //     setVisitorStats(res.visitorStats);
-  //   } catch (error) {
-  //     console.error('통계 조회 실패:', error);
-  //   }
-  // };
-
   const loadStats = async () => {
-    // 더미 데이터 적용
-    setContentStats([5, 8, 10, 6, 12, 9, 15]); // 월별 콘텐츠 수
-    setTypeRatio([60, 25, 15]); // 영상, 문서, 이미지 비율
-    setPopularViews([1800, 1500, 1200, 900, 700]); // 조회수 TOP5
-    setCommentStats([12, 20, 18, 25]); // 댓글 수
-    setVisitorStats([50, 80, 65, 90]); // 방문자 수
+    try {
+      const res = await fetchContentStats(startDate, endDate);
+      console.log(res);
+
+      // 월별 콘텐츠 업로드
+      setMonthlyLabels(res.monthlyStats.map((s: any) => s.month));
+      setContentStats(res.monthlyStats.map((s: any) => s.count));
+
+      // 콘텐츠 타입 비율
+      if (Array.isArray(res.ContentTypeRatios)) {
+        setTypeLabels(res.ContentTypeRatios.map((r: any) => r.contentType));
+        setTypeRatio(res.ContentTypeRatios.map((r: any) => r.count));
+      }
+
+    } catch (error) {
+      console.error('통계 조회 실패:', error);
+    }
   };
+
+  // const loadStats = async () => {
+  //   // 더미 데이터 적용
+  //   setTypeRatio([60, 25, 15]); // 영상, 문서, 이미지 비율
+  //   setPopularViews([1800, 1500, 1200, 900, 700]); // 조회수 TOP5
+  //   setCommentStats([12, 20, 18, 25]); // 댓글 수
+  //   setVisitorStats([50, 80, 65, 90]); // 방문자 수
+  // };
 
   useEffect(() => {
     loadStats();
@@ -119,7 +129,7 @@ const AdminIndex = () => {
             <h3 className="font-semibold mb-2">월별 콘텐츠 업로드</h3>
             <Line
               data={{
-                labels: ['1월', '2월', '3월', '4월', '5월', '6월', '7월'],
+                labels: monthlyLabels,
                 datasets: [
                   {
                     label: '건수',
@@ -136,7 +146,7 @@ const AdminIndex = () => {
             <h3 className="font-semibold mb-2">콘텐츠 유형 비율</h3>
             <Pie
               data={{
-                labels: ['영상', '문서', '이미지'],
+                labels: typeLabels,
                 datasets: [
                   {
                     data: typeRatio,
