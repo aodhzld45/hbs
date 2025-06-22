@@ -44,24 +44,32 @@ const AdminIndex = () => {
   
   const [typeLabels, setTypeLabels] = useState<string[]>([]);
   const [typeRatio, setTypeRatio] = useState<number[]>([]);
-  //
+
+  const [popularLabels, setPopularLabels] = useState<string[]>([]);
   const [popularViews, setPopularViews] = useState<number[]>([]);
+
+  //
   const [commentStats, setCommentStats] = useState<number[]>([]);
   const [visitorStats, setVisitorStats] = useState<number[]>([]);
 
   const loadStats = async () => {
     try {
       const res = await fetchContentStats(startDate, endDate);
-      console.log(res);
 
       // 월별 콘텐츠 업로드
       setMonthlyLabels(res.monthlyStats.map((s: any) => s.month));
       setContentStats(res.monthlyStats.map((s: any) => s.count));
 
       // 콘텐츠 타입 비율
-      if (Array.isArray(res.ContentTypeRatios)) {
-        setTypeLabels(res.ContentTypeRatios.map((r: any) => r.contentType));
-        setTypeRatio(res.ContentTypeRatios.map((r: any) => r.count));
+      if (Array.isArray(res.contentTypeRatios)) {
+        setTypeLabels(res.contentTypeRatios.map((r: any) => r.contentType));
+        setTypeRatio(res.contentTypeRatios.map((r: any) => r.count));
+      }
+
+      // 인기 콘텐츠 TOP5
+      if (Array.isArray(res.contentPopular)) {
+        setPopularLabels(res.contentPopular.map((p: any) => p.title));
+        setPopularViews(res.contentPopular.map((p: any) => p.viewCount));
       }
 
     } catch (error) {
@@ -71,8 +79,6 @@ const AdminIndex = () => {
 
   // const loadStats = async () => {
   //   // 더미 데이터 적용
-  //   setTypeRatio([60, 25, 15]); // 영상, 문서, 이미지 비율
-  //   setPopularViews([1800, 1500, 1200, 900, 700]); // 조회수 TOP5
   //   setCommentStats([12, 20, 18, 25]); // 댓글 수
   //   setVisitorStats([50, 80, 65, 90]); // 방문자 수
   // };
@@ -90,13 +96,7 @@ const AdminIndex = () => {
     <AdminLayout>
       <div className="p-8 bg-gray-50 min-h-screen">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">📊 통합 통계 대시보드</h1>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            로그아웃
-          </button>
+          <h1 className="text-3xl font-bold">📊 통합 대시보드</h1>
         </div>
 
         <div className="flex items-center gap-2 mb-8">
@@ -129,7 +129,7 @@ const AdminIndex = () => {
 
         <div className="grid grid-cols-2 gap-6">
           <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-semibold mb-2">월별 콘텐츠 업로드</h3>
+            <h3 className="text-xl font-bold mb-4">월별 콘텐츠 업로드</h3>
             <Line
               data={{
                 labels: monthlyLabels,
@@ -146,7 +146,7 @@ const AdminIndex = () => {
           </div>
 
           <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-semibold mb-2">콘텐츠 유형 비율</h3>
+            <h3 className="text-xl font-bold mb-4">콘텐츠 유형 비율</h3>
             <Pie
               data={{
                 labels: typeLabels,
@@ -160,18 +160,65 @@ const AdminIndex = () => {
             />
           </div>
 
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-semibold mb-2">인기 콘텐츠 TOP5</h3>
+          <div className="bg-white p-6 rounded-2xl shadow-lg">
+            <h3 className="text-xl font-bold mb-4">인기 콘텐츠 TOP5</h3>
             <Bar
               data={{
-                labels: ['1위', '2위', '3위', '4위', '5위'],
+                labels: popularLabels,
                 datasets: [
                   {
                     label: '조회수',
                     data: popularViews,
-                    backgroundColor: '#60a5fa',
+                    backgroundColor: [
+                      'rgba(59, 130, 246, 0.7)',   // blue
+                      'rgba(34, 197, 94, 0.7)',    // green
+                      'rgba(234, 179, 8, 0.7)',    // yellow
+                      'rgba(239, 68, 68, 0.7)',    // red
+                      'rgba(168, 85, 247, 0.7)',   // purple
+                    ],                    borderRadius: 6,
+                    barPercentage: 0.6,
                   },
                 ],
+              }}
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: {
+                    display: false,
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: (context) => `조회수: ${context.raw}회`,
+                    },
+                  },
+                  title: {
+                    display: false,
+                  },
+                },
+                scales: {
+                  x: {
+                    ticks: {
+                      maxRotation: 0,
+                      minRotation: 0,
+                      callback: (value, index) => {
+                        const label = popularLabels[index];
+                        return label.length > 10 ? label.slice(0, 10) + '…' : label;
+                      },
+                    },
+                    grid: {
+                      display: false,
+                    },
+                  },
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      stepSize: 5,
+                    },
+                    grid: {
+                      color: '#eee',
+                    },
+                  },
+                },
               }}
             />
           </div>

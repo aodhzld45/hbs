@@ -42,4 +42,20 @@ public class StatsRepositoryImpl implements StatsRepository {
                 .getResultList();
     }
 
+    // 인기 콘텐츠 TOP 5
+    @Override
+    public List<Object[]> contentPopular(LocalDateTime start, LocalDateTime end) {
+        return em.createNativeQuery("""
+            SELECT title, view_count
+            FROM contentfile
+            WHERE regDate BETWEEN :start AND :end            
+            ORDER BY view_count DESC
+            LIMIT 5;
+            """, Object[].class)
+                .setParameter("start", start)
+                .setParameter("end", end)
+                .getResultList();
+    }
+
+
 }

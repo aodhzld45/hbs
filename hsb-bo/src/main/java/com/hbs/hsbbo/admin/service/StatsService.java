@@ -1,6 +1,7 @@
 package com.hbs.hsbbo.admin.service;
 
 import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentMonthStatResponse;
+import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentPopularResponse;
 import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentStatsResponse;
 import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentTypeRatioResponse;
 import com.hbs.hsbbo.admin.repository.stats.StatsRepository;
@@ -25,6 +26,13 @@ public class StatsService {
                 .map(r -> new ContentTypeRatioResponse((String) r[0], ((Long) r[1]).intValue()))
                 .toList();
 
-        return new ContentStatsResponse(monthly, ratios);
+        var popular = statsRepository.contentPopular(start, end).stream()
+                .map(r -> new ContentPopularResponse(
+                        (String) r[0],
+                        ((Number) r[1]).intValue()
+                ))
+                .toList();
+
+        return new ContentStatsResponse(monthly, ratios, popular);
     }
 }
