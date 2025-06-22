@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/Layout/AdminLayout';
 import DatePicker from 'react-datepicker';
+import { ko } from 'date-fns/locale'; // 한글 locale
 import 'react-datepicker/dist/react-datepicker.css';
 import { Line, Pie, Bar } from 'react-chartjs-2';
 import {
@@ -104,6 +105,7 @@ const AdminIndex = () => {
               onChange={(date: Date | null) => {
                 if (date) setStartDate(date);
               }}
+              locale={ko}
               dateFormat="yyyy-MM-dd"
               maxDate={endDate}
             />
@@ -112,7 +114,8 @@ const AdminIndex = () => {
             selected={endDate}
             onChange={(date: Date | null) => {
               if (date) setEndDate(date);
-            }} 
+            }}
+            locale={ko} 
             dateFormat="yyyy-MM-dd"
             minDate={startDate}
           />
