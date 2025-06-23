@@ -6,7 +6,7 @@ import AdminLayout from '../../components/Layout/AdminLayout';
 import DatePicker from 'react-datepicker';
 import { ko } from 'date-fns/locale'; // 한글 locale
 import 'react-datepicker/dist/react-datepicker.css';
-import { Line, Pie, Bar } from 'react-chartjs-2';
+import { Line, Pie, Bar, PolarArea } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -15,18 +15,20 @@ import {
   LineElement,
   BarElement,
   ArcElement,
+  RadialLinearScale,
   Tooltip,
   Legend,
 } from 'chart.js';
 import dayjs from 'dayjs';
-import { fetchContentStats } from '../../services/Admin/statsApi';
-//import { fetchDashboardStats } from '../../services/Admin/statApi'; 
+import { fetchContentStats, fetchCommentStats } from '../../services/Admin/statsApi';
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
   BarElement,
+  RadialLinearScale,
   ArcElement,
   Tooltip,
   Legend
@@ -47,13 +49,17 @@ const AdminIndex = () => {
 
   const [popularLabels, setPopularLabels] = useState<string[]>([]);
   const [popularViews, setPopularViews] = useState<number[]>([]);
-
   //
-  const [commentStats, setCommentStats] = useState<number[]>([]);
+
+  // 댓글 통계 상태 값
+  const [commentLabels, setCommentLabels] = useState<string[]>([]);
+  const [commentCounts, setCommentCounts] = useState<number[]>([]);
+
   const [visitorStats, setVisitorStats] = useState<number[]>([]);
 
   const loadStats = async () => {
     try {
+      // 콘텐츠 통계
       const res = await fetchContentStats(startDate, endDate);
 
       // 월별 콘텐츠 업로드
@@ -72,16 +78,30 @@ const AdminIndex = () => {
         setPopularViews(res.contentPopular.map((p: any) => p.viewCount));
       }
 
+      // 댓글 통계
+
+      const commentRes = await fetchCommentStats(startDate, endDate);
+
+      // 댓글 대상 유형별 
+      if (Array.isArray(commentRes.commentTarget)) {
+        setCommentLabels(
+          commentRes.commentTarget.map((item: any) => {
+            switch (item.targetType) {
+              case 'BOARD': return '게시판';
+              case 'CONTENT': return '콘텐츠';
+              default: return item.targetType;
+            }
+          })
+        );
+
+        setCommentCounts(commentRes.commentTarget.map((item: any) => item.commentCount));
+      }    
+
     } catch (error) {
       console.error('통계 조회 실패:', error);
     }
   };
 
-  // const loadStats = async () => {
-  //   // 더미 데이터 적용
-  //   setCommentStats([12, 20, 18, 25]); // 댓글 수
-  //   setVisitorStats([50, 80, 65, 90]); // 방문자 수
-  // };
 
   useEffect(() => {
     loadStats();
@@ -224,21 +244,33 @@ const AdminIndex = () => {
           </div>
 
           <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-semibold mb-2">최근 댓글 활동</h3>
-            <Line
+            <h3 className="font-semibold mb-2">댓글 대상 유형 통계</h3>
+            <PolarArea
               data={{
-                labels: ['-30일', '-20일', '-10일', '오늘'],
+                labels: commentLabels,
                 datasets: [
                   {
                     label: '댓글 수',
-                    data: commentStats,
-                    borderColor: '#10b981',
-                    backgroundColor: '#6ee7b7',
+                    data: commentCounts,
+                    backgroundColor: [
+                      '#60a5fa', // blue
+                      '#34d399', // green
+                      '#fbbf24', // yellow
+                      '#f87171', // red
+                    ],
                   },
                 ],
               }}
+              options={{
+                plugins: {
+                  legend: {
+                    position: 'right',
+                  },
+                },
+              }}
             />
           </div>
+
 
           <div className="bg-white p-4 rounded shadow col-span-2">
             <h3 className="font-semibold mb-2">최근 방문자 수</h3>
