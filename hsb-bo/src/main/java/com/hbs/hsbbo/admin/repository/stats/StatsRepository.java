@@ -8,4 +8,5 @@ public interface StatsRepository {
     List<Object[]> countContentMonthly(LocalDateTime start, LocalDateTime end);
     List<Object[]> countContentTypeRatio(LocalDateTime start, LocalDateTime end);
     List<Object[]> contentPopular(LocalDateTime start, LocalDateTime end);
+    List<Object[]> commentTarget(LocalDateTime start, LocalDateTime end);
 }

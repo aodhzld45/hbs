@@ -1,5 +1,7 @@
 package com.hbs.hsbbo.admin.service;
 
+import com.hbs.hsbbo.admin.dto.statsDTO.response.comment.CommentStatsResponse;
+import com.hbs.hsbbo.admin.dto.statsDTO.response.comment.CommentTargetResponse;
 import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentMonthStatResponse;
 import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentPopularResponse;
 import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentStatsResponse;
@@ -35,4 +37,20 @@ public class StatsService {
 
         return new ContentStatsResponse(monthly, ratios, popular);
     }
+
+    // 댓글 통계 조회 후 DTO 변환
+    public CommentStatsResponse getCommentStats(LocalDateTime start, LocalDateTime end) {
+        var commentTarget = statsRepository.commentTarget(start, end).stream()
+                .map(r -> new CommentTargetResponse(
+                        (String) r[0],
+                        ((Number) r[1]).intValue()
+                ))
+                .toList();
+
+        return new CommentStatsResponse(commentTarget);
+    }
+
+
+
+
 }

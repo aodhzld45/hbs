@@ -57,5 +57,33 @@ public class StatsRepositoryImpl implements StatsRepository {
                 .getResultList();
     }
 
+    // 대상 유형별 댓글 수 - 타입별로 카운트
+    @Override
+    public List<Object[]> commentTarget(LocalDateTime start, LocalDateTime end) {
+        return em.createNativeQuery("""
+            SELECT target_type, COUNT(*) AS comment_count
+            FROM (
+              SELECT\s
+                CASE\s
+                  WHEN cf.fileId IS NOT NULL THEN 'CONTENT'
+                  WHEN b.id IS NOT NULL THEN 'BOARD'
+                  ELSE 'UNKNOWN'
+                END AS target_type
+              FROM comment c
+              LEFT JOIN contentfile cf ON c.target_id = cf.fileId
+              LEFT JOIN board b ON c.target_id = b.id
+              WHERE c.parent_id IS NULL
+                AND c.use_tf = 'Y'
+                AND c.reg_date BETWEEN :start AND :end
+            ) AS sub
+            GROUP BY target_type;
+            """, Object[].class)
+                .setParameter("start", start)
+                .setParameter("end", end)
+                .getResultList();
+    }
+
+
+
 
 }

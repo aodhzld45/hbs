@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.controller;
 
+import com.hbs.hsbbo.admin.dto.statsDTO.response.comment.CommentStatsResponse;
 import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentStatsResponse;
 import com.hbs.hsbbo.admin.service.StatsService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,14 @@ public class StatsController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate
     ) {
         return ResponseEntity.ok(statsService.getContentStats(startDate, endDate));
+    }
+
+    @GetMapping("/comment")
+    public ResponseEntity<CommentStatsResponse> getCommentStats(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate
+    ) {
+        return ResponseEntity.ok(statsService.getCommentStats(startDate, endDate));
     }
 
 
