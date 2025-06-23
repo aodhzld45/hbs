@@ -150,6 +150,7 @@ const AdminIndex = () => {
         <div className="grid grid-cols-2 gap-6">
           <div className="bg-white p-4 rounded shadow">
             <h3 className="text-xl font-bold mb-4">월별 콘텐츠 업로드</h3>
+            {contentStats.length > 0 ? (
             <Line
               data={{
                 labels: monthlyLabels,
@@ -163,10 +164,14 @@ const AdminIndex = () => {
                 ],
               }}
             />
+          ) : (
+            <div className="text-gray-500 text-center py-10">데이터가 없습니다</div>
+          )}
           </div>
 
           <div className="bg-white p-4 rounded shadow">
             <h3 className="text-xl font-bold mb-4">콘텐츠 유형 비율</h3>
+            {typeRatio.length > 0 ? (
             <Pie
               data={{
                 labels: typeLabels,
@@ -178,10 +183,14 @@ const AdminIndex = () => {
                 ],
               }}
             />
+            ) : (
+              <div className="text-gray-500 text-center py-10">데이터가 없습니다</div>
+            )}
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-lg">
             <h3 className="text-xl font-bold mb-4">인기 콘텐츠 TOP5</h3>
+            {popularViews.length > 0 ? (
             <Bar
               data={{
                 labels: popularLabels,
@@ -241,10 +250,14 @@ const AdminIndex = () => {
                 },
               }}
             />
+            ) : (
+              <div className="text-gray-500 text-center py-10">데이터가 없습니다</div>
+            )}
           </div>
 
           <div className="bg-white p-4 rounded shadow">
             <h3 className="font-semibold mb-2">댓글 대상 유형 통계</h3>
+            {commentCounts.length > 0 ? (
             <PolarArea
               data={{
                 labels: commentLabels,
@@ -269,6 +282,9 @@ const AdminIndex = () => {
                 },
               }}
             />
+            ) : (
+              <div className="text-gray-500 text-center py-10">데이터가 없습니다</div>
+            )}
           </div>
 
 
