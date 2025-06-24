@@ -8,6 +8,7 @@ import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentStatsResponse;
 import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentTypeRatioResponse;
 import com.hbs.hsbbo.admin.dto.statsDTO.response.userlog.UserLogHourStatsResponse;
 import com.hbs.hsbbo.admin.dto.statsDTO.response.userlog.UserLogStatsResponse;
+import com.hbs.hsbbo.admin.dto.statsDTO.response.userlog.UserMenuHourVisitResponse;
 import com.hbs.hsbbo.admin.repository.stats.StatsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -61,7 +62,15 @@ public class StatsService {
                 ))
                 .toList();
 
-        return new UserLogStatsResponse(userLogHour);
+        var usrLogMenuVisit = statsRepository.hourMenuVisit().stream()
+                .map(r-> new UserMenuHourVisitResponse(
+                        (String) r[0],
+                        (String) r[1],
+                        ((Number) r[2]).intValue()
+                ))
+                .toList();
+
+        return new UserLogStatsResponse(userLogHour,usrLogMenuVisit);
     }
 
 

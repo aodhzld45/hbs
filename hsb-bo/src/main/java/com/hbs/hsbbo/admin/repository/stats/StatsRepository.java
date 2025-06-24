@@ -10,4 +10,5 @@ public interface StatsRepository {
     List<Object[]> contentPopular(LocalDateTime start, LocalDateTime end);
     List<Object[]> commentTarget(LocalDateTime start, LocalDateTime end);
     List<Object[]> userLogHour();
+    List<Object[]> hourMenuVisit();
 }

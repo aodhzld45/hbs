@@ -6,7 +6,9 @@ import AdminLayout from '../../components/Layout/AdminLayout';
 import DatePicker from 'react-datepicker';
 import { ko } from 'date-fns/locale'; // 한글 locale
 import 'react-datepicker/dist/react-datepicker.css';
-import { Line, Pie, Bar, PolarArea } from 'react-chartjs-2';
+
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { Line, Pie, Bar, PolarArea, Chart } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -19,8 +21,10 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+
 import dayjs from 'dayjs';
 import { fetchContentStats, fetchCommentStats, fetchUserLogHour } from '../../services/Admin/statsApi';
+import { createJsxClosingElement } from 'typescript';
 
 ChartJS.register(
   CategoryScale,
@@ -31,7 +35,8 @@ ChartJS.register(
   RadialLinearScale,
   ArcElement,
   Tooltip,
-  Legend
+  Legend,
+  ChartDataLabels
 );
 
 const AdminIndex = () => {
@@ -62,7 +67,11 @@ const AdminIndex = () => {
 
   // 방문자 통계 상태 값
   const [hourLabels, setHourLabels] = useState<string[]>([]);
-  const [visitCount, setvisitCount] = useState<number[]>([]);
+  const [hourVisitCount, setHourVisitCount] = useState<number[]>([]);
+
+  const [hourMenuVisitLabels, setHourMenuVisitLabels] = useState<string[]>([]);
+  const [hourMenuVisitTitle, setHourMenuVisitTitle] = useState<string[]>([]);
+  const [hourMenuVisitCount, setHourMenuVisitCount] = useState<number[]>([]);
 
   const loadStats = async () => {
     try {
@@ -105,13 +114,23 @@ const AdminIndex = () => {
 
       // 방문자 통계
       const userLogRes = await fetchUserLogHour();
-      /*
-        const [hourLabels, setHourLabels] = useState<string[]>([]);
-        const [visitCount, setvisitCount] = useState<number[]>([]);
-      */
+      console.log(userLogRes.hourMenuVisit);
+
       if (Array.isArray(userLogRes.hourStats)) {
         setHourLabels(userLogRes.hourStats.map((h: any) => h.hourLabels));
-        setvisitCount(userLogRes.hourStats.map((h: any) => h.visitCount));
+        setHourVisitCount(userLogRes.hourStats.map((h: any) => h.visitCount));
+      }
+
+      /*
+        const [hourMenuVisitLabels, setHourMenuVisitLabels] = useState<string[]>([]);
+        const [hourMenuVisitTitle, setHourMenuVisitTitle] = useState<string[]>([]);
+        const [hourMenuVisitCount, setHourMenuVisitCount] = useState<number[]>([]);
+        hourLabels menuName visitCount
+      */
+      if (Array.isArray(userLogRes.hourMenuVisit)) {
+        setHourMenuVisitLabels(userLogRes.hourMenuVisit.map((hm: any) => hm.hourLabels));
+        setHourMenuVisitTitle(userLogRes.hourMenuVisit.map((hm: any) => hm.menuName));
+        setHourMenuVisitCount(userLogRes.hourMenuVisit.map((hm: any) => hm.visitCount));
       }
 
 
@@ -119,7 +138,6 @@ const AdminIndex = () => {
       console.error('통계 조회 실패:', error);
     }
   };
-
 
   useEffect(() => {
     loadStats();
@@ -137,23 +155,23 @@ const AdminIndex = () => {
           <h1 className="text-3xl font-bold">📊 통합 대시보드</h1>
         </div>
 
-        <div className="flex items-center gap-2 mb-8">
+        <div className="flex justify-end items-center gap-2 mb-8">
           <DatePicker
-              selected={startDate}
-              onChange={(date: Date | null) => {
-                if (date) setStartDate(date);
-              }}
-              locale={ko}
-              dateFormat="yyyy-MM-dd"
-              maxDate={endDate}
-            />
+            selected={startDate}
+            onChange={(date: Date | null) => {
+              if (date) setStartDate(date);
+            }}
+            locale={ko}
+            dateFormat="yyyy-MM-dd"
+            maxDate={endDate}
+          />
           <span>~</span>
           <DatePicker
             selected={endDate}
             onChange={(date: Date | null) => {
               if (date) setEndDate(date);
             }}
-            locale={ko} 
+            locale={ko}
             dateFormat="yyyy-MM-dd"
             minDate={startDate}
           />
@@ -165,8 +183,10 @@ const AdminIndex = () => {
           </button>
         </div>
 
+        <hr className="my-10 border-gray-300" />
+
         <div className="grid grid-cols-2 gap-6">
-          <div className="bg-white p-4 rounded shadow col-span-2">
+         <div className="bg-white p-4 rounded shadow">
             <h3 className="text-xl font-bold mb-4">시간대 별 방문자 수</h3>
             <Bar
               data={{
@@ -174,7 +194,7 @@ const AdminIndex = () => {
                 datasets: [
                   {
                     label: '방문자',
-                    data: visitCount,
+                    data: hourVisitCount,
                     backgroundColor: '#60a5fa',
                   },
                 ],
@@ -186,6 +206,104 @@ const AdminIndex = () => {
                 },
               }}
             />
+          </div>
+
+          <div className="bg-white p-4 rounded shadow">
+            <h3 className="text-xl font-bold mb-4">시간대 메뉴별 방문자 수</h3>
+            {hourMenuVisitCount.length > 0 ? (
+              <Chart
+                type="bar"
+                data={{
+                  labels: hourMenuVisitLabels,
+                  datasets: [
+                    {
+                      type: 'bar',
+                      label: '방문자 수',
+                      data: hourMenuVisitCount,
+                      backgroundColor: 'rgba(96,165,250,0.7)', // blue-400
+                      borderRadius: 6,
+                      barThickness: 24,
+                      datalabels: {
+                        display: true,
+                        align: 'end',
+                        anchor: 'end',
+                        color: '#1e40af', // blue-900
+                        font: {
+                          size: 12,
+                        },
+                      },
+                    },
+                    {
+                      type: 'line',
+                      label: '메뉴명',
+                      data: hourMenuVisitCount,
+                      borderColor: 'rgba(234,88,12,0.9)', // orange-600
+                      backgroundColor: 'rgba(251,191,36,0.2)',
+                      borderWidth: 2,
+                      tension: 0.3,
+                      pointRadius: 5,
+                      pointBackgroundColor: '#f97316', // orange-500
+                      datalabels: {
+                        display: true,
+                        align: 'top',
+                        anchor: 'end',
+                        color: '#eab308', // amber-400
+                        font: {
+                          size: 12,
+                        },
+                        formatter: (_, context) => {
+                          const label = hourMenuVisitTitle[context.dataIndex] || '';
+                          return label.length > 4 ? label.slice(0, 4) + '…' : label;
+                        },
+                      },
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    datalabels: {
+                      // 기본값은 숨김, 개별 dataset에서 설정함
+                      display: false,
+                    },
+                    tooltip: {
+                      callbacks: {
+                        afterLabel: (context) => {
+                          const index = context.dataIndex;
+                          return `메뉴: ${hourMenuVisitTitle[index]}`;
+                        },
+                      },
+                    },
+                    legend: {
+                      position: 'top',
+                      labels: {
+                        font: { size: 12 },
+                      },
+                    },
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        stepSize: 1,
+                      },
+                      grid: {
+                        color: '#e5e7eb',
+                      },
+                    },
+                    x: {
+                      grid: {
+                        display: false,
+                      },
+                    },
+                  },
+                }}
+                plugins={[ChartDataLabels]}
+              />
+
+          ) : (
+            <div className="text-gray-500 text-center py-10">데이터가 없습니다</div>
+          )}
           </div>
 
           <div className="bg-white p-4 rounded shadow">
