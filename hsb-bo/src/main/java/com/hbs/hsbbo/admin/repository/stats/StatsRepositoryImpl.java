@@ -35,7 +35,7 @@ public class StatsRepositoryImpl implements StatsRepository {
             SELECT contentType, COUNT(*) AS count
             FROM contentfile
             WHERE regDate BETWEEN :start AND :end            
-            GROUP BY contentType;
+            GROUP BY contentType
             """, Object[].class)
                 .setParameter("start", start)
                 .setParameter("end", end)
@@ -50,7 +50,7 @@ public class StatsRepositoryImpl implements StatsRepository {
             FROM contentfile
             WHERE regDate BETWEEN :start AND :end            
             ORDER BY view_count DESC
-            LIMIT 5;
+            LIMIT 5
             """, Object[].class)
                 .setParameter("start", start)
                 .setParameter("end", end)
@@ -76,12 +76,32 @@ public class StatsRepositoryImpl implements StatsRepository {
                 AND c.use_tf = 'Y'
                 AND c.reg_date BETWEEN :start AND :end
             ) AS sub
-            GROUP BY target_type;
+            GROUP BY target_type
             """, Object[].class)
                 .setParameter("start", start)
                 .setParameter("end", end)
                 .getResultList();
     }
+    // 시간대별 방문자 수 (SID 중복 제외)
+    @Override
+    public List<Object[]> userLogHour() {
+        return em.createNativeQuery("""
+            SELECT\s
+              CONCAT(LPAD(ul.hh, 2, '0'), '시') AS hour,
+              COUNT(DISTINCT ul.sid) AS visitCount
+            FROM userlog ul
+            WHERE ul.useTF = 'Y'
+              AND ul.delTF = 'N'
+              AND ul.url NOT LIKE '/admin%'
+              AND ul.ymd = DATE_FORMAT(NOW(), '%Y-%m-%d') -- 오늘 날짜
+              AND CAST(ul.hh AS UNSIGNED) BETWEEN 6 AND 23
+            GROUP BY hour
+            ORDER BY hour        
+                """, Object[].class)
+                .getResultList();
+    }
+
+
 
 
 

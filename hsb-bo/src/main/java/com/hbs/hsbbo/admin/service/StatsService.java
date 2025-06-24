@@ -6,6 +6,8 @@ import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentMonthStatRespons
 import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentPopularResponse;
 import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentStatsResponse;
 import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentTypeRatioResponse;
+import com.hbs.hsbbo.admin.dto.statsDTO.response.userlog.UserLogHourStatsResponse;
+import com.hbs.hsbbo.admin.dto.statsDTO.response.userlog.UserLogStatsResponse;
 import com.hbs.hsbbo.admin.repository.stats.StatsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,6 +50,18 @@ public class StatsService {
                 .toList();
 
         return new CommentStatsResponse(commentTarget);
+    }
+
+    // 시간대별 방문자 수 (SID 중복 제외)
+    public UserLogStatsResponse getUserLogStats() {
+        var userLogHour = statsRepository.userLogHour().stream()
+                .map(r-> new UserLogHourStatsResponse(
+                        (String) r[0],
+                        ((Number) r[1]).intValue()
+                ))
+                .toList();
+
+        return new UserLogStatsResponse(userLogHour);
     }
 
 

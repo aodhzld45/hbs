@@ -2,6 +2,7 @@ package com.hbs.hsbbo.admin.controller;
 
 import com.hbs.hsbbo.admin.dto.statsDTO.response.comment.CommentStatsResponse;
 import com.hbs.hsbbo.admin.dto.statsDTO.response.content.ContentStatsResponse;
+import com.hbs.hsbbo.admin.dto.statsDTO.response.userlog.UserLogStatsResponse;
 import com.hbs.hsbbo.admin.service.StatsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,11 @@ public class StatsController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate
     ) {
         return ResponseEntity.ok(statsService.getCommentStats(startDate, endDate));
+    }
+
+    @GetMapping("/user-log")
+    public ResponseEntity<UserLogStatsResponse> getUserLogStats() {
+        return ResponseEntity.ok(statsService.getUserLogStats());
     }
 
 

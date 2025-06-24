@@ -20,7 +20,7 @@ import {
   Legend,
 } from 'chart.js';
 import dayjs from 'dayjs';
-import { fetchContentStats, fetchCommentStats } from '../../services/Admin/statsApi';
+import { fetchContentStats, fetchCommentStats, fetchUserLogHour } from '../../services/Admin/statsApi';
 
 ChartJS.register(
   CategoryScale,
@@ -49,13 +49,20 @@ const AdminIndex = () => {
 
   const [popularLabels, setPopularLabels] = useState<string[]>([]);
   const [popularViews, setPopularViews] = useState<number[]>([]);
+
+  // 인기 콘텐츠 Label 커스텀
+  const trimmedLabels = popularLabels.map((label, index) =>
+    `${index + 1}위: ${label.slice(0, 4)}…`
+  );
   //
 
   // 댓글 통계 상태 값
   const [commentLabels, setCommentLabels] = useState<string[]>([]);
   const [commentCounts, setCommentCounts] = useState<number[]>([]);
 
-  const [visitorStats, setVisitorStats] = useState<number[]>([]);
+  // 방문자 통계 상태 값
+  const [hourLabels, setHourLabels] = useState<string[]>([]);
+  const [visitCount, setvisitCount] = useState<number[]>([]);
 
   const loadStats = async () => {
     try {
@@ -79,7 +86,6 @@ const AdminIndex = () => {
       }
 
       // 댓글 통계
-
       const commentRes = await fetchCommentStats(startDate, endDate);
 
       // 댓글 대상 유형별 
@@ -96,6 +102,18 @@ const AdminIndex = () => {
 
         setCommentCounts(commentRes.commentTarget.map((item: any) => item.commentCount));
       }    
+
+      // 방문자 통계
+      const userLogRes = await fetchUserLogHour();
+      /*
+        const [hourLabels, setHourLabels] = useState<string[]>([]);
+        const [visitCount, setvisitCount] = useState<number[]>([]);
+      */
+      if (Array.isArray(userLogRes.hourStats)) {
+        setHourLabels(userLogRes.hourStats.map((h: any) => h.hourLabels));
+        setvisitCount(userLogRes.hourStats.map((h: any) => h.visitCount));
+      }
+
 
     } catch (error) {
       console.error('통계 조회 실패:', error);
@@ -148,6 +166,28 @@ const AdminIndex = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-6">
+          <div className="bg-white p-4 rounded shadow col-span-2">
+            <h3 className="text-xl font-bold mb-4">시간대 별 방문자 수</h3>
+            <Bar
+              data={{
+                labels: hourLabels,
+                datasets: [
+                  {
+                    label: '방문자',
+                    data: visitCount,
+                    backgroundColor: '#60a5fa',
+                  },
+                ],
+              }}
+              options={{
+                indexAxis: 'y', // 수평 Bar Chart
+                scales: {
+                  x: { beginAtZero: true },
+                },
+              }}
+            />
+          </div>
+
           <div className="bg-white p-4 rounded shadow">
             <h3 className="text-xl font-bold mb-4">월별 콘텐츠 업로드</h3>
             {contentStats.length > 0 ? (
@@ -192,71 +232,59 @@ const AdminIndex = () => {
             <h3 className="text-xl font-bold mb-4">인기 콘텐츠 TOP5</h3>
             {popularViews.length > 0 ? (
             <Bar
-              data={{
-                labels: popularLabels,
-                datasets: [
-                  {
-                    label: '조회수',
-                    data: popularViews,
-                    backgroundColor: [
-                      'rgba(59, 130, 246, 0.7)',   // blue
-                      'rgba(34, 197, 94, 0.7)',    // green
-                      'rgba(234, 179, 8, 0.7)',    // yellow
-                      'rgba(239, 68, 68, 0.7)',    // red
-                      'rgba(168, 85, 247, 0.7)',   // purple
-                    ],                    borderRadius: 6,
-                    barPercentage: 0.6,
-                  },
-                ],
-              }}
-              options={{
-                responsive: true,
-                plugins: {
-                  legend: {
-                    display: false,
-                  },
-                  tooltip: {
-                    callbacks: {
-                      label: (context) => `조회수: ${context.raw}회`,
-                    },
-                  },
-                  title: {
-                    display: false,
+            data={{
+              labels: trimmedLabels,
+              datasets: [
+                {
+                  label: '조회수',
+                  data: popularViews,
+                  backgroundColor: [
+                    'rgba(59, 130, 246, 0.7)',   // blue
+                    'rgba(34, 197, 94, 0.7)',    // green
+                    'rgba(234, 179, 8, 0.7)',    // yellow
+                    'rgba(239, 68, 68, 0.7)',    // red
+                    'rgba(168, 85, 247, 0.7)',   // purple
+                  ],
+                  borderRadius: 6,
+                  barPercentage: 0.6,
+                },
+              ],
+            }}
+            options={{
+              responsive: true,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    // 전체 제목 그대로 tooltip 표시
+                    title: (context) => popularLabels[context[0].dataIndex],
+                    label: (context) => `조회수: ${context.raw}회`,
                   },
                 },
-                scales: {
-                  x: {
-                    ticks: {
-                      maxRotation: 0,
-                      minRotation: 0,
-                      callback: (value, index) => {
-                        const label = popularLabels[index];
-                        return label.length > 10 ? label.slice(0, 10) + '…' : label;
-                      },
-                    },
-                    grid: {
-                      display: false,
-                    },
+              },
+              scales: {
+                x: {
+                  ticks: {
+                    maxRotation: 0,
+                    minRotation: 0,
                   },
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      stepSize: 5,
-                    },
-                    grid: {
-                      color: '#eee',
-                    },
-                  },
+                  grid: { display: false },
                 },
-              }}
-            />
+                y: {
+                  beginAtZero: true,
+                  ticks: { stepSize: 5 },
+                  grid: { color: '#eee' },
+                },
+              },
+            }}
+          />
             ) : (
               <div className="text-gray-500 text-center py-10">데이터가 없습니다</div>
             )}
           </div>
 
           <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-semibold mb-2">댓글 대상 유형 통계</h3>
+            <h3 className="text-xl font-bold mb-4">댓글 대상 유형 통계</h3>
             {commentCounts.length > 0 ? (
             <PolarArea
               data={{
@@ -287,23 +315,6 @@ const AdminIndex = () => {
             )}
           </div>
 
-
-          <div className="bg-white p-4 rounded shadow col-span-2">
-            <h3 className="font-semibold mb-2">최근 방문자 수</h3>
-            <Line
-              data={{
-                labels: ['-30일', '-20일', '-10일', '오늘'],
-                datasets: [
-                  {
-                    label: '방문자',
-                    data: visitorStats,
-                    borderColor: '#6366f1',
-                    backgroundColor: '#c7d2fe',
-                  },
-                ],
-              }}
-            />
-          </div>
         </div>
       </div>
     </AdminLayout>

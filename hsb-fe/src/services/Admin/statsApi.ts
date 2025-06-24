@@ -21,3 +21,11 @@ export const fetchCommentStats = async (startDate: Date, endDate: Date) => {
   });
   return res.data;
 };
+
+// 대시보드 시간대별 방문자 수 통계
+export const fetchUserLogHour = async () => {
+  const res = await api.get('/stats/user-log') 
+
+  return res.data;
+}
+
