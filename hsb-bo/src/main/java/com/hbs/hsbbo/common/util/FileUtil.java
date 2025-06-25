@@ -1,3 +1,4 @@
+
 // com.hbs.hsbbo.common.util.FileUtil.java
 package com.hbs.hsbbo.common.util;
 
@@ -46,6 +47,14 @@ public class FileUtil {
         } catch (IOException e) {
             throw new RuntimeException("파일 저장 실패", e);
         }
+    }
+
+    // 공용 resolvePath 서브 디렉토리 저장경로 계산
+    public Path resolvePath(String subDir) {
+        if (subDir == null || subDir.isBlank()) {
+            throw new IllegalArgumentException("서브 디렉토리 이름이 유효하지 않습니다.");
+        }
+        return Paths.get(fileStorageProperties.getUploadPath(), subDir.toLowerCase());
     }
 
     /**
@@ -98,6 +107,10 @@ public class FileUtil {
             throw new IllegalArgumentException("contactType이 유효하지 않습니다.");
         }
         return Paths.get(fileStorageProperties.getUploadPath(), contactType.toLowerCase());
+    }
+
+    public Path resolveBannerPath() {
+        return Paths.get(fileStorageProperties.getUploadPath(), "banner");
     }
 
     /*
