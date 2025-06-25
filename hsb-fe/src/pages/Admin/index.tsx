@@ -114,7 +114,6 @@ const AdminIndex = () => {
 
       // 방문자 통계
       const userLogRes = await fetchUserLogHour();
-      console.log(userLogRes.hourMenuVisit);
 
       if (Array.isArray(userLogRes.hourStats)) {
         setHourLabels(userLogRes.hourStats.map((h: any) => h.hourLabels));
@@ -132,7 +131,6 @@ const AdminIndex = () => {
         setHourMenuVisitTitle(userLogRes.hourMenuVisit.map((hm: any) => hm.menuName));
         setHourMenuVisitCount(userLogRes.hourMenuVisit.map((hm: any) => hm.visitCount));
       }
-
 
     } catch (error) {
       console.error('통계 조회 실패:', error);
@@ -155,39 +153,10 @@ const AdminIndex = () => {
           <h1 className="text-3xl font-bold">📊 통합 대시보드</h1>
         </div>
 
-        <div className="flex justify-end items-center gap-2 mb-8">
-          <DatePicker
-            selected={startDate}
-            onChange={(date: Date | null) => {
-              if (date) setStartDate(date);
-            }}
-            locale={ko}
-            dateFormat="yyyy-MM-dd"
-            maxDate={endDate}
-          />
-          <span>~</span>
-          <DatePicker
-            selected={endDate}
-            onChange={(date: Date | null) => {
-              if (date) setEndDate(date);
-            }}
-            locale={ko}
-            dateFormat="yyyy-MM-dd"
-            minDate={startDate}
-          />
-          <button
-            onClick={loadStats}
-            className="px-4 py-1 bg-blue-600 text-white rounded"
-          >
-            조회
-          </button>
-        </div>
-
-        <hr className="my-10 border-gray-300" />
-
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-6 mb-10">
          <div className="bg-white p-4 rounded shadow">
             <h3 className="text-xl font-bold mb-4">시간대 별 방문자 수</h3>
+            {hourVisitCount.length > 0 ? (
             <Bar
               data={{
                 labels: hourLabels,
@@ -206,6 +175,9 @@ const AdminIndex = () => {
                 },
               }}
             />
+            ) : (
+              <div className="text-gray-500 text-center py-10">데이터가 없습니다</div>
+            )}
           </div>
 
           <div className="bg-white p-4 rounded shadow">
@@ -300,12 +272,43 @@ const AdminIndex = () => {
                 }}
                 plugins={[ChartDataLabels]}
               />
-
           ) : (
             <div className="text-gray-500 text-center py-10">데이터가 없습니다</div>
           )}
           </div>
+        </div>  
 
+          <hr className="my-10 border-gray-300" />
+
+          <div className="mb-6 flex justify-end items-center gap-2">
+            <DatePicker
+              selected={startDate}
+              onChange={(date: Date | null) => {
+                if (date) setStartDate(date);
+              }}
+              locale={ko}
+              dateFormat="yyyy-MM-dd"
+              maxDate={endDate}
+            />
+            <span>~</span>
+            <DatePicker
+              selected={endDate}
+              onChange={(date: Date | null) => {
+                if (date) setEndDate(date);
+              }}
+              locale={ko}
+              dateFormat="yyyy-MM-dd"
+              minDate={startDate}
+            />
+            <button
+              onClick={loadStats}
+              className="px-4 py-1 bg-blue-600 text-white rounded"
+            >
+              조회
+            </button>
+          </div>
+
+        <div className="grid grid-cols-2 gap-6">
           <div className="bg-white p-4 rounded shadow">
             <h3 className="text-xl font-bold mb-4">월별 콘텐츠 업로드</h3>
             {contentStats.length > 0 ? (
@@ -432,8 +435,8 @@ const AdminIndex = () => {
               <div className="text-gray-500 text-center py-10">데이터가 없습니다</div>
             )}
           </div>
-
         </div>
+        
       </div>
     </AdminLayout>
   );
