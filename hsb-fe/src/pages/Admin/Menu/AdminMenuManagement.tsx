@@ -23,11 +23,9 @@ const AdminMenuManagement: React.FC = () => {
   const [editingMenu, setEditingMenu] = useState<AdminMenu | null>(null);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
 
-  useEffect(() => {
     const loadMenus = async () => {
       try {
         const data = await fetchAdminMenus();
-
         const tree = buildMenuTree(data);
         const flattened = flattenMenuTree(tree as { id: number; name: string; children?: any[] }[]);
 
@@ -45,8 +43,12 @@ const AdminMenuManagement: React.FC = () => {
         setLoading(false);
       }
     };
+
+
+  useEffect(() => {
     loadMenus();
   }, []);
+
 
   // 메뉴 순서 변경
   const moveMenu = async (index: number, direction: 'up' | 'down') => {
@@ -83,11 +85,18 @@ const AdminMenuManagement: React.FC = () => {
     updatedMenus[i1].orderSequence = updatedMenus[i2].orderSequence;
     updatedMenus[i2].orderSequence = tempOrder;
   
-    // 서버에 순서 업데이트
-    await updateOrderSequence(updatedMenus[i1].id!, updatedMenus[i1].orderSequence!);
-    await updateOrderSequence(updatedMenus[i2].id!, updatedMenus[i2].orderSequence!);
-  
-    setMenus(updatedMenus);
+    try {
+      // 서버에 순서 업데이트
+      await updateOrderSequence(updatedMenus[i1].id!, updatedMenus[i1].orderSequence!);
+      await updateOrderSequence(updatedMenus[i2].id!, updatedMenus[i2].orderSequence!);
+
+      setLoading(true);
+      await loadMenus();
+      setLoading(false);
+
+    } catch (error) {
+      console.error('순서 변경 실패:', error);
+    }
   };
   
   const moveMenuUp = (index: number) => moveMenu(index, 'up');
