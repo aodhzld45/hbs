@@ -6,9 +6,11 @@ import com.hbs.hsbbo.admin.dto.response.UserMenuResponse;
 import com.hbs.hsbbo.admin.dto.response.UserMenuTreeResponse;
 import com.hbs.hsbbo.admin.service.UserMenuService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -41,6 +43,17 @@ public class UserMenuController {
                                        @RequestBody UserMenuRequest request,
                                        @RequestParam String adminId) {
         return userMenuService.updateMenu(id, request, adminId);
+    }
+    
+    // 관리자 사용자 메뉴 순서 변경
+    @PatchMapping("/{id}/order")
+    public ResponseEntity<?> updateOrder(
+            @PathVariable Long id,
+            @RequestBody Map<String, Integer> payload) {
+        Integer newOrder = payload.get("orderSequence");
+        
+        userMenuService.updateOrder(id, newOrder);
+        return ResponseEntity.ok().build();
     }
 
     // 관리자 - 사용자 메뉴 삭제

@@ -15,6 +15,11 @@ export const fetchUserMenuCreate = async (form: any, adminId: string) => {
     return res.data;
 };
 
+export const fetchUserMenuOrder = async (id: number, newOrder: number) => {
+  const res = await api.patch(`/user-menus/${id}/order`, {orderSequence : newOrder})
+  return res.data;
+};
+
 export const fetchUserMenuUpdate = async (id: number, form: any, adminId: string) => {
     const res = await api.put(`/user-menus/${id}`, form, {
       params: { adminId },

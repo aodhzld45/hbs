@@ -5,6 +5,7 @@ import com.hbs.hsbbo.admin.dto.request.UserMenuRequest;
 import com.hbs.hsbbo.admin.dto.response.UserMenuResponse;
 import com.hbs.hsbbo.admin.dto.response.UserMenuTreeResponse;
 import com.hbs.hsbbo.admin.repository.UserMenuRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -59,6 +60,15 @@ public class UserMenuService {
 
         return rootMenus;
 
+    }
+
+    // 사용자 메뉴 순서 변경
+    @Transactional
+    public void updateOrder(Long id, Integer newOrder) {
+        UserMenu target = userMenuRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 메뉴가 존재하지 않습니다."));
+
+        target.setOrderSeq(newOrder); // 단순 순서 변경
     }
 
     

@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface UserMenuRepository extends JpaRepository<UserMenu, Long> {
     List<UserMenu> findByDelTf(String delTf);
+    List<UserMenu> findByParentIdOrderByOrderSeqAsc(Long parentId);
 
 }
