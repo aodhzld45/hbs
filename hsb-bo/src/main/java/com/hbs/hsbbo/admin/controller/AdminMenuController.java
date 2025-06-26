@@ -2,17 +2,22 @@ package com.hbs.hsbbo.admin.controller;
 
 import com.hbs.hsbbo.admin.domain.entity.AdminMenu;
 import com.hbs.hsbbo.admin.repository.AdminMenuRepository;
+import com.hbs.hsbbo.admin.service.AdminMenuService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin/menus")
 public class AdminMenuController {
+
+    @Autowired
+    private AdminMenuService adminMenuService;
 
     @Autowired
     private AdminMenuRepository adminMenuRepository;
@@ -22,6 +27,16 @@ public class AdminMenuController {
     public ResponseEntity<List<AdminMenu>> getAllMenus() {
         List<AdminMenu> menus = adminMenuRepository.findByDelTfOrderByOrderSequenceAsc("N");
         return ResponseEntity.ok(menus);
+    }
+
+    // 메뉴 순서 변경
+    @PatchMapping("/{id}/order")
+    public ResponseEntity<?> updateOrder(
+            @PathVariable Long id,
+            @RequestBody Map<String, Integer> payload) {
+        Integer newOrder = payload.get("orderSequence");
+        adminMenuService.updateOrder(id, newOrder);
+        return ResponseEntity.ok().build();
     }
 
     // 메뉴 등록
