@@ -6,10 +6,12 @@ import {
   fetchAdminMenus,
   createAdminMenu,
   updateAdminMenu,
+  updateOrderSequence,
   deleteAdminMenu
 } from '../../../services/Admin/adminMenuApi';
 import AdminMenuCreateModal from '../../../components/Admin/Menu/AdminMenuCreateModal';
 import AdminMenuEditModal from '../../../components/Admin/Menu/AdminMenuEditModal';
+
 import { flattenMenuTree, FlattenedMenuOption } from '../../../utils/menuTreeFlattener';
 import { buildMenuTree } from '../../../utils/buildMenuTree';
 
@@ -45,6 +47,51 @@ const AdminMenuManagement: React.FC = () => {
     };
     loadMenus();
   }, []);
+
+  // 메뉴 순서 변경
+  const moveMenu = async (index: number, direction: 'up' | 'down') => {
+    const current = menus[index];
+    if (!current) return;
+  
+    // 같은 그룹(동일한 parentId + depth)만 추출
+    const group = menus.filter(
+      m => m.parentId === current.parentId && m.depth === current.depth
+    );
+  
+    // 그룹에서 현재 index 찾기
+    const groupIndex = group.findIndex(m => m.id === current.id);
+    if (
+      (direction === 'up' && groupIndex === 0) ||
+      (direction === 'down' && groupIndex === group.length - 1)
+    ) {
+      return; // 이동 불가 (최상위 or 최하위)
+    }
+  
+    // 이동 대상 찾기
+    const targetIndex = direction === 'up' ? groupIndex - 1 : groupIndex + 1;
+    const target = group[targetIndex];
+  
+    if (!target) return;
+  
+    // 전체 메뉴 배열에서 위치 찾아서 순서 교체
+    const updatedMenus = [...menus];
+    const i1 = updatedMenus.findIndex(m => m.id === current.id);
+    const i2 = updatedMenus.findIndex(m => m.id === target.id);
+  
+    // 순서 필드만 교체하고, 위치는 그대로
+    const tempOrder = updatedMenus[i1].orderSequence;
+    updatedMenus[i1].orderSequence = updatedMenus[i2].orderSequence;
+    updatedMenus[i2].orderSequence = tempOrder;
+  
+    // 서버에 순서 업데이트
+    await updateOrderSequence(updatedMenus[i1].id!, updatedMenus[i1].orderSequence!);
+    await updateOrderSequence(updatedMenus[i2].id!, updatedMenus[i2].orderSequence!);
+  
+    setMenus(updatedMenus);
+  };
+  
+  const moveMenuUp = (index: number) => moveMenu(index, 'up');
+  const moveMenuDown = (index: number) => moveMenu(index, 'down');
 
   const handleSaveNewMenu = async (newMenu: AdminMenu) => {
     try {
@@ -110,12 +157,32 @@ const AdminMenuManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {menus.map(menu => (
+              {menus.map((menu, index) => (
                 <tr key={menu.id}>
                   <td className="px-4 py-2 text-sm">{menu.id}</td>
                   <td className="px-4 py-2 text-sm whitespace-nowrap">{menu.label ?? menu.name}</td>
                   <td className="px-4 py-2 text-sm">{menu.url}</td>
-                  <td className="px-4 py-2 text-sm">{menu.orderSequence}</td>
+                  {/* <td className="px-4 py-2 text-sm">{menu.orderSequence}</td> */}
+                  <td className="px-4 py-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <button
+                        disabled={index === 0}
+                        onClick={() => moveMenuUp(index)}
+                        className="text-gray-600 hover:text-blue-600"
+                        title="위로 이동"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        disabled={index === menus.length - 1}
+                        onClick={() => moveMenuDown(index)}
+                        className="text-gray-600 hover:text-blue-600"
+                        title="아래로 이동"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  </td>
                   <td className="px-4 py-2 text-sm">{menu.depth}</td>
                   <td className="px-4 py-2 text-sm">{menu.parentId ?? '-'}</td>
                   <td className="px-4 py-2 text-sm">

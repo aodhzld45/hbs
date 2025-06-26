@@ -20,3 +20,7 @@ export const updateAdminMenu = async (id: number, menu: AdminMenu): Promise<Admi
 export const deleteAdminMenu = async (id: number): Promise<void> => {
   await api.delete(`/admin/menus/${id}`);
 };
+
+export const updateOrderSequence = async (id: number, newOrder: number) => {
+  return api.patch(`/admin/menus/${id}/order`, { orderSequence: newOrder });
+};

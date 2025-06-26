@@ -15,11 +15,11 @@
   export const flattenMenuTree = <T extends { id: number; name: string; children?: T[] }>(
     nodes: T[],
     level = 0,
-    result: FlattenedMenuOption[] = []
-  ): FlattenedMenuOption[] => {
+    result: (T & { label: string })[] = []
+  ): (T & { label: string })[] => {
     nodes.forEach((node) => {
       result.push({
-        id: node.id,
+        ...node,
         label: `${'—'.repeat(level)} ${node.name}`,
       });
   
