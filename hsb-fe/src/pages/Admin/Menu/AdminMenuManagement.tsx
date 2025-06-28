@@ -27,6 +27,8 @@ const AdminMenuManagement: React.FC = () => {
       try {
         const data = await fetchAdminMenus();
         const tree = buildMenuTree(data);
+
+        console.log(tree);
         const flattened = flattenMenuTree(tree as { id: number; name: string; children?: any[] }[]);
 
         const menuMap = new Map(data.map(menu => [menu.id, menu]));
@@ -142,6 +144,26 @@ const AdminMenuManagement: React.FC = () => {
     }
   };
 
+  const handleToggleUseTf = async (menu: AdminMenu) => {
+    try {
+      const newUseTf = menu.useTf === 'Y' ? 'N' : 'Y';
+  
+      // API 호출
+      await updateAdminMenu(menu.id!, {
+        ...menu,
+        useTf: newUseTf,
+      });
+  
+      // 다시 메뉴 목록 새로고침
+      setLoading(true);
+      await loadMenus();
+      setLoading(false);
+    } catch (error) {
+      console.error('useTf 변경 실패:', error);
+      alert('상태 변경에 실패했습니다.');
+    }
+  };
+
   if (loading) return <div className="text-center py-8">로딩 중...</div>;
   if (error) return <div className="text-red-500 text-center py-8">{error}</div>;
 
@@ -201,8 +223,18 @@ const AdminMenuManagement: React.FC = () => {
                   </td>
                   <td className="px-4 py-2 text-sm">{menu.depth}</td>
                   <td className="px-4 py-2 text-sm">{menu.parentId ?? '-'}</td>
+      
                   <td className="px-4 py-2 text-sm">
-                    {menu.useTf === 'Y' ? '사용' : '미사용'} / {menu.delTf === 'N' ? '정상' : '삭제'}
+                    <button
+                      onClick={() => handleToggleUseTf(menu)}
+                      className={`px-2 py-1 rounded text-xs ${
+                        menu.useTf === 'Y'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-200 text-gray-600'
+                      } hover:bg-green-200`}
+                    >
+                      {menu.useTf === 'Y' ? '사용' : '미사용'}
+                    </button>
                   </td>
                   <td className="px-4 py-2 text-sm">
                     <button
