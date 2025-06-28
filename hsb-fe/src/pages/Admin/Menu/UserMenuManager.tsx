@@ -9,7 +9,6 @@ const UserMenuManager: React.FC = () => {
   const [menuTree, setMenuTree] = useState<UserMenuNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMenu, setSelectedMenu] = useState<UserMenuNode | null>(null); // 수정 대상
-  const [isModalOpen, setModalOpen] = useState(false);
 
   const loadTree = async () => {
     try {
@@ -90,29 +89,34 @@ const UserMenuManager: React.FC = () => {
             </section>
 
             <section className="border-t pt-6">
-            <h3 className="text-lg font-semibold mb-2 flex items-center justify-between">
-                {selectedMenu ? '✏️ 메뉴 수정' : '➕ 메뉴 등록'}
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">
+                  {selectedMenu ? '✏️ 메뉴 수정' : '➕ 메뉴 등록'}
+                </h3>
                 {selectedMenu && (
-                    <button
+                  <button
                     onClick={() => setSelectedMenu(null)}
                     className="text-sm text-blue-600 underline hover:text-blue-800"
-                    >
+                  >
                     등록으로 전환
-                    </button>
+                  </button>
                 )}
-            </h3>
+              </div>
 
-            <UserMenuForm
-            treeData={menuTree}
-            initialForm={
-                selectedMenu
-                    ? {
-                        ...selectedMenu,
-                        url: selectedMenu.url ?? '', // null → 빈 문자열
-                    }
-                    : undefined
-                }                onSuccess={handleSuccess}
-            />
+              <div className="overflow-x-auto">
+                <UserMenuForm
+                  treeData={menuTree}
+                  initialForm={
+                    selectedMenu
+                      ? {
+                          ...selectedMenu,
+                          url: selectedMenu.url ?? '',
+                        }
+                      : undefined
+                  }
+                  onSuccess={handleSuccess}
+                />
+              </div>
             </section>
           </>
         )}

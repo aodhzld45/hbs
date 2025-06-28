@@ -4,8 +4,12 @@ import { UserMenuNode } from '../../../types/Admin/UserMenuNode';
 import {
   fetchUserMenuCreate,
   fetchUserMenuUpdate,
+  fetchUserMenuDelete,
 } from '../../../services/Admin/userMenuApi';
+
 import { flattenMenuTree } from '../../../utils/menuTreeFlattener';
+import { useAuth } from '../../../context/AuthContext';
+
 
 type Props = {
   treeData: UserMenuNode[];
@@ -37,6 +41,7 @@ const defaultForm: FormState = {
 
 const UserMenuForm: React.FC<Props> = ({ treeData, initialForm, onSuccess }) => {
   const [form, setForm] = useState<FormState>({ ...defaultForm, ...initialForm });
+  const { admin } = useAuth();
 
   useEffect(() => {
     if (initialForm) {
@@ -45,6 +50,12 @@ const UserMenuForm: React.FC<Props> = ({ treeData, initialForm, onSuccess }) => 
       setForm({ ...defaultForm }); // ← 등록 모드로 전환 시 초기화
     }
   }, [initialForm]);
+
+  const adminId = admin?.id;
+  if (!adminId) {
+    alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
+    return null;
+  }
 
   const isEditMode = form.id !== undefined;
 
@@ -73,7 +84,6 @@ const UserMenuForm: React.FC<Props> = ({ treeData, initialForm, onSuccess }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const adminId = 'admin'; // TODO: 연동 예정
 
     try {
       if (isEditMode && form.id !== undefined) {
@@ -89,6 +99,22 @@ const UserMenuForm: React.FC<Props> = ({ treeData, initialForm, onSuccess }) => 
     }
   };
 
+  const handleDeleteMenu = async () => {
+    if (!form.id) return;
+
+    const confirmed = window.confirm('정말 삭제하시겠습니까?');
+    if (!confirmed) return;
+
+    try {
+      await fetchUserMenuDelete(form.id, adminId);
+      onSuccess();
+      resetForm();
+    } catch (err) {
+      alert('삭제 실패');
+      console.error(err);
+    }
+  };
+
   const options = flattenMenuTree(treeData);
 
   return (
@@ -99,6 +125,7 @@ const UserMenuForm: React.FC<Props> = ({ treeData, initialForm, onSuccess }) => 
         onChange={handleChange}
         placeholder="메뉴명"
         className="input w-full"
+        required
       />
       <input
         name="url"
@@ -106,6 +133,7 @@ const UserMenuForm: React.FC<Props> = ({ treeData, initialForm, onSuccess }) => 
         onChange={handleChange}
         placeholder="URL"
         className="input w-full"
+        required
       />
       <input
         name="orderSeq"
@@ -148,9 +176,25 @@ const UserMenuForm: React.FC<Props> = ({ treeData, initialForm, onSuccess }) => 
         <option value="N">미사용</option>
       </select>
 
-      <button type="submit" className="btn btn-primary w-full">
-        {isEditMode ? '수정하기' : '등록하기'}
-      </button>
+      <div className="w-full flex justify-end gap-2 mt-4">
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          {isEditMode ? '수정하기' : '등록하기'}
+        </button>
+
+        {isEditMode && (
+          <button
+            type="button"
+            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            onClick={handleDeleteMenu}
+          >
+            삭제하기
+          </button>
+        )}
+      </div>
+
     </form>
   );
 };

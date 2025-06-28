@@ -45,7 +45,9 @@ const Header = () => {
     alert('통합검색 기능 구현중입니다.');
   };
 
-  const topMenus = menuTree.filter((m) => m.depth === 0);
+  const topMenus = menuTree.filter(
+    (m) => m.depth === 0 && m.useTf === 'Y'
+  ); 
 
   return (
     <>
@@ -75,8 +77,9 @@ const Header = () => {
                     {menu.name}
                   </span>
                 )}
-
-                {hoveredMenuId === menu.id && menu.children && menu.children.length > 0 && (
+                {hoveredMenuId === menu.id &&
+                  menu.children &&
+                  menu.children.filter(child => child.useTf === 'Y').length > 0 && (
                   <div className="absolute left-0 top-full mt-2 w-48 bg-white text-black shadow-md rounded z-40">
                     <ul className="flex flex-col py-2">
                       {menu.children.map((child) => (
