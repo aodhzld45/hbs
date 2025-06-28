@@ -55,32 +55,34 @@ const AdminMenuManagement: React.FC = () => {
     const current = menus[index];
     if (!current) return;
   
-    // 같은 그룹(동일한 parentId + depth)만 추출
-    const group = menus.filter(
-      m => m.parentId === current.parentId && m.depth === current.depth
-    );
+    // 같은 부모 ID 가진 메뉴들만 추출 (같은 depth까지 체크)
+    const siblingMenus = menus
+      .filter(
+        m => m.parentId === current.parentId && m.depth === current.depth
+      )
+      .sort((a, b) => (a.orderSequence ?? 0) - (b.orderSequence ?? 0));
   
-    // 그룹에서 현재 index 찾기
-    const groupIndex = group.findIndex(m => m.id === current.id);
+    const groupIndex = siblingMenus.findIndex(m => m.id === current.id);
+  
     if (
       (direction === 'up' && groupIndex === 0) ||
-      (direction === 'down' && groupIndex === group.length - 1)
+      (direction === 'down' && groupIndex === siblingMenus.length - 1)
     ) {
       return; // 이동 불가 (최상위 or 최하위)
     }
   
-    // 이동 대상 찾기
     const targetIndex = direction === 'up' ? groupIndex - 1 : groupIndex + 1;
-    const target = group[targetIndex];
+    const target = siblingMenus[targetIndex];
   
     if (!target) return;
   
-    // 전체 메뉴 배열에서 위치 찾아서 순서 교체
+    // 순서 교환
     const updatedMenus = [...menus];
+    
     const i1 = updatedMenus.findIndex(m => m.id === current.id);
     const i2 = updatedMenus.findIndex(m => m.id === target.id);
-  
-    // 순서 필드만 교체하고, 위치는 그대로
+    
+    // orderSequence swap
     const tempOrder = updatedMenus[i1].orderSequence;
     updatedMenus[i1].orderSequence = updatedMenus[i2].orderSequence;
     updatedMenus[i2].orderSequence = tempOrder;
@@ -89,15 +91,15 @@ const AdminMenuManagement: React.FC = () => {
       // 서버에 순서 업데이트
       await updateOrderSequence(updatedMenus[i1].id!, updatedMenus[i1].orderSequence!);
       await updateOrderSequence(updatedMenus[i2].id!, updatedMenus[i2].orderSequence!);
-
+  
       setLoading(true);
       await loadMenus();
       setLoading(false);
-
     } catch (error) {
       console.error('순서 변경 실패:', error);
     }
   };
+  
   
   const moveMenuUp = (index: number) => moveMenu(index, 'up');
   const moveMenuDown = (index: number) => moveMenu(index, 'down');
@@ -107,6 +109,11 @@ const AdminMenuManagement: React.FC = () => {
       const created = await createAdminMenu(newMenu);
       setMenus(prev => [...prev, created]); // reloadMenus로 대체하는 것도 고려 가능
       setShowCreateModal(false);
+
+      setLoading(true);
+      await loadMenus();
+      setLoading(false);
+
     } catch (err) {
       console.error(err);
       setError('메뉴 등록에 실패했습니다.');
