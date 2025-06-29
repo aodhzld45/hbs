@@ -21,6 +21,7 @@ public class PopupBanner {
 
     private String type;
 
+
     @Column(name = "file_path")
     private String filePath;
 
@@ -35,6 +36,9 @@ public class PopupBanner {
 
     @Column(name = "end_date")
     private LocalDateTime endDate;
+
+    @Column(name = "order_seq")
+    private Integer orderSeq;
 
     @Column(name = "use_tf")
     private String useTf;

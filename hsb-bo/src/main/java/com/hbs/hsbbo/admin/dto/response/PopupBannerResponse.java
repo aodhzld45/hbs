@@ -19,10 +19,12 @@ public class PopupBannerResponse {
     private String filePath;
     private String originalFileName;
     private String linkUrl;
+    private Integer orderSeq;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+    private String useTf;
 
-    public static PopupBannerResponse from(PopupBanner entity) {
+    public static PopupBannerResponse fromEntity(PopupBanner entity) {
         PopupBannerResponse response = new PopupBannerResponse();
         response.setId(entity.getId());
         response.setTitle(entity.getTitle());
@@ -30,6 +32,8 @@ public class PopupBannerResponse {
         response.setFilePath(entity.getFilePath());
         response.setOriginalFileName(entity.getOriginalFileName());
         response.setLinkUrl(entity.getLinkUrl());
+        response.setOrderSeq(entity.getOrderSeq());
+        response.setUseTf(entity.getUseTf());
         response.setStartDate(entity.getStartDate());
         response.setEndDate(entity.getEndDate());
         return response;

@@ -2,10 +2,15 @@ package com.hbs.hsbbo.admin.service;
 
 import com.hbs.hsbbo.admin.domain.entity.PopupBanner;
 import com.hbs.hsbbo.admin.dto.request.PopupBannerRequest;
+import com.hbs.hsbbo.admin.dto.response.PopupBannerListResponse;
 import com.hbs.hsbbo.admin.dto.response.PopupBannerResponse;
 import com.hbs.hsbbo.admin.repository.PopupBannerRepository;
 import com.hbs.hsbbo.common.util.FileUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,19 +30,41 @@ public class PopupBannerService {
 
     // 메인 노출용 팝업배너 목록
     public List<PopupBannerResponse> getVisiblePopupBanners() {
-        return popupBannerRepository.findVisibleBanners(LocalDateTime.now())
+        return popupBannerRepository.findVisiblePopupBanners(LocalDateTime.now())
                 .stream()
-                .map(PopupBannerResponse::from)
+                .map(PopupBannerResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
     // 관리자 전체 팝업배너 목록 - 페이징 포함
+    public PopupBannerListResponse getPopupBannerList(String type,String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+
+        Page<PopupBanner> bannerPage = popupBannerRepository
+                .searchWithFilters(type, keyword, pageable);
+
+        List<PopupBannerResponse> items = bannerPage
+                .getContent()
+                .stream()
+                .map(PopupBannerResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        PopupBannerListResponse response = new PopupBannerListResponse();
+        response.setItems(items);
+        response.setTotalCount(bannerPage.getTotalElements());
+        response.setTotalPages(bannerPage.getTotalPages());
+
+        return response;
+    }
 
     // 팝업 배너 등록
     public Long createPopupBanner(PopupBannerRequest request, String adminId) {
         MultipartFile file = request.getFile();
         String originalFileName = null;
         String savedPath = null;
+
+        Integer maxOrderSeq = popupBannerRepository.findMaxOrderSeqByType(request.getType());
+        int newOrderSeq = maxOrderSeq + 1;
 
         if (file != null && !file.isEmpty()) {
             originalFileName = file.getOriginalFilename();
@@ -54,6 +81,7 @@ public class PopupBannerService {
         popupBanner.setType(request.getType());
         popupBanner.setFilePath(savedPath);
         popupBanner.setOriginalFileName(originalFileName);
+        popupBanner.setOrderSeq(newOrderSeq);
         popupBanner.setStartDate(request.getStartDate());
         popupBanner.setEndDate(request.getEndDate());
         popupBanner.setUseTf(request.getUseTf());
@@ -65,6 +93,52 @@ public class PopupBannerService {
 
     }
 
+    // 수정
+    public void updatePopupBanner(Long id, PopupBannerRequest request, String adminId) {
+        PopupBanner popupBanner = popupBannerRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 배너 ID입니다."));
+
+        // 파일 업로드 처리
+        MultipartFile file = request.getFile();
+        String originalFileName = popupBanner.getOriginalFileName();
+        String savedPath = popupBanner.getFilePath();
+
+        if (file != null && !file.isEmpty()) {
+            originalFileName = file.getOriginalFilename();
+
+            String typeDir = request.getType().toLowerCase(); // popup 또는 banner
+            Path baseDir = fileUtil.resolvePath(typeDir);
+            savedPath = fileUtil.saveFile(baseDir, file);
+        }
+
+        // 엔티티 수정
+        popupBanner.setTitle(request.getTitle());
+        popupBanner.setLinkUrl(request.getLinkUrl());
+        popupBanner.setType(request.getType());
+        popupBanner.setFilePath(savedPath);
+        popupBanner.setOriginalFileName(originalFileName);
+        popupBanner.setStartDate(request.getStartDate());
+        popupBanner.setEndDate(request.getEndDate());
+        popupBanner.setUseTf(request.getUseTf());
+        popupBanner.setUpAdm(adminId);
+        popupBanner.setUpDate(LocalDateTime.now());
+
+        popupBannerRepository.save(popupBanner);
+    }
+
+    // 순서 변경
+    public void updatePopupBannerOrder(Long id, Integer orderSeq, String adminId) {
+        PopupBanner popupBanner = popupBannerRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 배너 ID입니다."));
+
+        popupBanner.setOrderSeq(orderSeq);
+        popupBanner.setUpAdm(adminId);
+        popupBanner.setUpDate(LocalDateTime.now());
+
+        popupBannerRepository.save(popupBanner);
+    }
+
+    // 삭제
     public void deleteBanner(Long id, String adminId) {
         popupBannerRepository.findById(id).ifPresent(banner -> {
             banner.setDelTf("Y");
