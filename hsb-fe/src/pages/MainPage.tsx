@@ -1,8 +1,43 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Code, ServerCog, ClipboardList, BarChart4 } from 'lucide-react';
 import Layout from '../components/Layout/Layout';
 
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, Navigation, Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+import { PopupBannerItem } from '../types/Admin/PopupBannerItem'
+import { fetchVisiblePopupBanners } from '../services/Admin/popupBannerApi';
+import { FILE_BASE_URL } from '../config/config';
+
 const MainPage = () => {
+  const [bannerPopups, setBannerPopups] = useState<PopupBannerItem[]>([]);
+  const [popupPopups, setPopupPopups] = useState<PopupBannerItem[]>([]);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+
+  useEffect(() => {
+    const loadPopups = async () => {
+      try {
+        const res = await fetchVisiblePopupBanners();
+        const filtered = res.filter((popup) => popup.useTf === 'Y');
+
+        const bannerList = filtered.filter(p => p.type === 'banner');
+        const popupList = filtered.filter(p => p.type === 'popup');
+
+        setBannerPopups(bannerList);
+
+        if (popupList.length > 0) {
+          setPopupPopups(popupList);
+          setIsPopupOpen(true);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    loadPopups();
+  }, []);
 
   return (
     <Layout>
@@ -74,6 +109,113 @@ const MainPage = () => {
           </div>
         </div>
       </div>
+
+      {/* 메인 배너 부분 */}
+      {bannerPopups.length > 0 && (
+        <div className="my-10 max-w-3xl mx-auto">
+          <Swiper
+            modules={[Autoplay, Navigation, Pagination]}
+            spaceBetween={30}
+            slidesPerView={1}
+            loop={true}
+            autoplay={{
+              delay: 3000,
+              disableOnInteraction: false,
+            }}
+            pagination={{ clickable: true }}
+            navigation={true}
+          >
+            {bannerPopups.map((popup) => (
+              <SwiperSlide key={popup.id}>
+                <div className="relative">
+                  <img
+                    src={`${FILE_BASE_URL}${popup.filePath}`}
+                    alt={popup.title}
+                    className="w-full max-h-[400px] object-contain rounded-lg shadow-md"
+                  />
+                  {popup.linkUrl && (
+                    <a
+                      href={popup.linkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute inset-0"
+                    >
+                      <span className="sr-only">{popup.title}</span>
+                    </a>
+                  )}
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
+      )}
+
+      {/* 메인 팝업 부분 */}
+      {isPopupOpen && popupPopups.length > 0 && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div
+            className="
+              bg-white dark:bg-gray-800
+              p-6 rounded-lg shadow relative
+              w-[80vw] h-[80vh]
+              max-w-5xl max-h-[90vh]
+              flex justify-center items-center
+            "
+          >
+            <button
+              className="
+                absolute top-4 right-4
+                w-12 h-12
+                text-gray-500 hover:text-gray-800
+                dark:text-gray-300 dark:hover:text-white
+                text-3xl font-bold flex items-center justify-center
+                z-10
+              "
+              onClick={() => setIsPopupOpen(false)}
+            >
+              ✕
+            </button>
+
+            <Swiper
+              modules={[Navigation, Pagination]}
+              spaceBetween={30}
+              slidesPerView={1}
+              navigation
+              pagination={{ clickable: true }}
+              className="w-full h-full"
+            >
+              {popupPopups.map((popup) => (
+                <SwiperSlide key={popup.id}>
+                  <div className="relative w-full h-full flex justify-center items-center">
+                    <img
+                      src={`${FILE_BASE_URL}${popup.filePath}`}
+                      alt={popup.title}
+                      className="max-w-full max-h-full object-contain rounded"
+                    />
+                    {popup.linkUrl && (
+                      <a
+                        href={popup.linkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="
+                          absolute
+                          top-1/2 left-1/2
+                          -translate-x-1/2 -translate-y-1/2
+                          w-[80%] h-[80%]
+                          z-20
+                        "
+                      >
+                        <span className="sr-only">{popup.title}</span>
+                      </a>
+                    )}
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+        </div>
+      )}
+
     </Layout>
   );
 };

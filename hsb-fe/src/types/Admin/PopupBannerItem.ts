@@ -10,6 +10,8 @@ export type PopupBannerItem = {
     endDate: string;
     orderSeq: number;
     useTf: "Y" | "N";
+    width?: number;     
+    height?: number;   
   };
 
   export type PopupBannerListResponse = {
