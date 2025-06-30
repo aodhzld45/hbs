@@ -6,6 +6,7 @@ import com.hbs.hsbbo.admin.dto.response.PopupBannerListResponse;
 import com.hbs.hsbbo.admin.dto.response.PopupBannerResponse;
 import com.hbs.hsbbo.admin.repository.PopupBannerRepository;
 import com.hbs.hsbbo.common.util.FileUtil;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -127,15 +128,53 @@ public class PopupBannerService {
     }
 
     // 순서 변경
-    public void updatePopupBannerOrder(Long id, Integer orderSeq, String adminId) {
-        PopupBanner popupBanner = popupBannerRepository.findById(id)
+    @Transactional
+    public void updatePopupBannerOrder(Long id, String direction, String adminId) {
+        PopupBanner current = popupBannerRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 배너 ID입니다."));
 
-        popupBanner.setOrderSeq(orderSeq);
-        popupBanner.setUpAdm(adminId);
-        popupBanner.setUpDate(LocalDateTime.now());
+        Integer currentOrder = current.getOrderSeq();
 
-        popupBannerRepository.save(popupBanner);
+        // 찾을 조건: 같은 타입의 배너 중, 위/아래 항목
+        PopupBanner target;
+        if (direction.equals("up")) {
+            target = popupBannerRepository
+                    .findFirstByOrderSeqLessThanOrderByOrderSeqDesc(currentOrder)
+                    .orElse(null);
+        } else {
+            target = popupBannerRepository
+                    .findFirstByOrderSeqGreaterThanOrderByOrderSeqAsc(currentOrder)
+                    .orElse(null);
+        }
+
+        if (target == null) {
+            // 위/아래로 이동할 대상이 없는 경우
+            return;
+        }
+
+        // 두 개의 순서를 swap
+        int tempOrder = current.getOrderSeq();
+        current.setOrderSeq(target.getOrderSeq());
+        target.setOrderSeq(tempOrder);
+
+        current.setUpAdm(adminId);
+        current.setUpDate(LocalDateTime.now());
+
+        target.setUpAdm(adminId);
+        target.setUpDate(LocalDateTime.now());
+
+        popupBannerRepository.save(current);
+        popupBannerRepository.save(target);
+    }
+
+    // 사용 여부 변경
+    public void updateUseTf(Long id, String useTf, String adminId) {
+        PopupBanner banner = popupBannerRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 배너 ID입니다."));
+        banner.setUseTf(useTf);
+        banner.setUpAdm(adminId);
+        banner.setUpDate(LocalDateTime.now());
+        popupBannerRepository.save(banner);
     }
 
     // 삭제

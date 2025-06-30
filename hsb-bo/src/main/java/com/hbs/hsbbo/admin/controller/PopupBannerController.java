@@ -63,10 +63,21 @@ public class PopupBannerController {
     @PutMapping("/{id}/order")
     public ResponseEntity<Void> updateBannerOrder(
             @PathVariable Long id,
-            @RequestParam Integer orderSeq,
+            @RequestParam String direction,
             @RequestParam String adminId
     ) {
-        popupBannerService.updatePopupBannerOrder(id, orderSeq, adminId);
+        popupBannerService.updatePopupBannerOrder(id, direction, adminId);
+        return ResponseEntity.ok().build();
+    }
+
+    // 사용여부 변경
+    @PutMapping("/{id}/use-tf")
+    public ResponseEntity<Void> updateUseTf(
+            @PathVariable Long id,
+            @RequestParam String useTf,
+            @RequestParam String adminId
+    ) {
+        popupBannerService.updateUseTf(id, useTf, adminId);
         return ResponseEntity.ok().build();
     }
 

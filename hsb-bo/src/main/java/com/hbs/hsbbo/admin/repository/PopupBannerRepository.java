@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface PopupBannerRepository extends JpaRepository<PopupBanner, Long> {
 
@@ -45,6 +46,10 @@ public interface PopupBannerRepository extends JpaRepository<PopupBanner, Long> 
       AND p.delTf = 'N'
     """)
     Integer findMaxOrderSeqByType(@Param("type") String type);
+
+    // 순서 변경 - 백앤드 처리
+    Optional<PopupBanner> findFirstByOrderSeqLessThanOrderByOrderSeqDesc(Integer orderSeq);
+    Optional<PopupBanner> findFirstByOrderSeqGreaterThanOrderByOrderSeqAsc(Integer orderSeq);
 
 
 

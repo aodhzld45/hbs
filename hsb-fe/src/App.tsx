@@ -15,6 +15,8 @@ import UserMenuManager from './pages/Admin/Menu/UserMenuManager';
 import CodeParentManagement from "./pages/Admin/Code/CodeParentManagement";
 import ContactManager from "./pages/Admin/Contact/ContactManager";
 import ContactDetail from "./pages/Admin/Contact/ContactDetail";
+import PopupBannerManager from './pages/Admin/Main/PopupBannerManager';
+import VisualSliderManager from './pages/Admin/Main/VisualSliderManager';
 
 // 관리자 공통 게시판 관련 imports
 import BoardManager from './pages/Admin/Board/BoardManager';
@@ -77,6 +79,8 @@ function App() {
               <Route path="/admin/contact" element={<ContactManager />} />
               <Route path="/admin/contact/detail/:id" element={<ContactDetail />} />
 
+              <Route path='/admin/main/popup-banner-manager' element={<PopupBannerManager />} />
+              <Route path='/admin/main/visual-slider-manager' element={<VisualSliderManager />} />
             </Route>
             
             <Route path="/admin/hbs/:fileId" element={<ContentManagerDetail />} />

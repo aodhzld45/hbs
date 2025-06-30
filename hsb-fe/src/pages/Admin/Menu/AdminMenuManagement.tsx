@@ -28,7 +28,6 @@ const AdminMenuManagement: React.FC = () => {
         const data = await fetchAdminMenus();
         const tree = buildMenuTree(data);
 
-        console.log(tree);
         const flattened = flattenMenuTree(tree as { id: number; name: string; children?: any[] }[]);
 
         const menuMap = new Map(data.map(menu => [menu.id, menu]));
