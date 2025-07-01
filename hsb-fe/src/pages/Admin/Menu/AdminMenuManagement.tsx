@@ -123,6 +123,7 @@ const AdminMenuManagement: React.FC = () => {
 
   const handleDeleteMenu = async (id?: number) => {
     if (!id) return;
+    if (!window.confirm("삭제하시겠습니까?")) return;
     try {
       await deleteAdminMenu(id);
       setMenus(prev => prev.filter(menu => menu.id !== id));
