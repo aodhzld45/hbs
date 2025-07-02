@@ -6,29 +6,22 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "code_detail")
+@Table(name = "code_group")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CodeDetail {
+public class CodeGroup {
 
     @Id
-    @Column(name = "code_id", length = 50)
-    private String codeId;
+    @Column(name = "code_group_id", length = 50)
+    private String codeGroupId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "code_group_id")
-    private CodeGroup codeGroup;
+    @Column(name = "group_name", length = 200, nullable = false)
+    private String groupName;
 
-    @Column(name = "parent_code_id", length = 50)
-    private String parentCodeId;
-
-    @Column(name = "code_name_ko", length = 200, nullable = false)
-    private String codeNameKo;
-
-    @Column(name = "code_name_en", length = 200)
-    private String codeNameEn;
+    @Column(name = "description", length = 500)
+    private String description;
 
     @Column(name = "order_seq")
     private Integer orderSeq;

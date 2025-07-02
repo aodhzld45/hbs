@@ -13,6 +13,7 @@ import AdminMenu from "./pages/Admin/Menu/AdminMenuManagement";
 import AdminAuthManagement from './pages/Admin/Role/AdminRoleManagement';
 import UserMenuManager from './pages/Admin/Menu/UserMenuManager';
 import CodeParentManagement from "./pages/Admin/Code/CodeParentManagement";
+import CodeManager from "./pages/Admin/Code/CodeManager"
 import ContactManager from "./pages/Admin/Contact/ContactManager";
 import ContactDetail from "./pages/Admin/Contact/ContactDetail";
 import PopupBannerManager from './pages/Admin/Main/PopupBannerManager';
@@ -37,7 +38,6 @@ import ContactForm from './components/Contact/ContactForm';
 import PrivateRoute from './components/Admin/PrivateRoute';
 import { AuthProvider } from './context/AuthContext';
 import { PermissionProvider } from './context/PermissionContext';
-
 
 
 function App() {
@@ -69,6 +69,8 @@ function App() {
               <Route path="/admin/admin-menu" element={<AdminMenu />} />
 
               <Route path="/admin/user-menu-manager" element={<UserMenuManager />} />
+
+              <Route path="/admin/code-manager" element={<CodeManager />} />
               <Route path="/admin/code-parent" element={<CodeParentManagement />} />
               
               <Route path="/admin/board/:boardType" element={<BoardManager />} />

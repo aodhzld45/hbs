@@ -1,88 +1,37 @@
 // src/main/java/com/hbs/hsbbo/common/controller/CodeController.java
 package com.hbs.hsbbo.common.controller;
 
-import com.hbs.hsbbo.common.dto.request.CodeParentRequest;
-import com.hbs.hsbbo.common.dto.request.CodeDetailRequest;
-import com.hbs.hsbbo.common.dto.response.CodeParentResponse;
 import com.hbs.hsbbo.common.dto.response.CodeDetailResponse;
+import com.hbs.hsbbo.common.dto.response.CodeGroupResponse;
 import com.hbs.hsbbo.common.service.CodeService;
-import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/common/codes")
 public class CodeController {
+    private final CodeService codeService;
 
-    private final CodeService svc;
-
-    public CodeController(CodeService svc) {
-        this.svc = svc;
+    @GetMapping("/groups")
+    public List<CodeGroupResponse> getGroups() {
+        return codeService.getCodeGroups();
     }
 
-    // 대분류 ------------------------------------------------
-    @GetMapping("/parents")
-    public List<CodeParentResponse> listParents() {
-        return svc.listParents();
+    @GetMapping("/{groupId}/parents")
+    public List<CodeDetailResponse> getParentCodes(@PathVariable String groupId) {
+        return codeService.getParentCodes(groupId);
     }
 
-    @PostMapping("/parent")
-    public ResponseEntity<CodeParentResponse> createParent(
-            @Valid @RequestBody CodeParentRequest req
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(svc.createParent(req));
+    @GetMapping("/{groupId}/{parentCodeId}")
+    public List<CodeDetailResponse> getChildCodes(@PathVariable String groupId,
+                                                  @PathVariable String parentCodeId) {
+        return codeService.getChildCodes(groupId, parentCodeId);
     }
 
-    @PutMapping("/parent/{id}")
-    public CodeParentResponse updateParent(
-            @PathVariable Long id,
-            @Valid @RequestBody CodeParentRequest req
-    ) {
-        return svc.updateParent(id, req);
-    }
-
-    @DeleteMapping("/parent/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteParent(@PathVariable Long id) {
-        svc.deleteParent(id);
-    }
-
-    // 하위 --------------------------------------------------
-    @GetMapping("/{pcode}/details")
-    public List<CodeDetailResponse> listDetails(@PathVariable String pcode) {
-        return svc.listDetails(pcode);
-    }
-
-    @PostMapping("/{pcode}/detail")
-    public ResponseEntity<CodeDetailResponse> createDetail(
-            @PathVariable String pcode,
-            @Valid @RequestBody CodeDetailRequest req
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(svc.createDetail(pcode, req));
-    }
-
-    @PutMapping("/{pcode}/detail/{dcodeNo}")
-    public CodeDetailResponse updateDetail(
-            @PathVariable String pcode,
-            @PathVariable Long dcodeNo,
-            @Valid @RequestBody CodeDetailRequest req
-    ) {
-        return svc.updateDetail(pcode, dcodeNo, req);
-    }
-
-    @DeleteMapping("/{pcode}/detail/{dcodeNo}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteDetail(
-            @PathVariable String pcode,
-            @PathVariable Long dcodeNo
-    ) {
-        svc.deleteDetail(pcode, dcodeNo);
-    }
 }

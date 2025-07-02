@@ -9,13 +9,10 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CodeDetailRequest {
-    private String codeId;
+public class CodeGroupRequest {
     private String codeGroupId;
-    private String parentCodeId;
-    private String codeNameKo;
-    private String codeNameEn;
+    private String groupName;
+    private String description;
     private Integer orderSeq;
     private String useTf;
 }
-
