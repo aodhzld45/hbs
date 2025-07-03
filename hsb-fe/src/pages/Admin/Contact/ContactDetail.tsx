@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import { ContactItem } from '../../../types/Common/ContactItem';
 import { fetchContactDetail, fetchContactReply, fetchContactDelete } from '../../../services/Common/ContactApi';
 import AdminLayout from '../../../components/Layout/AdminLayout';
@@ -7,13 +8,14 @@ import { FILE_BASE_URL } from '../../../config/config';
 
 const ContactDetail = () => {
     const { id } = useParams();
+    const { admin } = useAuth();
     const navigate = useNavigate();
-
     const [contents, setContents] = useState<ContactItem | null>(null);
     const [loading, setLoading] = useState(true);
     const [reply, setReply] = useState('');
     const [replyMethod, setReplyMethod] = useState('EMAIL');
     const replyRef = useRef<HTMLTextAreaElement>(null);
+    const adminId = admin?.id;
 
   useEffect(() => {
     const loadDetail = async () => {

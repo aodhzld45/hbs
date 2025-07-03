@@ -1,80 +1,57 @@
 import api from '../api';
-import { CodeParent } from '../../types/Common/CodeParent';
-import { CodeDetail } from '../../types/Common/CodeDetail';
 
-// ---- CodeParent ----
-export const fetchCodeParents = async (): Promise<CodeParent[]> => {
-  const resp = await api.get<CodeParent[]>('/common/codes/parents');
-  return resp.data;
+import { CodeGroup } from "../../types/Common/CodeGroup"; 
+import { CodeDetail } from "../../types/Common/CodeDetail"; 
+
+/** CodeGroup */
+export const fetchCodeGroups = async () => {
+  const res = await api.get("/common/codes/groups");
+  return res.data;
 };
 
-export const createCodeParent = async (data: {
-  pcode: string;
-  pcodeNm: string;
-  pcodeMemo?: string;
-  pcodeSeqNo: number;
-}): Promise<CodeParent> => {
-  const resp = await api.post<CodeParent>('/common/codes/parent', data);
-  return resp.data;
+export const createCodeGroup = async (payload: any, adminId : string) => {
+  return api.post("/admin/code-groups", payload, {
+    params: { adminId: adminId },
+  });
 };
 
-export const updateCodeParent = async (
-  id: number,
-  data: {
-    pcode: string;
-    pcodeNm: string;
-    pcodeMemo?: string;
-    pcodeSeqNo: number;
-    useTf: 'Y' | 'N';
-    delTf: 'Y' | 'N';
-  }
-): Promise<CodeParent> => {
-  const resp = await api.put<CodeParent>(`/common/codes/parent/${id}`, data);
-  return resp.data;
+export const updateCodeGroup = async (id: string, payload: any) => {
+  return api.put(`/api/admin/code-groups/${id}`, payload, {
+    params: { adminId: "admin" },
+  });
 };
 
-export const deleteCodeParent = async (id: number): Promise<void> => {
-  await api.delete(`/common/codes/parent/${id}`);
+export const deleteCodeGroup = async (id: string) => {
+  return api.delete(`/api/admin/code-groups/${id}`, {
+    params: { adminId: "admin" },
+  });
 };
 
-// ---- CodeDetail ----
-export const fetchCodeDetails = async (pcode: string): Promise<CodeDetail[]> => {
-  const resp = await api.get<CodeDetail[]>(`/common/codes/${pcode}/details`);
-  return resp.data;
+/** CodeDetail */
+export const fetchParentCodes = async (groupId: string) => {
+  const res = await api.get(`/common/codes/${groupId}/parents`);
+  return res.data;
 };
 
-export const createCodeDetail = async (
-  pcode: string,
-  data: {
-    dcode: string;
-    dcodeNm: string;
-    dcodeExt?: string;
-    dcodeSeqNo: number;
-  }
-): Promise<CodeDetail> => {
-  const resp = await api.post<CodeDetail>(`/common/codes/${pcode}/detail`, data);
-  return resp.data;
+export const fetchChildCodes = async (groupId: string, parentCodeId: string) => {
+  const res = await api.get(`/common/codes/${groupId}/${parentCodeId}`);
+  return res.data;
 };
 
-export const updateCodeDetail = async (
-  pcode: string,
-  dcodeNo: number,
-  data: {
-    dcode: string;
-    dcodeNm: string;
-    dcodeExt?: string;
-    dcodeSeqNo: number;
-    useTf: 'Y' | 'N';
-    delTf: 'Y' | 'N';
-  }
-): Promise<CodeDetail> => {
-  const resp = await api.put<CodeDetail>(
-    `/common/codes/${pcode}/detail/${dcodeNo}`,
-    data
-  );
-  return resp.data;
+export const createCodeDetail = async (payload: any, adminId : string ) => {
+  return api.post("/admin/code-details", payload, {
+    params: { adminId: adminId },
+  });
 };
 
-export const deleteCodeDetail = async (pcode: string, dcodeNo: number): Promise<void> => {
-  await api.delete(`/common/codes/${pcode}/detail/${dcodeNo}`);
+export const updateCodeDetail = async (id: string, payload: any) => {
+  return api.put(`/admin/code-details/${id}`, payload, {
+    params: { adminId: "admin" },
+  });
+};
+
+export const deleteCodeDetail = async (id: string) => {
+  return api.delete(`/admin/code-details/${id}`, {
+    params: { adminId: "admin" },
+  });
 };

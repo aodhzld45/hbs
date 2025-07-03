@@ -22,7 +22,7 @@ public class CodeDetailResponse {
         response.setCodeNameKo((String) row[1]);
         response.setCodeNameEn((String) row[2]);
         response.setParentCodeId((String) row[3]);
-        response.setOrderSeq(row[4] != null ? ((Number) row[3]).intValue() : null);
+        response.setOrderSeq(row[4] != null ? ((Number) row[4]).intValue() : null);
         return response;
     }
 

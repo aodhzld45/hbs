@@ -1,107 +1,95 @@
 import React, { useEffect, useState } from "react";
+import { useAuth } from '../../../context/AuthContext';
+
 import AdminLayout from '../../../components/Layout/AdminLayout';
+import { CodeGroup } from "../../../types/Common/CodeGroup"; 
+import { CodeDetail } from "../../../types/Common/CodeDetail"; 
+import { 
+  fetchCodeGroups,
+  createCodeGroup,
+  updateCodeGroup,
+  deleteCodeGroup,
 
-/** 더미 데이터 타입 */
-interface CodeGroup {
-  codeGroupId: string;
-  groupName: string;
-  description: string;
-  orderSeq: number;
-}
+  fetchParentCodes,
+  fetchChildCodes,
+  createCodeDetail
+ } from "../../../services/Common/CodeApi";
 
-interface CodeDetail {
-  codeId: string;
-  codeGroupId: string;
-  parentCodeId: string | null;
-  codeNameKo: string;
-  codeNameEn: string;
-  orderSeq: number;
-  useTf: string;
-}
-
-/** 더미 데이터 */
-const dummyGroups: CodeGroup[] = [
-  {
-    codeGroupId: "INDUSTRY",
-    groupName: "산업분류",
-    description: "표준 산업분류",
-    orderSeq: 1,
-  },
-  {
-    codeGroupId: "LOCATION",
-    groupName: "국가/도시",
-    description: "국가 및 도시 코드",
-    orderSeq: 2,
-  },
-];
-
-const dummyDetails: CodeDetail[] = [
-  {
-    codeId: "A",
-    codeGroupId: "INDUSTRY",
-    parentCodeId: null,
-    codeNameKo: "농업, 임업 및 어업",
-    codeNameEn: "Agriculture, Forestry, Fishing",
-    orderSeq: 1,
-    useTf: "Y",
-  },
-  {
-    codeId: "A01",
-    codeGroupId: "INDUSTRY",
-    parentCodeId: "A",
-    codeNameKo: "농업",
-    codeNameEn: "Agriculture",
-    orderSeq: 2,
-    useTf: "Y",
-  },
-  {
-    codeId: "KR",
-    codeGroupId: "LOCATION",
-    parentCodeId: null,
-    codeNameKo: "대한민국",
-    codeNameEn: "Korea",
-    orderSeq: 1,
-    useTf: "Y",
-  },
-  {
-    codeId: "KR01",
-    codeGroupId: "LOCATION",
-    parentCodeId: "KR",
-    codeNameKo: "서울특별시",
-    codeNameEn: "Seoul",
-    orderSeq: 2,
-    useTf: "Y",
-  },
-];
+import GroupModal from "../../../components/Admin/Code/GroupModal";
+import DetailModal from "../../../components/Admin/Code/DetailModal";
 
 const CodeManager: React.FC = () => {
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [groupList, setGroupList] = useState<CodeGroup[]>([]);
   const [detailList, setDetailList] = useState<CodeDetail[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [loadingGroup, setLoadingGroup] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const { admin } = useAuth();
+
+  // 모달 부분
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<CodeGroup | null>(null);
+
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [editingDetail, setEditingDetail] = useState<CodeDetail | null>(null);
+
+  /** 그룹 목록 불러오기 */
+  const loadGroups = async () => {
+    try {
+      setLoadingGroup(true);
+      const res = await fetchCodeGroups();
+      setGroupList(res);
+  
+      if (res.length > 0) {
+        const firstGroupId = res[0].codeGroupId;
+        setSelectedGroupId(firstGroupId);
+        loadAllDetails(firstGroupId);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("그룹 목록 조회 오류");
+    } finally {
+      setLoadingGroup(false);
+    }
+  };
+
+  const loadAllDetails = async (groupId: string) => {
+    try {
+      setLoadingDetail(true);
+      const parents = await fetchParentCodes(groupId);
+  
+      let allDetails: CodeDetail[] = [...parents];
+  
+      for (const parent of parents) {
+        const children = await fetchChildCodes(groupId, parent.codeId);
+        allDetails = [...allDetails, ...children];
+      }
+  
+      setDetailList(allDetails);
+    } catch (err) {
+      console.error(err);
+      alert("상세코드 목록 조회 오류");
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+  
 
   useEffect(() => {
-    // 페이지 초기 로딩 → 그룹 목록 로드
-    setGroupList(dummyGroups);
-
-    // 첫 그룹 자동 선택
-    if (dummyGroups.length > 0) {
-      const firstGroupId = dummyGroups[0].codeGroupId;
-      setSelectedGroupId(firstGroupId);
-      loadDetails(firstGroupId);
-    }
+    loadGroups();
   }, []);
 
-  const loadDetails = (groupId: string) => {
-    const details = dummyDetails.filter(
-      (item) => item.codeGroupId === groupId
-    );
-    setDetailList(details);
-  };
 
   const handleGroupSelect = (groupId: string) => {
     setSelectedGroupId(groupId);
-    loadDetails(groupId);
+    loadAllDetails(groupId);
   };
+
+  const adminId = admin?.id;
+  if (!adminId) {
+    alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
+    return null;
+  }
 
   return (
     <AdminLayout>
@@ -142,7 +130,13 @@ const CodeManager: React.FC = () => {
             ))}
           </tbody>
         </table>
-        <button className="mt-4 bg-blue-500 text-white px-3 py-1 rounded">
+        <button
+          className="mt-4 bg-blue-500 text-white px-3 py-1 rounded"
+          onClick={() => {
+            setEditingGroup(null);
+            setGroupModalOpen(true);
+          }}
+        >
           + 그룹 등록
         </button>
       </div>
@@ -197,7 +191,13 @@ const CodeManager: React.FC = () => {
                 ))}
               </tbody>
             </table>
-            <button className="mt-4 bg-green-600 text-white px-3 py-1 rounded">
+            <button
+              className="mt-4 bg-green-600 text-white px-3 py-1 rounded"
+              onClick={() => {
+                setEditingDetail(null);
+                setDetailModalOpen(true);
+              }}
+            >
               + 상세코드 등록
             </button>
           </>
@@ -206,6 +206,62 @@ const CodeManager: React.FC = () => {
         )}
       </div>
     </div>
+
+    <GroupModal
+      isOpen={groupModalOpen}
+      onClose={() => setGroupModalOpen(false)}
+      initialData={editingGroup}
+      onSave={(group) => {
+        if (editingGroup) {
+          // 수정
+          updateCodeGroup(group.codeGroupId, adminId!)
+            .then(() => {
+              alert("그룹 코드가 성공적으로 수정되었습니다.");
+              loadGroups();
+              setGroupModalOpen(false);
+            })
+            .catch(() => alert("수정 실패"));
+        } else {
+          // 등록
+          createCodeGroup(group, adminId!)
+            .then(() => {
+              alert("그룹 코드가 성공적으로 등록되었습니다.");
+              loadGroups();
+              setGroupModalOpen(false);
+            })
+            .catch(() => alert("등록 실패"));
+        }
+      }}
+    />
+
+    <DetailModal
+      isOpen={detailModalOpen}
+      onClose={() => setDetailModalOpen(false)}
+      initialData={editingDetail}
+      codeGroupId={selectedGroupId!}
+      parentCandidates={detailList.filter(
+        (d) => d.parentCodeId === null && d.codeId !== editingDetail?.codeId
+      )}
+      onSave={(detail) => {
+        if (editingDetail) {
+          // updateCodeDetail(detail, adminId!)
+          //   .then(() => {
+          //     alert("수정 완료!");
+          //     loadParentDetails(selectedGroupId!);
+          //     setDetailModalOpen(false);
+          //   })
+          //   .catch(() => alert("수정 실패"));
+        } else {
+          createCodeDetail(detail, adminId!)
+            .then(() => {
+              alert("상세 코드가 성공적으로 등록 되었습니다.");
+              loadAllDetails(selectedGroupId!);
+              setDetailModalOpen(false);
+            })
+            .catch(() => alert("등록 실패"));
+        }
+      }}
+    />
     </AdminLayout>
   );
 };
