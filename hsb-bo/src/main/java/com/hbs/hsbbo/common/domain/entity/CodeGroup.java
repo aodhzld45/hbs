@@ -14,7 +14,10 @@ import java.time.LocalDateTime;
 public class CodeGroup {
 
     @Id
-    @Column(name = "code_group_id", length = 50)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "code_group_id", unique = true, nullable = false)
     private String codeGroupId;
 
     @Column(name = "group_name", length = 200, nullable = false)

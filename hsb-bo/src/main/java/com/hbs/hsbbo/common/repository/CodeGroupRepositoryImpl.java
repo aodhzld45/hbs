@@ -17,12 +17,14 @@ public class CodeGroupRepositoryImpl implements CodeGroupRepository {
     public List<CodeGroupResponse> findAllGroups() {
         String sql = """
             SELECT
+                id,
                 code_group_id,
                 group_name,
                 description,
-                order_seq
+                order_seq,
+                use_tf
             FROM code_group
-            WHERE use_tf = 'Y'
+            WHERE 1=1
               AND del_tf = 'N'
             ORDER BY order_seq
         """;

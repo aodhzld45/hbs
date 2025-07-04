@@ -1,6 +1,7 @@
 export interface CodeDetail {
+  id: number;
   codeId: string;
-  codeGroupId: string;
+  codeGroupId: number;
   parentCodeId: string | null;
   codeNameKo: string;
   codeNameEn: string;

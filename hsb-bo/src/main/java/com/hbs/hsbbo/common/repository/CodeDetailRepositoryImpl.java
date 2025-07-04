@@ -16,11 +16,13 @@ public class CodeDetailRepositoryImpl implements CodeDetailRepository {
     public List<CodeDetailResponse> findParentCodes(String codeGroupId) {
         String sql = """
             SELECT
+                id,
                 code_id,
                 code_name_ko,
                 code_name_en,
                 parent_code_id,
-                order_seq
+                order_seq,
+                use_tf
             FROM code_detail
             WHERE code_group_id = :groupId
               AND parent_code_id IS NULL
@@ -42,11 +44,13 @@ public class CodeDetailRepositoryImpl implements CodeDetailRepository {
     public List<CodeDetailResponse> findChildCodes(String codeGroupId, String parentCodeId) {
         String sql = """
             SELECT
+                id,
                 code_id,
                 code_name_ko,
                 code_name_en,
                 parent_code_id,
-                order_seq
+                order_seq,
+                use_tf
             FROM code_detail
             WHERE code_group_id = :groupId
               AND parent_code_id = :parentCodeId

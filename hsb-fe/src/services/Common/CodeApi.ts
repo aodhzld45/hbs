@@ -15,25 +15,25 @@ export const createCodeGroup = async (payload: any, adminId : string) => {
   });
 };
 
-export const updateCodeGroup = async (id: string, payload: any) => {
-  return api.put(`/api/admin/code-groups/${id}`, payload, {
-    params: { adminId: "admin" },
+export const updateCodeGroup = async (id: number, payload: any, adminId : string) => {
+  return api.put(`/admin/code-groups/${id}`, payload, {
+    params: { adminId: adminId },
   });
 };
 
-export const deleteCodeGroup = async (id: string) => {
+export const deleteCodeGroup = async (id: number) => {
   return api.delete(`/api/admin/code-groups/${id}`, {
     params: { adminId: "admin" },
   });
 };
 
 /** CodeDetail */
-export const fetchParentCodes = async (groupId: string) => {
+export const fetchParentCodes = async (groupId: number) => {
   const res = await api.get(`/common/codes/${groupId}/parents`);
   return res.data;
 };
 
-export const fetchChildCodes = async (groupId: string, parentCodeId: string) => {
+export const fetchChildCodes = async (groupId: number, parentCodeId: string) => {
   const res = await api.get(`/common/codes/${groupId}/${parentCodeId}`);
   return res.data;
 };
@@ -44,13 +44,13 @@ export const createCodeDetail = async (payload: any, adminId : string ) => {
   });
 };
 
-export const updateCodeDetail = async (id: string, payload: any) => {
+export const updateCodeDetail = async (id: number, payload: any, adminId : string) => {
   return api.put(`/admin/code-details/${id}`, payload, {
-    params: { adminId: "admin" },
+    params: { adminId: adminId },
   });
 };
 
-export const deleteCodeDetail = async (id: string) => {
+export const deleteCodeDetail = async (id: number) => {
   return api.delete(`/admin/code-details/${id}`, {
     params: { adminId: "admin" },
   });

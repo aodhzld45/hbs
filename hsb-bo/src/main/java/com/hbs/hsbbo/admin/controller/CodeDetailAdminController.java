@@ -18,12 +18,12 @@ public class CodeDetailAdminController {
     }
 
     @PutMapping("/{id}")
-    public void updateDetail(@PathVariable String id, @RequestBody CodeDetailRequest req, String adminId) {
+    public void updateDetail(@PathVariable Long id, @RequestBody CodeDetailRequest req, String adminId) {
         codeDetailAdminService.updateDetail(id, req, adminId);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteDetail(@PathVariable String id, String adminId) {
+    public void deleteDetail(@PathVariable Long id, String adminId) {
         codeDetailAdminService.deleteDetail(id, adminId);
     }
 }

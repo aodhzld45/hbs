@@ -15,6 +15,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
   onSave,
   initialData,
 }) => {
+  const [id, setId] = useState<number | undefined>(undefined);
   const [groupId, setGroupId] = useState("");
   const [groupName, setGroupName] = useState("");
   const [description, setDescription] = useState("");
@@ -23,12 +24,14 @@ const GroupModal: React.FC<GroupModalProps> = ({
 
   useEffect(() => {
     if (initialData) {
+      setId(initialData.id);
       setGroupId(initialData.codeGroupId);
       setGroupName(initialData.groupName);
       setDescription(initialData.description);
       setOrderSeq(initialData.orderSeq);
       setUseTf(initialData.useTf ?? "Y"); // ← 추가!
     } else {
+      setId(undefined);
       setGroupId("");
       setGroupName("");
       setDescription("");
@@ -39,6 +42,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
 
   const handleSave = () => {
     onSave({
+      id: id ?? 0,                  // 신규 등록 시 id는 0
       codeGroupId: groupId,
       groupName,
       description,
@@ -62,7 +66,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
             type="text"
             value={groupId}
             onChange={(e) => setGroupId(e.target.value)}
-            disabled={!!initialData}
+            //disabled={!!initialData}
             className="border px-2 py-1 w-full"
           />
         </div>

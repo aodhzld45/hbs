@@ -6,20 +6,22 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "code_detail")
-@Getter
+@Table(name = "code_detail",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"code_group_id", "code_id"}))@Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class CodeDetail {
-
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "code_group_id", nullable = false)
+    private CodeGroup codeGroup;
+
     @Column(name = "code_id", length = 50)
     private String codeId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "code_group_id")
-    private CodeGroup codeGroup;
 
     @Column(name = "parent_code_id", length = 50)
     private String parentCodeId;

@@ -7,6 +7,7 @@ interface DetailModalProps {
     onSave: (detail: CodeDetail) => void;
     initialData?: CodeDetail | null;
     codeGroupId: string;
+    codeGroupPkId: number;
     parentCandidates: CodeDetail[];
   }
 
@@ -18,6 +19,7 @@ interface DetailModalProps {
     codeGroupId,
     parentCandidates,
   }) => {
+    const [id, setId] = useState<number | undefined>(undefined);
     const [codeId, setCodeId] = useState("");
     const [codeNameKo, setCodeNameKo] = useState("");
     const [codeNameEn, setCodeNameEn] = useState("");
@@ -26,7 +28,9 @@ interface DetailModalProps {
     const [useTf, setUseTf] = useState("Y");
 
     useEffect(() => {
+      if (isOpen) {
         if (initialData) {
+          setId(initialData.id);
           setCodeId(initialData.codeId);
           setCodeNameKo(initialData.codeNameKo);
           setCodeNameEn(initialData.codeNameEn);
@@ -34,6 +38,7 @@ interface DetailModalProps {
           setOrderSeq(initialData.orderSeq);
           setUseTf(initialData.useTf);
         } else {
+          setId(undefined);
           setCodeId("");
           setCodeNameKo("");
           setCodeNameEn("");
@@ -41,12 +46,14 @@ interface DetailModalProps {
           setOrderSeq(1);
           setUseTf("Y");
         }
-      }, [initialData]);
+      }
+    }, [isOpen, initialData]);
 
       const handleSave = () => {
         onSave({
+          id: id ?? 0,                  // 신규 등록 시 id는 0
           codeId,
-          codeGroupId,
+          codeGroupId: Number(codeGroupId),
           parentCodeId,
           codeNameKo,
           codeNameEn,

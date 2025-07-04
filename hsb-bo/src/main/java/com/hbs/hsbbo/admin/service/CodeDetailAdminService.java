@@ -14,11 +14,13 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class CodeDetailAdminService {
+
     private final CodeDetailAdminRepository codeDetailAdminRepository;
     private final CodeGroupAdminRepository codeGroupAdminRepository;
 
     @Transactional
     public void createDetail(CodeDetailRequest req, String adminId) {
+
         CodeGroup group = codeGroupAdminRepository.findById(req.getCodeGroupId())
                 .orElseThrow(() -> new RuntimeException("CodeGroup Not Found"));
 
@@ -38,14 +40,14 @@ public class CodeDetailAdminService {
     }
 
     @Transactional
-    public void updateDetail(String id, CodeDetailRequest req, String adminId) {
+    public void updateDetail(Long id, CodeDetailRequest req, String adminId) {
         CodeDetail detail = codeDetailAdminRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("CodeDetail Not Found"));
 
-        CodeGroup group = codeGroupAdminRepository.findById(req.getCodeGroupId())
-                .orElseThrow(() -> new RuntimeException("CodeGroup Not Found"));
+//        CodeGroup group = codeGroupAdminRepository.findById(req.getCodeGroupId())
+//                .orElseThrow(() -> new RuntimeException("CodeGroup Not Found"));
 
-        detail.setCodeGroup(group);
+        //detail.setCodeGroup(group);
         detail.setParentCodeId(req.getParentCodeId());
         detail.setCodeNameKo(req.getCodeNameKo());
         detail.setCodeNameEn(req.getCodeNameEn());
@@ -58,7 +60,7 @@ public class CodeDetailAdminService {
     }
 
     @Transactional
-    public void deleteDetail(String id, String adminId) {
+    public void deleteDetail(Long id, String adminId) {
         CodeDetail detail = codeDetailAdminRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("CodeDetail Not Found"));
         detail.setDelTf("Y");

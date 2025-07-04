@@ -31,9 +31,10 @@ public class CodeGroupAdminService {
     }
 
     @Transactional
-    public void updateGroup(String id, CodeGroupRequest req, String adminId) {
+    public void updateGroup(Long id, CodeGroupRequest req, String adminId) {
         CodeGroup group = codeGroupAdminRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("CodeGroup Not Found"));
+        group.setCodeGroupId(req.getCodeGroupId());
         group.setGroupName(req.getGroupName());
         group.setDescription(req.getDescription());
         group.setOrderSeq(req.getOrderSeq());
@@ -44,7 +45,7 @@ public class CodeGroupAdminService {
     }
 
     @Transactional
-    public void deleteGroup(String id, String adminId) {
+    public void deleteGroup(Long id, String adminId) {
         CodeGroup group = codeGroupAdminRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("CodeGroup Not Found"));
         group.setDelTf("Y");

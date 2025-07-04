@@ -18,12 +18,12 @@ public class CodeGroupAdminController {
     }
 
     @PutMapping("/{id}")
-    public void updateGroup(@PathVariable String id, @RequestBody CodeGroupRequest req, String adminId) {
+    public void updateGroup(@PathVariable Long id, @RequestBody CodeGroupRequest req, String adminId) {
         codeGroupAdminService.updateGroup(id, req, adminId);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteGroup(@PathVariable String id, String adminId) {
+    public void deleteGroup(@PathVariable Long id, String adminId) {
         codeGroupAdminService.deleteGroup(id, adminId);
     }
 

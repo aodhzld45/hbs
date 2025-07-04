@@ -12,27 +12,33 @@ import lombok.Setter;
 @AllArgsConstructor
 
 public class CodeGroupResponse {
+    private Long id;
     private String codeGroupId;
     private String groupName;
     private String description;
     private Integer orderSeq;
+    private String useTf;
 
     // native query 용 Object Array response
     public static CodeGroupResponse nativeFrom(Object[] row) {
         CodeGroupResponse response = new CodeGroupResponse();
-        response.setCodeGroupId((String) row[0]);
-        response.setGroupName((String) row[1]);
-        response.setDescription((String) row[2]);
-        response.setOrderSeq(row[3] != null ? ((Number) row[3]).intValue() : null);
+        response.setId(row[0] != null ? ((Number) row[0]).longValue() : null);
+        response.setCodeGroupId((String) row[1]);
+        response.setGroupName((String) row[2]);
+        response.setDescription((String) row[3]);
+        response.setOrderSeq(row[4] != null ? ((Number) row[4]).intValue() : null);
+        response.setUseTf(row[5] != null ? row[5].toString() : null);
         return response;
     }
 
     public static CodeGroupResponse from(CodeGroup entity) {
         CodeGroupResponse response = new CodeGroupResponse();
+        response.setId(entity.getId());
         response.setCodeGroupId(entity.getCodeGroupId());
         response.setGroupName(entity.getGroupName());
         response.setDescription(entity.getDescription());
         response.setOrderSeq(entity.getOrderSeq());
+        response.setUseTf(entity.getUseTf());
         return response;
     }
 }
