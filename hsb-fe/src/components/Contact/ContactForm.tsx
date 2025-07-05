@@ -1,5 +1,5 @@
 import Layout from '../Layout/Layout';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ContactItem } from '../../types/Common/ContactItem';
 import { fetchContactCreate } from '../../services/Common/ContactApi';
 import PrivacyPolicyModal from '../Common/PrivacyPolicyModal';

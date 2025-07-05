@@ -32,6 +32,8 @@ import ContentsList from './components/Contents/ContentsList';
 import ContentDetail from './components/Contents/ContentDetail';
 import ContactForm from './components/Contact/ContactForm';
 
+// 각종 테스트용 imports
+import TestPage from './pages/User/TestPage';
 
 // 관리자 Common imports
 import PrivateRoute from './components/Admin/PrivateRoute';
@@ -53,6 +55,8 @@ function App() {
             <Route path="/:fileType/:contentType/list" element={<ContentsList />} />
             <Route path="/:fileType/:contentType/detail/:fileId" element={<ContentDetail />} />
             <Route path="/contact" element={<ContactForm />} />
+            <Route path="/test" element={<TestPage />} />
+
 
             {/* 관리자 공용 라우트 (로그인 페이지) */}
             <Route path="/admin/login" element={<AdminLogin />} />
