@@ -7,4 +7,7 @@ export interface CodeDetail {
   codeNameEn: string;
   orderSeq: number;
   useTf: string;
+
+  level?: number;
+  label?: string;
 }

@@ -5,11 +5,14 @@ import com.hbs.hsbbo.admin.repository.CodeGroupAdminRepository;
 import com.hbs.hsbbo.common.domain.entity.CodeDetail;
 import com.hbs.hsbbo.common.domain.entity.CodeGroup;
 import com.hbs.hsbbo.common.dto.request.CodeDetailRequest;
+import com.hbs.hsbbo.common.dto.response.CodeDetailResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +20,14 @@ public class CodeDetailAdminService {
 
     private final CodeDetailAdminRepository codeDetailAdminRepository;
     private final CodeGroupAdminRepository codeGroupAdminRepository;
+
+    public List<CodeDetailResponse> getAllDetails(Long groupId) {
+        List<CodeDetail> entities = codeDetailAdminRepository.findAllByCodeGroupIdAndDelTfOrderByOrderSeqAsc(groupId, "N");
+
+        return entities.stream()
+                .map(CodeDetailResponse::from)
+                .collect(Collectors.toList());
+    }
 
     @Transactional
     public void createDetail(CodeDetailRequest req, String adminId) {

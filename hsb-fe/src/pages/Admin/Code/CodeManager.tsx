@@ -11,12 +11,17 @@ import {
   deleteCodeGroup,
   fetchParentCodes,
   fetchChildCodes,
+  fetchAllDetails,
   createCodeDetail,
-  updateCodeDetail
+  updateCodeDetail,
+  deleteCodeDetail
 } from "../../../services/Common/CodeApi";
 
 import GroupModal from "../../../components/Admin/Code/GroupModal";
 import DetailModal from "../../../components/Admin/Code/DetailModal";
+
+import { buildCodeDetailTree } from "../../../utils/buildCodeDetailTree";
+import { flattenCodeDetailTree } from "../../../utils/codeDetailTreeFlattener";
 
 const CodeManager: React.FC = () => {
   const [groupList, setGroupList] = useState<CodeGroup[]>([]);
@@ -49,7 +54,7 @@ const CodeManager: React.FC = () => {
           id: firstGroup.id,
           codeGroupId: firstGroup.codeGroupId,
         });
-        loadAllDetails(firstGroup.id);
+        loadAllDetailTree(firstGroup.id);
       }
     } catch (err) {
       console.error(err);
@@ -59,22 +64,23 @@ const CodeManager: React.FC = () => {
     }
   };
 
-  const loadAllDetails = async (groupId: number) => {
+
+
+  const loadAllDetailTree = async (groupId: number) => {
     try {
       setLoadingDetail(true);
-      const parents = await fetchParentCodes(groupId);
-
-      let allDetails: CodeDetail[] = [...parents];
-      console.log(allDetails);
-      for (const parent of parents) {
-        const children = await fetchChildCodes(groupId, parent.codeId);
-        allDetails = [...allDetails, ...children];
-      }
-
-      setDetailList(allDetails);
-    } catch (err) {
-      console.error(err);
-      alert("상세코드 목록 조회 오류");
+      const allDetails = await fetchAllDetails(groupId);
+  
+      // 트리 생성
+      const tree = buildCodeDetailTree(allDetails);
+  
+      // 플랫트리 생성 (렌더링용)
+      const flatList = flattenCodeDetailTree(tree);
+  
+      // console.log(" 트리:", tree);
+      // console.log(" 플랫:", flatList);
+  
+      setDetailList(flatList);
     } finally {
       setLoadingDetail(false);
     }
@@ -91,7 +97,8 @@ const CodeManager: React.FC = () => {
         id: selected.id,
         codeGroupId: selected.codeGroupId,
       });
-      loadAllDetails(selected.id);
+      loadAllDetailTree(selected.id);
+
     }
   };
 
@@ -120,6 +127,26 @@ const CodeManager: React.FC = () => {
     }
   };
 
+  const handleDelete = async (id?: number, type?: "group" | "detail") => {
+
+    if (!id) return;
+    if (!window.confirm("삭제하시겠습니까?")) return;
+
+    if (type === "group") {
+      await deleteCodeGroup(id, adminId!);
+    } else {
+      await deleteCodeDetail(id, adminId!);
+    }
+    try {
+      alert("코드가 성공적으로 삭제되었습니다.");
+      loadGroups();
+    } catch (err) {
+      console.error(err);
+      alert("삭제에 실패했습니다.");
+    }
+  };
+  
+
   const adminId = admin?.id;
   if (!adminId) {
     alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
@@ -132,7 +159,7 @@ const CodeManager: React.FC = () => {
         {/* 왼쪽: 그룹 관리 */}
         <div className="w-1/3">
           <h2 className="text-lg font-bold mb-3">코드 그룹 관리</h2>
-          <table className="w-full border text-sm">
+          <table className="w-full border text-sm text-center-table">
             <thead className="bg-gray-100">
               <tr>
                 <th className="border px-4 py-2">PK</th>
@@ -179,7 +206,13 @@ const CodeManager: React.FC = () => {
                     >
                       수정
                     </button>
-                    <button className="text-red-600 hover:underline">
+                    <button
+                      className="text-red-600 hover:underline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(group.id, "group");
+                      }}
+                    >
                       삭제
                     </button>
                   </td>
@@ -211,7 +244,7 @@ const CodeManager: React.FC = () => {
 
           {selectedGroup ? (
             <>
-              <table className="w-full border text-sm">
+              <table className="w-full border text-sm text-center-table">
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="border p-2">코드ID</th>
@@ -226,11 +259,11 @@ const CodeManager: React.FC = () => {
                 <tbody>
                   {detailList.map((detail) => (
                     <tr key={detail.codeId}>
-                      <td className="border p-2">{detail.codeId}</td>
-                      <td className="border p-2">
-                        {detail.parentCodeId || "-"}
+                      <td className="border p-2" style={{ paddingLeft: `${detail.level! * 20}px` }}>
+                        {detail.codeId}
                       </td>
-                      <td className="border p-2">{detail.codeNameKo}</td>
+                      <td className="border p-2">{detail.parentCodeId || "-"}</td>
+                      <td className="border p-2">{detail.label}</td>
                       <td className="border p-2">{detail.codeNameEn}</td>
                       <td className="border p-2">{detail.orderSeq}</td>
                       <td className="border p-2">
@@ -247,7 +280,13 @@ const CodeManager: React.FC = () => {
                         >
                           수정
                         </button>
-                        <button className="text-red-600 hover:underline">
+                        <button
+                          className="text-red-600 hover:underline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(detail.id, "detail");
+                          }}
+                        >
                           삭제
                         </button>
                       </td>
@@ -312,8 +351,8 @@ const CodeManager: React.FC = () => {
           if (editingDetail) {
             updateCodeDetail(detail.id, detail, adminId!)
               .then(() => {
-                alert("수정 완료!");
-                loadAllDetails(selectedGroup!.id);
+                alert("상세코드가 성공적으로 수정되었습니다.");
+                loadAllDetailTree(selectedGroup!.id);
                 setDetailModalOpen(false);
               })
               .catch(() => alert("수정 실패"));
@@ -328,7 +367,7 @@ const CodeManager: React.FC = () => {
             )
               .then(() => {
                 alert("상세 코드가 성공적으로 등록 되었습니다.");
-                loadAllDetails(selectedGroup!.id);
+                loadAllDetailTree(selectedGroup!.id);
                 setDetailModalOpen(false);
               })
               .catch(() => alert("등록 실패"));

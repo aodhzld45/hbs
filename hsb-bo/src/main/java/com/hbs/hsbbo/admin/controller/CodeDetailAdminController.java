@@ -2,8 +2,11 @@ package com.hbs.hsbbo.admin.controller;
 
 import com.hbs.hsbbo.admin.service.CodeDetailAdminService;
 import com.hbs.hsbbo.common.dto.request.CodeDetailRequest;
+import com.hbs.hsbbo.common.dto.response.CodeDetailResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -11,6 +14,11 @@ import org.springframework.web.bind.annotation.*;
 public class CodeDetailAdminController {
 
     private final CodeDetailAdminService codeDetailAdminService;
+
+    @GetMapping("/all")
+    public List<CodeDetailResponse> getAllDetails(@RequestParam Long groupId) {
+        return codeDetailAdminService.getAllDetails(groupId);
+    }
 
     @PostMapping
     public void createDetail(@RequestBody CodeDetailRequest req, String adminId) {
