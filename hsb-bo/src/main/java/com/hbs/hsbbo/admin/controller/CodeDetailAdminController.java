@@ -37,6 +37,17 @@ public class CodeDetailAdminController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{id}/use-tf")
+    public ResponseEntity<Void> updateGDetailUseTf(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> payload,
+            @RequestParam String adminId
+    ) {
+        String useTf = payload.get("useTf");
+        codeDetailAdminService.updateDetailUseTf(id, useTf, adminId);
+        return ResponseEntity.ok().build();
+    }
+
     @PutMapping("/{id}")
     public void updateDetail(@PathVariable Long id, @RequestBody CodeDetailRequest req, String adminId) {
         codeDetailAdminService.updateDetail(id, req, adminId);

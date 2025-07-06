@@ -36,6 +36,17 @@ public class CodeGroupAdminController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{id}/use-tf")
+    public ResponseEntity<Void> updateGroupUseTf(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> payload,
+            @RequestParam String adminId
+    ) {
+        String useTf = payload.get("useTf");
+        codeGroupAdminService.updateGroupUseTf(id, useTf, adminId);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{id}")
     public void deleteGroup(@PathVariable Long id, String adminId) {
         codeGroupAdminService.deleteGroup(id, adminId);

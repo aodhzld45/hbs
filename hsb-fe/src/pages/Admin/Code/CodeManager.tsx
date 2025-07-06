@@ -8,12 +8,14 @@ import {
   fetchCodeGroups,
   createCodeGroup,
   updateOrderSequence,
+  updateGroupUseTf,
   updateCodeGroup,
   deleteCodeGroup,
   fetchAllDetails,
   createCodeDetail,
   updateCodeDetail,
   updateCodeOrder,
+  updateDetailUseTf,
   deleteCodeDetail
 } from "../../../services/Common/CodeApi";
 
@@ -167,25 +169,22 @@ const CodeManager: React.FC = () => {
     }
   };
   
-  const handleToggleUseTf = async (group: CodeGroup) => {
+  const handleToggleUseTf = async (
+    item: CodeGroup | CodeDetail,
+    type: "group" | "detail"
+  ) => {
     try {
-      // 토글된 값
-      const newUseTf = group.useTf === 'Y' ? 'N' : 'Y';
-
-      // payload 준비
-      const payload = {
-        id: group.id,
-        codeGroupId: group.codeGroupId,
-        groupName: group.groupName,
-        description: group.description,
-        orderSeq: group.orderSeq,
-        useTf: newUseTf,
-      };
-
-      await updateCodeGroup(group.id, payload, adminId!);
-
-      alert("사용 여부가 변경되었습니다.");
-      loadGroups();
+      const newUseTf = item.useTf === "Y" ? "N" : "Y";
+  
+      if (type === "group") {
+        await updateGroupUseTf(item.id!, newUseTf, adminId!);
+        alert("그룹 사용 여부가 변경되었습니다.");
+        loadGroups();
+      } else {
+        await updateDetailUseTf(item.id!, newUseTf, adminId!);
+        alert("상세코드 사용 여부가 변경되었습니다.");
+        await loadAllDetailTree(selectedGroup!.id);
+      }
     } catch (error) {
       console.error(error);
       alert("사용 여부 변경 실패");
@@ -278,16 +277,16 @@ const CodeManager: React.FC = () => {
                     </div>
                   </td>
                   <td className="border px-4 py-2">
-                    <button
-                      onClick={() => handleToggleUseTf(group)}
-                      className={`px-2 py-1 rounded text-xs ${
-                        group.useTf === 'Y'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-200 text-gray-600'
-                      } hover:bg-green-200`}
-                    >
-                      {group.useTf === 'Y' ? '사용' : '미사용'}
-                    </button>
+                  <button
+                    onClick={() => handleToggleUseTf(group, "group")}
+                    className={`px-2 py-1 rounded text-xs ${
+                      group.useTf === "Y"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-200 text-gray-600"
+                    } hover:bg-green-200`}
+                  >
+                    {group.useTf === "Y" ? "사용" : "미사용"}
+                  </button>
                   </td>
                   <td className="border p-2 text-center">
                     <button
@@ -407,7 +406,16 @@ const CodeManager: React.FC = () => {
                       </td>
 
                       <td className="border p-2">
-                        {detail.useTf === "Y" ? "사용" : "미사용"}
+                        <button
+                          onClick={() => handleToggleUseTf(detail, "detail")}
+                          className={`px-2 py-1 rounded text-xs ${
+                            detail.useTf === "Y"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-200 text-gray-600"
+                          } hover:bg-green-200`}
+                        >
+                          {detail.useTf === "Y" ? "사용" : "미사용"}
+                        </button>
                       </td>
                       <td className="border p-2 text-center">
                         <button

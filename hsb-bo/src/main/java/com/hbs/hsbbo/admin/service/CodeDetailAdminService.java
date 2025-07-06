@@ -65,6 +65,15 @@ public class CodeDetailAdminService {
     }
 
     @Transactional
+    public void updateDetailUseTf(Long id, String useTf, String adminId) {
+        CodeDetail detail = codeDetailAdminRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("CodeGroup Not Found"));
+        detail.setUseTf(useTf);
+        detail.setUpAdm(adminId);
+        detail.setUpDate(LocalDateTime.now());
+    }
+
+    @Transactional
     public void updateDetail(Long id, CodeDetailRequest req, String adminId) {
         CodeDetail detail = codeDetailAdminRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("CodeDetail Not Found"));

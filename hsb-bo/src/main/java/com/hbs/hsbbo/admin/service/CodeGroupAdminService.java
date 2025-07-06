@@ -63,6 +63,15 @@ public class CodeGroupAdminService {
     }
 
     @Transactional
+    public void updateGroupUseTf(Long id, String useTf, String adminId) {
+        CodeGroup group = codeGroupAdminRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("CodeGroup Not Found"));
+        group.setUseTf(useTf);
+        group.setUpAdm(adminId);
+        group.setUpDate(LocalDateTime.now());
+    }
+
+    @Transactional
     public void updateGroup(Long id, CodeGroupRequest req, String adminId) {
         CodeGroup group = codeGroupAdminRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("CodeGroup Not Found"));

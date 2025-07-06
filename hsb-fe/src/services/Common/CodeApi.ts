@@ -24,6 +24,18 @@ export const updateOrderSequence = async (
   });
 };
 
+export const updateGroupUseTf = async (
+  id: number,
+  useTf: string,
+  adminId: string
+) => {
+  return api.patch(
+    `/admin/code-groups/${id}/use-tf`,
+    { useTf },
+    { params: { adminId } }
+  );
+};
+
 export const updateCodeGroup = async (id: number, payload: any, adminId : string) => {
   return api.put(`/admin/code-groups/${id}`, payload, {
     params: { adminId: adminId },
@@ -70,6 +82,17 @@ export const updateCodeOrder = async (
   });
 };
 
+export const updateDetailUseTf = async (
+  id: number,
+  useTf: string,
+  adminId: string
+) => {
+  return api.patch(
+    `/admin/code-details/${id}/use-tf`,
+    { useTf },
+    { params: { adminId } }
+  );
+};
 
 export const updateCodeDetail = async (id: number, payload: any, adminId : string) => {
   return api.put(`/admin/code-details/${id}`, payload, {
