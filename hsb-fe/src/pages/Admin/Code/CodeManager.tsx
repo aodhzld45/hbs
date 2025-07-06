@@ -7,10 +7,9 @@ import { CodeDetail } from "../../../types/Common/CodeDetail";
 import {
   fetchCodeGroups,
   createCodeGroup,
+  updateOrderSequence,
   updateCodeGroup,
   deleteCodeGroup,
-  fetchParentCodes,
-  fetchChildCodes,
   fetchAllDetails,
   createCodeDetail,
   updateCodeDetail,
@@ -64,8 +63,6 @@ const CodeManager: React.FC = () => {
     }
   };
 
-
-
   const loadAllDetailTree = async (groupId: number) => {
     try {
       setLoadingDetail(true);
@@ -99,6 +96,45 @@ const CodeManager: React.FC = () => {
       });
       loadAllDetailTree(selected.id);
 
+    }
+  };
+
+  // 그룹 순서 변경
+  const moveGroup = async (index: number, direction: 'up' | 'down') => {
+    const current = groupList[index];
+    if (!current) return;
+
+    let targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+    if (targetIndex < 0 || targetIndex >= groupList.length) {
+      return; // 이동 불가
+    }
+
+    const target = groupList[targetIndex];
+    if (!target) return;
+
+    try {
+      await updateOrderSequence(current.id, target.orderSeq!);
+      
+      // 변경 전에 현재 선택된 그룹 ID 저장
+      const currentSelectedGroupId = selectedGroup?.codeGroupId;
+      
+      await loadGroups();
+      
+      // 로드 후에 이전에 선택된 그룹 ID로 다시 선택
+      if (currentSelectedGroupId) {
+        const newSelectedGroup = groupList.find(g => g.codeGroupId === currentSelectedGroupId);
+        if (newSelectedGroup) {
+          setSelectedGroup({
+            id: newSelectedGroup.id,
+            codeGroupId: newSelectedGroup.codeGroupId,
+          });
+          loadAllDetailTree(newSelectedGroup.id);
+        }
+      }
+    } catch (error) {
+      console.error("순서 변경 실패:", error);
+      alert("순서 변경 실패");
     }
   };
 
@@ -165,12 +201,13 @@ const CodeManager: React.FC = () => {
                 <th className="border px-4 py-2">PK</th>
                 <th className="border px-4 py-2">그룹ID</th>
                 <th className="border px-4 py-2">그룹명</th>
+                <th className="border px-4 py-2">순서</th>
                 <th className="border px-4 py-2">상태</th>
                 <th className="border px-4 py-2">관리</th>
               </tr>
             </thead>
             <tbody>
-              {groupList.map((group) => (
+              {groupList.map((group, index) => (
                 <tr
                   key={group.id}
                   className={`cursor-pointer ${
@@ -183,6 +220,34 @@ const CodeManager: React.FC = () => {
                   <td className="border px-4 py-2">{group.id}</td>
                   <td className="border px-4 py-2">{group.codeGroupId}</td>
                   <td className="border px-4 py-2">{group.groupName}</td>
+                  {/*  순서 표시 및 화살표 버튼 추가 */}
+                  <td className="border px-2 py-2">
+                    <div className="flex flex-col items-center space-y-1">
+                      <span>{group.orderSeq}</span>
+                      <div className="flex flex-col">
+                        <button
+                          className="text-xs text-gray-600 hover:text-blue-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveGroup(index, "up");
+                          }}
+                          disabled={index === 0} // 첫 번째는 up 불가
+                        >
+                          ▲
+                        </button>
+                        <button
+                          className="text-xs text-gray-600 hover:text-blue-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveGroup(index, "down");
+                          }}
+                          disabled={index === groupList.length - 1} // 마지막은 down 불가
+                        >
+                          ▼
+                        </button>
+                      </div>
+                    </div>
+                  </td>
                   <td className="border px-4 py-2">
                     <button
                       onClick={() => handleToggleUseTf(group)}

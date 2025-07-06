@@ -19,7 +19,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
   const [groupId, setGroupId] = useState("");
   const [groupName, setGroupName] = useState("");
   const [description, setDescription] = useState("");
-  const [orderSeq, setOrderSeq] = useState(1);
+  //const [orderSeq, setOrderSeq] = useState(1);
   const [useTf, setUseTf] = useState("Y");
 
   useEffect(() => {
@@ -28,14 +28,14 @@ const GroupModal: React.FC<GroupModalProps> = ({
       setGroupId(initialData.codeGroupId);
       setGroupName(initialData.groupName);
       setDescription(initialData.description);
-      setOrderSeq(initialData.orderSeq);
+      //setOrderSeq(initialData.orderSeq);
       setUseTf(initialData.useTf ?? "Y"); // ← 추가!
     } else {
       setId(undefined);
       setGroupId("");
       setGroupName("");
       setDescription("");
-      setOrderSeq(1);
+      //setOrderSeq(1);
       setUseTf("Y"); // 기본값 Y로 초기화
     }
   }, [initialData]);
@@ -46,7 +46,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
       codeGroupId: groupId,
       groupName,
       description,
-      orderSeq,
+      //orderSeq,
       useTf
     });
   };
@@ -91,7 +91,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
           />
         </div>
 
-        <div className="mb-3">
+        {/* <div className="mb-3">
           <label className="block text-sm font-medium">순서</label>
           <input
             type="number"
@@ -99,7 +99,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
             onChange={(e) => setOrderSeq(Number(e.target.value))}
             className="border px-2 py-1 w-full"
           />
-        </div>
+        </div> */}
 
         <div className="mb-3">
             <label className="block text-sm font-medium">사용 여부</label>

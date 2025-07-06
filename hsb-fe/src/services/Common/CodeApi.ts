@@ -15,6 +15,15 @@ export const createCodeGroup = async (payload: any, adminId : string) => {
   });
 };
 
+export const updateOrderSequence = async (
+  id: number,
+  orderSequence: number
+) => {
+  return api.patch(`/admin/code-groups/${id}/order`, {
+    orderSequence,
+  });
+};
+
 export const updateCodeGroup = async (id: number, payload: any, adminId : string) => {
   return api.put(`/admin/code-groups/${id}`, payload, {
     params: { adminId: adminId },

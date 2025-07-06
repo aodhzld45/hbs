@@ -17,17 +17,49 @@ public class CodeGroupAdminService {
 
     @Transactional
     public void createGroup(CodeGroupRequest req, String adminId) {
+        // 현재 등록된 그룹 중 orderSeq의 최대값 조회
+        Integer maxOrderSeq = codeGroupAdminRepository.findMaxOrderSeq();
+        int nextOrderSeq = (maxOrderSeq != null) ? maxOrderSeq + 1 : 1;
+
         CodeGroup group = new CodeGroup();
         group.setCodeGroupId(req.getCodeGroupId());
         group.setGroupName(req.getGroupName());
         group.setDescription(req.getDescription());
-        group.setOrderSeq(req.getOrderSeq());
+        group.setOrderSeq(nextOrderSeq);
         group.setUseTf(req.getUseTf());
         group.setDelTf("N");
         group.setRegAdm(adminId);
         group.setRegDate(LocalDateTime.now());
 
         codeGroupAdminRepository.save(group);
+    }
+
+    @Transactional
+    public void updateOrder(Long id, int newOrder) {
+        CodeGroup currentGroup = codeGroupAdminRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("그룹 ID 오류"));
+
+        int currentOrder = currentGroup.getOrderSeq();
+
+        if (newOrder == currentOrder) {
+            // 그대로면 변경할 필요 없음
+            return;
+        }
+
+        if (newOrder < 1) {
+            throw new IllegalArgumentException("순서는 1 이상이어야 합니다.");
+        }
+
+        if (newOrder < currentOrder) {
+            // 순서 당김 → 기존 newOrder ~ currentOrder-1 까지 +1씩 증가
+            codeGroupAdminRepository.incrementOrderBetween(newOrder, currentOrder - 1);
+        } else {
+            // 순서 밀림 → 기존 currentOrder+1 ~ newOrder 까지 -1씩 감소
+            codeGroupAdminRepository.decrementOrderBetween(currentOrder + 1, newOrder);
+        }
+
+        currentGroup.setOrderSeq(newOrder);
+        codeGroupAdminRepository.save(currentGroup);
     }
 
     @Transactional
