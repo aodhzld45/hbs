@@ -35,7 +35,7 @@ interface DetailModalProps {
           setCodeNameKo(initialData.codeNameKo);
           setCodeNameEn(initialData.codeNameEn);
           setParentCodeId(initialData.parentCodeId);
-          setOrderSeq(initialData.orderSeq);
+          //setOrderSeq(initialData.orderSeq);
           setUseTf(initialData.useTf);
         } else {
           setId(undefined);
@@ -43,7 +43,7 @@ interface DetailModalProps {
           setCodeNameKo("");
           setCodeNameEn("");
           setParentCodeId(null);
-          setOrderSeq(1);
+          //setOrderSeq(1);
           setUseTf("Y");
         }
       }
@@ -57,7 +57,7 @@ interface DetailModalProps {
           parentCodeId,
           codeNameKo,
           codeNameEn,
-          orderSeq,
+          //orderSeq,
           useTf,
         });
       };
@@ -119,7 +119,7 @@ interface DetailModalProps {
                 </select>
             </div>
     
-            <div className="mb-3">
+            {/* <div className="mb-3">
               <label className="block text-sm font-medium">순서</label>
               <input
                 type="number"
@@ -127,7 +127,7 @@ interface DetailModalProps {
                 onChange={(e) => setOrderSeq(Number(e.target.value))}
                 className="border px-2 py-1 w-full"
               />
-            </div>
+            </div> */}
     
             <div className="mb-3">
               <label className="block text-sm font-medium">사용여부</label>

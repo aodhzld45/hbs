@@ -5,7 +5,7 @@ export interface CodeDetail {
   parentCodeId: string | null;
   codeNameKo: string;
   codeNameEn: string;
-  orderSeq: number;
+  orderSeq?: number;
   useTf: string;
 
   level?: number;

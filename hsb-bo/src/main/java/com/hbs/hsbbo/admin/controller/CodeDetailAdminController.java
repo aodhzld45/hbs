@@ -4,9 +4,11 @@ import com.hbs.hsbbo.admin.service.CodeDetailAdminService;
 import com.hbs.hsbbo.common.dto.request.CodeDetailRequest;
 import com.hbs.hsbbo.common.dto.response.CodeDetailResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,6 +25,16 @@ public class CodeDetailAdminController {
     @PostMapping
     public void createDetail(@RequestBody CodeDetailRequest req, String adminId) {
         codeDetailAdminService.createDetail(req, adminId);
+    }
+
+    @PatchMapping("/{id}/order")
+    public ResponseEntity<?> updateOrder(
+            @PathVariable Long id,
+            @RequestBody Map<String, Integer> payload) {
+
+        Integer newOrder = payload.get("orderSequence");
+        codeDetailAdminService.updateOrder(id, newOrder);
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{id}")

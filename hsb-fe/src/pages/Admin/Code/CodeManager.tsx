@@ -13,6 +13,7 @@ import {
   fetchAllDetails,
   createCodeDetail,
   updateCodeDetail,
+  updateCodeOrder,
   deleteCodeDetail
 } from "../../../services/Common/CodeApi";
 
@@ -138,6 +139,34 @@ const CodeManager: React.FC = () => {
     }
   };
 
+  const moveDetail = async (detail: CodeDetail, direction: 'up' | 'down') => {
+    const siblings = detailList
+      .filter(
+        (d) =>
+          d.parentCodeId === detail.parentCodeId &&
+          d.level === detail.level
+      )
+      .sort((a, b) => (a.orderSeq ?? 0) - (b.orderSeq ?? 0));
+  
+    const currentIndex = siblings.findIndex((d) => d.codeId === detail.codeId);
+    if (currentIndex === -1) return;
+  
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= siblings.length) return;
+  
+    const target = siblings[targetIndex];
+  
+    try {
+      await updateCodeOrder(detail.id!, { orderSequence: target.orderSeq! }, adminId!);
+      await updateCodeOrder(target.id!, { orderSequence: detail.orderSeq! }, adminId!);
+  
+      await loadAllDetailTree(selectedGroup!.id);
+    } catch (error) {
+      console.error(error);
+      alert("상세코드 순서 변경 실패");
+    }
+  };
+  
   const handleToggleUseTf = async (group: CodeGroup) => {
     try {
       // 토글된 값
@@ -330,7 +359,53 @@ const CodeManager: React.FC = () => {
                       <td className="border p-2">{detail.parentCodeId || "-"}</td>
                       <td className="border p-2">{detail.label}</td>
                       <td className="border p-2">{detail.codeNameEn}</td>
-                      <td className="border p-2">{detail.orderSeq}</td>
+
+                      <td className="border p-2">
+                        <div className="flex flex-col items-center space-y-1">
+                          <span>{detail.orderSeq}</span>
+                          <div className="flex flex-col">
+                            <button
+                              className="text-xs text-gray-600 hover:text-blue-600"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveDetail(detail, "up");
+                              }}
+                              disabled={
+                                detailList
+                                  .filter(d => 
+                                    d.parentCodeId === detail.parentCodeId &&
+                                    d.level === detail.level
+                                  )
+                                  .findIndex(d => d.codeId === detail.codeId) === 0
+                              }
+                            >
+                              ▲
+                            </button>
+                            <button
+                              className="text-xs text-gray-600 hover:text-blue-600"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveDetail(detail, "down");
+                              }}
+                              disabled={
+                                detailList
+                                  .filter(d => 
+                                    d.parentCodeId === detail.parentCodeId &&
+                                    d.level === detail.level
+                                  )
+                                  .findIndex(d => d.codeId === detail.codeId) ===
+                                detailList.filter(d =>
+                                  d.parentCodeId === detail.parentCodeId &&
+                                  d.level === detail.level
+                                ).length - 1
+                              }
+                            >
+                              ▼
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+
                       <td className="border p-2">
                         {detail.useTf === "Y" ? "사용" : "미사용"}
                       </td>

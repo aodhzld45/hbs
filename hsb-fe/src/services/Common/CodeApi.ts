@@ -60,6 +60,17 @@ export const createCodeDetail = async (payload: any, adminId : string ) => {
   });
 };
 
+export const updateCodeOrder = async (
+  id: number,
+  payload: any,
+  adminId: string
+) => {
+  return api.patch(`/admin/code-details/${id}/order`, payload, {
+    params: { adminId: adminId },
+  });
+};
+
+
 export const updateCodeDetail = async (id: number, payload: any, adminId : string) => {
   return api.put(`/admin/code-details/${id}`, payload, {
     params: { adminId: adminId },

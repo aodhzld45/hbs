@@ -31,6 +31,13 @@ public class CodeDetailAdminService {
 
     @Transactional
     public void createDetail(CodeDetailRequest req, String adminId) {
+        Long groupId = req.getCodeGroupId();
+        String parentCodeId = req.getParentCodeId();
+
+        Integer maxOrderSeq = codeDetailAdminRepository
+                .findMaxOrderSeqByGroupAndParent(groupId, parentCodeId);
+
+        int nextOrderSeq = (maxOrderSeq != null) ? maxOrderSeq + 1 : 1;
 
         CodeGroup group = codeGroupAdminRepository.findById(req.getCodeGroupId())
                 .orElseThrow(() -> new RuntimeException("CodeGroup Not Found"));
@@ -41,12 +48,19 @@ public class CodeDetailAdminService {
         detail.setParentCodeId(req.getParentCodeId());
         detail.setCodeNameKo(req.getCodeNameKo());
         detail.setCodeNameEn(req.getCodeNameEn());
-        detail.setOrderSeq(req.getOrderSeq());
+        detail.setOrderSeq(nextOrderSeq);
         detail.setUseTf(req.getUseTf());
         detail.setDelTf("N");
         detail.setRegAdm(adminId);
         detail.setRegDate(LocalDateTime.now());
 
+        codeDetailAdminRepository.save(detail);
+    }
+
+    public void updateOrder(Long id, int newOrder) {
+        CodeDetail detail = codeDetailAdminRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("메뉴 ID 오류"));
+        detail.setOrderSeq(newOrder);
         codeDetailAdminRepository.save(detail);
     }
 
