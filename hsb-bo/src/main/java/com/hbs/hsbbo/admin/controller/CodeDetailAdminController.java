@@ -4,13 +4,16 @@ import com.hbs.hsbbo.admin.service.CodeDetailAdminService;
 import com.hbs.hsbbo.common.dto.request.CodeDetailRequest;
 import com.hbs.hsbbo.common.dto.response.CodeDetailResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
 
 @RestController
+@Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/api/admin/code-details")
 public class CodeDetailAdminController {
@@ -57,4 +60,16 @@ public class CodeDetailAdminController {
     public void deleteDetail(@PathVariable Long id, String adminId) {
         codeDetailAdminService.deleteDetail(id, adminId);
     }
+
+    // 엑셀 업로드
+    @PostMapping("/upload")
+    public ResponseEntity<Void> uploadExcel(
+            @RequestParam MultipartFile file,
+            @RequestParam Long groupId,
+            @RequestParam String adminId
+    ) {
+        codeDetailAdminService.uploadExcel(file, groupId, adminId);
+        return ResponseEntity.ok().build();
+    }
+
 }

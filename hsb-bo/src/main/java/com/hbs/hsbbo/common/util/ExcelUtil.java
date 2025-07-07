@@ -92,7 +92,8 @@ public class ExcelUtil {
             Sheet sheet = workbook.getSheetAt(0);
 
             List<Map<String, String>> result = new ArrayList<>();
-            Row headerRow = sheet.getRow(2); // 헤더 row index
+            //Row headerRow = sheet.getRow(2); // 헤더 row index
+            Row headerRow = sheet.getRow(0);
 
             if (headerRow == null) {
                 return result;

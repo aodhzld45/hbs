@@ -16,7 +16,8 @@ import {
   updateCodeDetail,
   updateCodeOrder,
   updateDetailUseTf,
-  deleteCodeDetail
+  deleteCodeDetail,
+  uploadCodeDetailsExcel
 } from "../../../services/Common/CodeApi";
 
 import GroupModal from "../../../components/Admin/Code/GroupModal";
@@ -209,6 +210,30 @@ const CodeManager: React.FC = () => {
       alert("삭제에 실패했습니다.");
     }
   };
+
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+  
+    // FormData 구성
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("groupId", String(selectedGroup?.id ?? 0));
+    formData.append("adminId", adminId!);
+
+    try {
+      await uploadCodeDetailsExcel(formData);
+      alert("엑셀 업로드가 완료되었습니다!");
+      loadAllDetailTree(selectedGroup!.id);
+    } catch (error) {
+      console.error(error);
+      alert("엑셀 업로드 실패!");
+    }
+  };
+  
+  const downloadSampleExcel = async () => {
+    alert('샘플 엑셀 파일 다운로드');
+  }
   
 
   const adminId = admin?.id;
@@ -442,15 +467,34 @@ const CodeManager: React.FC = () => {
                   ))}
                 </tbody>
               </table>
-              <button
-                className="mt-4 bg-green-600 text-white px-3 py-1 rounded"
-                onClick={() => {
-                  setEditingDetail(null);
-                  setDetailModalOpen(true);
-                }}
-              >
-                + 상세코드 등록
-              </button>
+              <div className="flex gap-2 mt-4">
+                <button
+                  className="bg-green-600 text-white px-3 py-1 rounded"
+                  onClick={() => {
+                    setEditingDetail(null);
+                    setDetailModalOpen(true);
+                  }}
+                >
+                  + 상세코드 등록
+                </button>
+
+                <label className="bg-yellow-500 text-white px-3 py-1 rounded cursor-pointer hover:bg-yellow-600">
+                  엑셀 업로드
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleExcelUpload}
+                    className="hidden"
+                  />
+                </label>
+
+                <button
+                  className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
+                  onClick={downloadSampleExcel}
+                >
+                  샘플 다운로드
+                </button>
+              </div>
             </>
           ) : (
             <p>그룹을 선택해주세요.</p>

@@ -6,12 +6,16 @@ import com.hbs.hsbbo.common.domain.entity.CodeDetail;
 import com.hbs.hsbbo.common.domain.entity.CodeGroup;
 import com.hbs.hsbbo.common.dto.request.CodeDetailRequest;
 import com.hbs.hsbbo.common.dto.response.CodeDetailResponse;
+import com.hbs.hsbbo.common.util.ExcelUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,6 +59,60 @@ public class CodeDetailAdminService {
         detail.setRegDate(LocalDateTime.now());
 
         codeDetailAdminRepository.save(detail);
+    }
+
+    // 엑셀 업로드 부분
+    @Transactional
+    public void uploadExcel(MultipartFile file, Long groupId, String adminId) {
+        try (InputStream is = file.getInputStream()) {
+
+            List<Map<String, String>> rows = ExcelUtil.parseExcel(is);
+
+            int preview = Math.min(5, rows.size());
+            for (int i = 0; i < preview; i++) {
+                System.out.println("엑셀 Row " + (i + 1) + " → " + rows.get(i));
+            }
+            if (rows.size() > preview) {
+                System.out.println("... 생략: 총 " + rows.size() + "건");
+            }
+
+            CodeGroup group = codeGroupAdminRepository.findById(groupId)
+                    .orElseThrow(() -> new RuntimeException("CodeGroup Not Found"));
+
+            for (Map<String, String> row : rows) {
+                String codeId = row.get("codeId");
+                String codeNameKo = row.get("codeNameKo");
+                String codeNameEn = row.get("codeNameEn");
+                String parentCodeId = row.get("parentCodeId");
+                String orderSeqStr = row.get("orderSeq");
+                String useTf = row.get("useTf");
+
+                Integer orderSeq = orderSeqStr != null && !orderSeqStr.isEmpty()
+                        ? Integer.parseInt(orderSeqStr)
+                        : null;
+
+                if (parentCodeId != null && parentCodeId.trim().isEmpty()) {
+                    parentCodeId = null;
+                }
+
+                CodeDetail detail = new CodeDetail();
+                detail.setCodeId(codeId);
+                detail.setCodeGroup(group);
+                detail.setParentCodeId(parentCodeId);
+                detail.setCodeNameKo(codeNameKo);
+                detail.setCodeNameEn(codeNameEn);
+                detail.setOrderSeq(orderSeq);
+                detail.setUseTf(useTf);
+                detail.setDelTf("N");
+                detail.setRegAdm(adminId);
+                detail.setRegDate(LocalDateTime.now());
+
+                codeDetailAdminRepository.save(detail);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("엑셀 업로드 실패", e);
+        }
     }
 
     public void updateOrder(Long id, int newOrder) {

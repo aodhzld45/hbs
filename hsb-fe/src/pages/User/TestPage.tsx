@@ -33,34 +33,34 @@ const TestPage = () => {
       <div className="p-8 space-y-4">
         <h1 className="text-2xl font-bold">DynamicSelectBox 테스트</h1>
         <pre>
-          예시 group은 NATION입니다.
+          예시 group은 INDUSTRY입니다.
         </pre>
 
         {/* Dynamic SelectBox */}
         <DynamicSelectBox
-          group="NATION"
+          group="INDUSTRY"
           levels={[
             {
-              label: "첫번째 - 국가 선택",
+              label: "첫번째 - 산업 분류 선택",
               value: selected1,
               setValue: setSelected1,
-              placeholder: "국가를 선택해주세요",
+              placeholder: "1차 산업분류를 선택해주세요",
               labelClassName: "text-blue-600 font-bold mb-2",
               selectClassName: "border border-blue-500 p-3 rounded",
             },
             {
-              label: "두번째 - 도/광역시 선택",
+              label: "두번째 - 산업 분류 선택",
               value: selected2,
               setValue: setSelected2,
-              placeholder: "도/광역시를 선택해주세요",
+              placeholder: "2차 산업분류를 선택해주세요.",
               labelClassName: "text-blue-600 font-bold mb-2",
               selectClassName: "border border-green-500 p-3 rounded",
             },
             {
-              label: "세번째 - 시/군/구 선택",
+              label: "세번째 - 산업 분류 선택",
               value: selected3,
               setValue: setSelected3,
-              placeholder: "시/군/구를 선택해주세요",
+              placeholder: "3차 산업 분류를 선택해주세요.",
               labelClassName: "text-blue-600 font-bold mb-2",
               selectClassName: "border border-red-500 p-3 rounded",
             }
