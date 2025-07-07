@@ -10,14 +10,19 @@ import org.springframework.stereotype.Component;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 @Component
 @RequiredArgsConstructor
 @Resource
 public class ExcelUtil {
+    // 엑셀 저장용
     public static <T> ByteArrayInputStream generateExcel(
             String sheetName,
             List<T> data,
@@ -78,6 +83,79 @@ public class ExcelUtil {
 
         } catch (IOException e) {
             throw new RuntimeException("엑셀 생성 실패", e);
+        }
+    }
+
+    // 엑셀 데이터 파싱
+    public static List<Map<String, String>> parseExcel(InputStream is) {
+        try (Workbook workbook = WorkbookFactory.create(is)) {
+            Sheet sheet = workbook.getSheetAt(0);
+
+            List<Map<String, String>> result = new ArrayList<>();
+            Row headerRow = sheet.getRow(2); // 헤더 row index
+
+            if (headerRow == null) {
+                return result;
+            }
+
+            int colCount = headerRow.getPhysicalNumberOfCells();
+            List<String> headers = new ArrayList<>();
+            for (int i = 0; i < colCount; i++) {
+                Cell cell = headerRow.getCell(i);
+                headers.add(cell != null ? cellToString(cell) : "");
+            }
+
+            for (int i = 3; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                Map<String, String> rowData = new LinkedHashMap<>();
+                for (int j = 0; j < colCount; j++) {
+                    Cell cell = row.getCell(j);
+                    String value = (cell != null) ? cellToString(cell) : "";
+                    rowData.put(headers.get(j), value);
+                }
+                result.add(rowData);
+            }
+
+            return result;
+
+        } catch (IOException e) {
+            throw new RuntimeException("엑셀 파싱 실패", e);
+        }
+    }
+
+
+    private static String cellToString(Cell cell) {
+        if (cell == null) {
+            return "";
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                double num = cell.getNumericCellValue();
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString(); // 필요 시 포맷팅
+                } else {
+                    if (num == Math.floor(num)) {
+                        return String.valueOf((int) num);
+                    } else {
+                        return String.valueOf(num);
+                    }
+                }
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                try {
+                    return cell.getStringCellValue().trim();
+                } catch (IllegalStateException e) {
+                    return String.valueOf(cell.getNumericCellValue());
+                }
+            case BLANK:
+                return "";
+            default:
+                return "";
         }
     }
 
