@@ -65,10 +65,16 @@ const AdminLogin = () => {
     try {
       const loginResponse: any = await fetchAdminLogin(formData.id, formData.password);
       const token = loginResponse.token;
-      const adminInfo = loginResponse.admin;
+      const adminInfo = loginResponse;
 
       // AuthContext에 token과 admin 함께 전달
-      login(adminInfo, token);
+      login({
+        id: adminInfo.adminId,
+        name: adminInfo.name,
+        email: adminInfo.email,
+        groupId: adminInfo.groupId,
+        isDeleted: false,
+      }, token);
 
       // 로그인 성공 후 이동
       navigate('/admin/index');

@@ -65,5 +65,18 @@ public class JwtTokenProvider {
                 .getBody()
                 .getSubject();
     }
+
+    /**
+     * JWT 토큰에서 role 값을 추출하는 메서드
+     * - JWT 생성 시 claims.put("role", role) 로 저장했던 값 꺼냄
+     */
+    public String getRole(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("role", String.class);
+    }
     
 }

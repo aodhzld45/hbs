@@ -42,50 +42,61 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest,
                                    HttpServletRequest request) {
-            // 전달받은 id와 password로 관리자 검색(평문 비교)
-            Optional<Admin> adminOpt = adminRepository.findByIdAndPassword(
-                    loginRequest.getId(),
-                    loginRequest.getPassword()
-            );
+        Optional<Admin> adminOpt = adminRepository.findByIdAndPassword(
+                loginRequest.getId(),
+                loginRequest.getPassword()
+        );
 
-            if (adminOpt.isPresent()) {
-                Admin admin = adminOpt.get();
+        if (adminOpt.isPresent()) {
+            Admin admin = adminOpt.get();
 
-                // JWT
-                String token = jwtTokenProvider.createToken(admin.getId(), "ADMIN");
+            // JWT
+            String token = jwtTokenProvider.createToken(admin.getId(), "ADMIN");
 
-                // 응답으로 JWT 반환
-                return ResponseEntity.ok().body(Map.of(
-                        "token", token,
-                        "admin", admin
-                ));
+            // 권한도 함께 내려보냄
+            List<String> roles = List.of("ROLE_ADMIN");
 
-                // 인증 성공: 세션 생성
-//                request.getSession(true);
-//                HttpSession session = request.getSession(true);
-//                session.setAttribute("admin", adminOpt.get());
-//                Admin admin = adminOpt.get();
-//                return ResponseEntity.ok(admin);
-            } else {
-                // 인증 실패: 적절한 실패 메시지 반환
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login 실패");
-            }
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "adminId", admin.getId(),
+                    "name", admin.getName(),
+                    "groupId", admin.getGroupId(),
+                    "tel", admin.getTel(),
+                    "memo", admin.getMemo(),
+                    "email", admin.getEmail(),
+                    "roles", roles
+            ));
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login 실패");
+        }
     }
 
     // 현재 로그인된 관리자 정보 반환 (JWT 인증 기반)
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentAdmin(@RequestAttribute(name = "admin", required = false) Admin admin,
-                                             HttpServletRequest request,
-                                             java.security.Principal principal) {
-        if (principal == null || !(principal instanceof Authentication)) {
+    public ResponseEntity<?> getCurrentAdmin(Authentication authentication) {
+        if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("인증되지 않은 사용자입니다.");
         }
 
-        Authentication authentication = (Authentication) principal;
         Object principalObj = authentication.getPrincipal();
 
         if (principalObj instanceof Admin currentAdmin) {
-            return ResponseEntity.ok(currentAdmin);
+            // 권한 목록 꺼내기
+            List<String> roles = authentication.getAuthorities()
+                    .stream()
+                    .map(a -> a.getAuthority())
+                    .toList();
+
+            return ResponseEntity.ok(Map.of(
+                    "adminId", currentAdmin.getId(),
+                    "name", currentAdmin.getName(),
+                    "groupId", currentAdmin.getGroupId(),
+                    "tel", currentAdmin.getTel(),
+                    "memo", currentAdmin.getMemo(),
+                    "email", currentAdmin.getEmail(),
+                    "roles", roles
+            ));
+
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("인증 정보가 올바르지 않습니다.");
         }
