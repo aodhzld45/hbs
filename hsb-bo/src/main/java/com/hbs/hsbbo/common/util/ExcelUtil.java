@@ -89,14 +89,21 @@ public class ExcelUtil {
     // 엑셀 데이터 파싱
     public static List<Map<String, String>> parseExcel(InputStream is) {
         try (Workbook workbook = WorkbookFactory.create(is)) {
+
+            // 시트 유효성 체크
+            if (workbook.getNumberOfSheets() < 1) {
+                throw new RuntimeException("엑셀 파일에 시트가 없습니다.");
+            }
+
             Sheet sheet = workbook.getSheetAt(0);
+            if (sheet == null) {
+                throw new RuntimeException("엑셀 첫 번째 시트를 찾을 수 없습니다.");
+            }
 
-            List<Map<String, String>> result = new ArrayList<>();
-            //Row headerRow = sheet.getRow(2); // 헤더 row index
-            Row headerRow = sheet.getRow(0);
-
+            // 헤더 Row 유효성 체크
+            Row headerRow = sheet.getRow(1);
             if (headerRow == null) {
-                return result;
+                throw new RuntimeException("엑셀 첫 번째 시트에 헤더가 없습니다.");
             }
 
             int colCount = headerRow.getPhysicalNumberOfCells();
@@ -106,7 +113,8 @@ public class ExcelUtil {
                 headers.add(cell != null ? cellToString(cell) : "");
             }
 
-            for (int i = 3; i <= sheet.getLastRowNum(); i++) {
+            List<Map<String, String>> result = new ArrayList<>();
+            for (int i = 2; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
 
