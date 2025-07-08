@@ -231,11 +231,15 @@ const CodeManager: React.FC = () => {
     }
   };
   
-  const downloadSampleExcel = async () => {
-    alert('샘플 엑셀 파일 다운로드');
-  }
+  const downloadSampleExcel = () => {
+    const link = document.createElement('a');
+    link.href = '/sample/상세코드_업로드_샘플.xlsx';
+    link.download = '상세코드_업로드_샘플.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   
-
   const adminId = admin?.id;
   if (!adminId) {
     alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
