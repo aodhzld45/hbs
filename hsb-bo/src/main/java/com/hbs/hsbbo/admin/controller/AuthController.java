@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.domain.entity.Admin;
 import com.hbs.hsbbo.admin.dto.request.LoginRequest;
 import com.hbs.hsbbo.admin.repository.AdminRepository;
@@ -40,6 +41,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @AdminActionLog(action = "LOGIN")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest,
                                    HttpServletRequest request) {
         Optional<Admin> adminOpt = adminRepository.findByIdAndPassword(
@@ -105,6 +107,7 @@ public class AuthController {
 
 
     // 기존 로그인 API 외에 추가
+    @AdminActionLog(action = "LOGOUT")
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
