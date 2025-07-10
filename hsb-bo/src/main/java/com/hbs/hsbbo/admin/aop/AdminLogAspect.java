@@ -1,16 +1,15 @@
 package com.hbs.hsbbo.admin.aop;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hbs.hsbbo.admin.domain.entity.Admin;
 import com.hbs.hsbbo.admin.domain.entity.AdminLog;
+import com.hbs.hsbbo.admin.dto.request.LoginRequest;
 import com.hbs.hsbbo.admin.service.AdminLogService;
+import com.hbs.hsbbo.common.util.SecurityUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -48,16 +47,8 @@ public class AdminLogAspect {
                                AdminActionLog adminActionLog,
                                Object result) {
 
-        // 1. SecurityContext에서 현재 로그인된 Admin 객체 가져오기
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Admin admin = null;
-
-        if (authentication != null && authentication.getPrincipal() instanceof Admin) {
-            admin = (Admin) authentication.getPrincipal();
-        }
-
-        // 로그인되어 있지 않다면 anonymous로 처리
-        String adminId = (admin != null) ? admin.getId() : "anonymous";
+        // 1. SecurityContext에서 현재 로그인된 Admin 객체 가져오기 -> 로그인되어 있지 않다면 anonymous로 처리
+        String adminId = SecurityUtil.getCurrentAdminId();
 
         // 2. 요청 URL 추출
         String url = request.getRequestURI();
@@ -81,6 +72,16 @@ public class AdminLogAspect {
                 ) {
                     continue;
                 }
+
+                // LoginRequest일 경우 비밀번호 마스킹 처리
+                if (arg instanceof LoginRequest loginRequest) {
+                    // 로그인 시도 시 adminId 덮어쓰기
+                    if (adminId == null || adminId.equals("anonymous")) {
+                        adminId = loginRequest.getId();
+                    }
+                    loginRequest.setPassword("*****");
+                }
+
                 serializableArgs.add(arg);
             }
         }
