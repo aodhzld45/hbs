@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -29,6 +30,8 @@ public class AuthController {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @GetMapping("/login")
     public ResponseEntity<?> getIp(HttpServletRequest request) {
@@ -44,13 +47,15 @@ public class AuthController {
     @AdminActionLog(action = "LOGIN")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest,
                                    HttpServletRequest request) {
-        Optional<Admin> adminOpt = adminRepository.findByIdAndPassword(
-                loginRequest.getId(),
-                loginRequest.getPassword()
-        );
+        Optional<Admin> adminOpt = adminRepository.findById(loginRequest.getId());
 
         if (adminOpt.isPresent()) {
             Admin admin = adminOpt.get();
+
+            // 암호화된 비밀번호 비교
+            if (!passwordEncoder.matches(loginRequest.getPassword(), admin.getPassword())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login 실패");
+            }
 
             // JWT
             String token = jwtTokenProvider.createToken(admin.getId(), "ADMIN");
@@ -172,8 +177,8 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("해당 아이디의 관리자가 이미 존재합니다.");
         }
-        // (필요하다면 여기서 비밀번호 암호화 처리, 예: admin.setPassword(passwordEncoder.encode(admin.getPassword())) )
 
+        admin.setPassword(passwordEncoder.encode(admin.getPassword()));
         // 생성일 및 수정일 설정
         admin.setCreatedAt(LocalDateTime.now());
         admin.setUpdatedAt(LocalDateTime.now());
