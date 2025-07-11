@@ -47,6 +47,8 @@ public class AdminLogAspect {
     public void logAdminAction(JoinPoint joinPoint,
                                AdminActionLog adminActionLog,
                                Object result) {
+        System.out.println("==> result: " + result);
+        System.out.println("==> result map: " + extractFields(result));
 
         // ① 현재 로그인한 관리자 ID 추출 (로그인 전이면 anonymous)
         String adminId = SecurityUtil.getCurrentAdminId();
@@ -57,10 +59,20 @@ public class AdminLogAspect {
         // ③ 메서드 파라미터를 Map<String, Object>로 추출
         Map<String, Object> paramMap = extractParamMap(joinPoint);
 
-        // ④ 반환 객체(result)가 Entity나 DTO라면 그 필드도 paramMap에 추가
+        // ④ 반환 객체(result)가 ResponseEntity인 경우
+        //    → ResponseEntity의 body가 실제 DTO이므로 body를 꺼내 필드 추출하여 paramMap에 추가
+        //    → 그렇지 않으면 result 자체를 DTO로 간주하고 필드 추출
         if (result != null) {
-            Map<String, Object> resultMap = extractFields(result);
-            paramMap.putAll(resultMap);
+            if (result instanceof org.springframework.http.ResponseEntity<?> responseEntity) {
+                Object body = responseEntity.getBody();
+                if (body != null) {
+                    Map<String, Object> resultMap = extractFields(body);
+                    paramMap.putAll(resultMap);
+                }
+            } else {
+                Map<String, Object> resultMap = extractFields(result);
+                paramMap.putAll(resultMap);
+            }
         }
 
         // ⑤ 어노테이션에 명시된 detail 템플릿 치환
@@ -142,6 +154,12 @@ public class AdminLogAspect {
         if (obj == null) return result;
 
         Class<?> clazz = obj.getClass();
+
+        // Hibernate Proxy 클래스일 경우 실제 Entity 클래스로 치환
+        if (clazz.getName().contains("HibernateProxy")) {
+            clazz = clazz.getSuperclass();
+        }
+
         for (Field field : clazz.getDeclaredFields()) {
             field.setAccessible(true);
             try {
