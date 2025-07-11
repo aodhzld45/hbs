@@ -24,6 +24,9 @@ public class AdminLog {
     @Column(length = 50, nullable = false)
     private String action;
 
+    @Column(length = 1000, nullable = false)
+    private String detail;
+
     @Column(length = 200)
     private String url;
 
