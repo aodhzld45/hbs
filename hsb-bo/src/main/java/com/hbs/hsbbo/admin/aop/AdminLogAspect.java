@@ -1,6 +1,8 @@
 package com.hbs.hsbbo.admin.aop;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hbs.hsbbo.admin.domain.entity.AdminLog;
 import com.hbs.hsbbo.admin.dto.request.LoginRequest;
 import com.hbs.hsbbo.admin.service.AdminLogService;
@@ -47,21 +49,35 @@ public class AdminLogAspect {
     public void logAdminAction(JoinPoint joinPoint,
                                AdminActionLog adminActionLog,
                                Object result) {
-        System.out.println("==> result: " + result);
-        System.out.println("==> result map: " + extractFields(result));
-
-        // ① 현재 로그인한 관리자 ID 추출 (로그인 전이면 anonymous)
-        String adminId = SecurityUtil.getCurrentAdminId();
-
-        // ② 요청 URL 추출
+        // 1. 요청 URL 추출
         String url = request.getRequestURI();
 
-        // ③ 메서드 파라미터를 Map<String, Object>로 추출
+        // 로그인 API의 경우 SecurityContext에 아직 인증 정보가 없으므로
+        // 파라미터 LoginRequest에서 직접 id를 추출하도록 분기 처리
+        String adminId;
+        if ("/api/admin/login".equals(url)) {
+            adminId = extractLoginId(joinPoint);
+        } else {
+            adminId = SecurityUtil.getCurrentAdminId();
+        }
+
+        // 조회 action 중복 체크 (AOP만 수정)
+        if ("조회".equals(adminActionLog.action())) {
+            boolean exists = adminLogService.existsRecentLog(
+                    adminId, adminActionLog.action(), url, 60
+            );
+            if (exists) {
+                // 최근 동일 로그 있으면 insert 안함
+                return;
+            }
+        }
+
+        // 2. 메서드 파라미터를 Map<String, Object>로 추출
         Map<String, Object> paramMap = extractParamMap(joinPoint);
 
-        // ④ 반환 객체(result)가 ResponseEntity인 경우
-        //    → ResponseEntity의 body가 실제 DTO이므로 body를 꺼내 필드 추출하여 paramMap에 추가
-        //    → 그렇지 않으면 result 자체를 DTO로 간주하고 필드 추출
+        // 3. 반환 객체(result)가 ResponseEntity인 경우:
+        //    → ResponseEntity의 body를 꺼내서 필드 정보를 Map에 추가
+        //    → 그렇지 않으면 result 자체를 DTO로 간주하고 필드 정보를 추출
         if (result != null) {
             if (result instanceof org.springframework.http.ResponseEntity<?> responseEntity) {
                 Object body = responseEntity.getBody();
@@ -75,17 +91,17 @@ public class AdminLogAspect {
             }
         }
 
-        // ⑤ 어노테이션에 명시된 detail 템플릿 치환
+        // 4. 어노테이션에 명시된 detail 템플릿 치환
         String detailTemplate = adminActionLog.detail();
         String detail = applyTemplate(detailTemplate, paramMap);
 
-        // ⑥ 메서드 호출 시 전달된 파라미터 전체를 JSON으로 직렬화 (로그 보관용)
+        // 5. 메서드 호출 시 전달된 파라미터 전체를 JSON으로 직렬화 (로그 보관용)
         String paramsJson = serializeArguments(joinPoint);
 
-        // ⑦ 실제 클라이언트 IP 추출 (프록시 환경 고려)
+        // 6. 실제 클라이언트 IP 추출 (프록시 환경 고려)
         String ip = getClientIp();
 
-        // ⑧ AdminLog 엔티티 생성 및 세팅
+        // 7. AdminLog 엔티티 생성 및 세팅
         AdminLog log = new AdminLog();
         log.setAdminId(adminId);                    // 관리자 ID
         log.setAction(adminActionLog.action());     // 어노테이션에 설정한 액션명
@@ -97,8 +113,25 @@ public class AdminLogAspect {
         log.setRegAdm(adminId);                     // 등록자 ID
         log.setRegDate(LocalDateTime.now());        // 등록 시각
 
-        // ⑨ 로그 저장 (DB Insert)
+        // 8. 로그 저장 (DB Insert)
         adminLogService.save(log);
+    }
+
+    /**
+     * 로그인 API의 경우 SecurityContext에 아직 인증 정보가 없으므로
+     * JoinPoint에서 LoginRequest 파라미터를 찾아 id를 꺼내옴
+     *
+     * @param joinPoint 메서드 호출 정보
+     * @return 로그인 시도한 adminId (없으면 "anonymous")
+     */
+    private String extractLoginId(JoinPoint joinPoint) {
+        Object[] args = joinPoint.getArgs();
+        for (Object arg : args) {
+            if (arg instanceof LoginRequest loginRequest) {
+                return loginRequest.getId();
+            }
+        }
+        return "anonymous";
     }
 
     /**
@@ -127,15 +160,31 @@ public class AdminLogAspect {
                 continue;
             }
 
-            if (isPrimitiveOrWrapper(arg.getClass()) || arg instanceof String) {
-                // 단순 타입 (int, String 등)은 그대로 기록
+            //  Map<String, ?> 파라미터는 key-value를 풀어헤쳐 paramMap에 바로 넣음
+            if (arg instanceof Map<?, ?> mapArg) {
+                for (Map.Entry<?, ?> entry : mapArg.entrySet()) {
+                    paramMap.put(String.valueOf(entry.getKey()), entry.getValue());
+                }
+            }
+            //  단순 값은 그대로 paramMap에 기록
+            else if (isPrimitiveOrWrapper(arg.getClass()) || arg instanceof String) {
                 paramMap.put(paramName, arg);
-            } else {
-                // DTO, Entity 등은 필드 단위로 펼쳐서 Map에 추가
+            }
+            //  DTO나 엔티티는 필드 단위로 풀어서 paramMap에 추가
+            else {
                 Map<String, Object> fields = extractFields(arg);
                 paramMap.putAll(fields);
             }
         }
+
+        //  request attribute(logArgs)도 paramMap에 추가
+        Object logArgs = request.getAttribute("logArgs");
+        if (logArgs != null && logArgs instanceof Map<?, ?> logMap) {
+            for (Map.Entry<?, ?> entry : logMap.entrySet()) {
+                paramMap.put(String.valueOf(entry.getKey()), entry.getValue());
+            }
+        }
+
         return paramMap;
     }
 
@@ -146,6 +195,10 @@ public class AdminLogAspect {
      *   AdminMenu(id=1, menuName="대시보드")
      * → {id=1, menuName="대시보드"}
      *
+     * 주의:
+     * - JDK 컬렉션, Map, 배열 등은 reflection 대신 toString()으로 처리
+     * - JDK 내부 클래스 (java.*)는 reflection 하지 않음
+     *
      * @param obj DTO 또는 Entity
      * @return 필드명-값 Map
      */
@@ -154,6 +207,13 @@ public class AdminLogAspect {
         if (obj == null) return result;
 
         Class<?> clazz = obj.getClass();
+
+        // JDK 컬렉션, Map, 배열, java.* 클래스는 reflection 하지 않고 문자열로 처리
+        if (obj instanceof Collection || obj instanceof Map || clazz.isArray()
+                || clazz.getPackageName().startsWith("java.")) {
+            result.put(clazz.getSimpleName(), String.valueOf(obj));
+            return result;
+        }
 
         // Hibernate Proxy 클래스일 경우 실제 Entity 클래스로 치환
         if (clazz.getName().contains("HibernateProxy")) {
@@ -196,14 +256,16 @@ public class AdminLogAspect {
     /**
      * 메서드 파라미터 전체를 JSON 문자열로 직렬화
      *
-     * e.g.
-     *   [ {menuName: "대시보드", orderSeq: 1}, "abc" ]
+     * - 보안을 위해 비밀번호 등은 마스킹 처리
+     * - 직렬화가 불가능한 빈 객체의 경우 예외 방지
      *
      * @param joinPoint 메서드 호출 정보
      * @return 직렬화된 JSON 문자열
      */
     private String serializeArguments(JoinPoint joinPoint) {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.configure(com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
         List<Object> serializableArgs = new ArrayList<>();
@@ -243,9 +305,10 @@ public class AdminLogAspect {
     }
 
     /**
-     * 프록시 환경 (Load Balancer) 고려하여 클라이언트 IP 추출
+     * 프록시 환경 (Load Balancer 등)을 고려하여 클라이언트 IP를 추출
      *
-     * X-Forwarded-For 헤더 우선 사용, 없으면 request.getRemoteAddr()
+     * - X-Forwarded-For 헤더 우선 사용
+     * - 없으면 request.getRemoteAddr() 사용
      *
      * @return 클라이언트 IP
      */
@@ -260,8 +323,8 @@ public class AdminLogAspect {
     /**
      * Wrapper 타입 여부 확인
      *
-     * @param clazz 클래스
-     * @return Wrapper 여부
+     * @param clazz 클래스 타입
+     * @return Wrapper 여부 true/false
      */
     private boolean isPrimitiveOrWrapper(Class<?> clazz) {
         return clazz.isPrimitive()
