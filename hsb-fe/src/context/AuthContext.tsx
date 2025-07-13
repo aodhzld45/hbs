@@ -78,9 +78,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    setIsAuthenticated(false);
-    setAdmin(undefined);
-    localStorage.removeItem("jwtToken");
+    try {
+      await api.post("/admin/logout");
+    } catch (error) {
+      console.error("서버 로그아웃 실패:", error);
+      // 서버가 죽었거나, 인증 만료된 경우 무시하고 클라이언트 토큰만 제거
+    } finally {
+      setIsAuthenticated(false);
+      setAdmin(undefined);
+      localStorage.removeItem("jwtToken");
+    }
   };
 
   return (

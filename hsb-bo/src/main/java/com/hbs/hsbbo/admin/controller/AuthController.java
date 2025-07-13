@@ -5,6 +5,7 @@ import com.hbs.hsbbo.admin.domain.entity.Admin;
 import com.hbs.hsbbo.admin.dto.request.LoginRequest;
 import com.hbs.hsbbo.admin.repository.AdminRepository;
 import com.hbs.hsbbo.common.config.JwtTokenProvider;
+import com.hbs.hsbbo.common.util.SecurityUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -44,8 +45,11 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @AdminActionLog(action = "LOGIN")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest,
+    @AdminActionLog(
+            action = "로그인",
+            detail = "관리자 계정 {id} 로그인"
+    )
+        public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest,
                                    HttpServletRequest request) {
         Optional<Admin> adminOpt = adminRepository.findById(loginRequest.getId());
 
@@ -111,17 +115,26 @@ public class AuthController {
 
 
 
-    // 기존 로그인 API 외에 추가
-    @AdminActionLog(action = "LOGOUT")
+    // 기존 로그아웃
     @PostMapping("/logout")
+    @AdminActionLog(
+            action = "로그아웃",
+            detail = "관리자 계정 {id} 로그아웃"
+    )
     public ResponseEntity<?> logout(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-            System.out.println("로그아웃 성공");
+        String authHeader = request.getHeader("Authorization");
+        String token = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
         }
-        return ResponseEntity.ok("Logout 성공");
+
+        String adminId = SecurityUtil.getCurrentAdminId();
+
+        request.setAttribute("logArgs", Map.of("id", adminId));
+
+        return ResponseEntity.ok("Logout 성공. 클라이언트에서 토큰을 삭제하세요.");
     }
+
 
     // 세션 인증
     @GetMapping("/session-check")
@@ -159,6 +172,10 @@ public class AuthController {
 
     // 관리자 계정 삭제 (논리 삭제: isDeleted 값을 true로 변경)
     @DeleteMapping("/accounts/{id}")
+    @AdminActionLog(
+            action = "삭제",
+            detail = "관리자 계정 {id} 삭제"
+    )
     public ResponseEntity<?> deleteAdmin(@PathVariable("id") String id) {
         return adminRepository.findById(id)
                 .map(admin -> {
@@ -171,6 +188,10 @@ public class AuthController {
 
     // 관리자 등록 API
     @PostMapping("/register")
+    @AdminActionLog(
+            action = "등록",
+            detail = "관리자 계정 {id} 등록"
+    )
     public ResponseEntity<?> registerAdmin(@Valid @RequestBody Admin admin) {
         // 동일한 id가 이미 존재하는지 확인
         if(adminRepository.existsById(admin.getId())) {
