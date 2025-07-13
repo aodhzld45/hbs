@@ -1,6 +1,8 @@
 package com.hbs.hsbbo.admin.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.domain.entity.AdminMenu;
+import com.hbs.hsbbo.admin.dto.response.AdminMenuResponse;
 import com.hbs.hsbbo.admin.repository.AdminMenuRepository;
 import com.hbs.hsbbo.admin.service.AdminMenuService;
 import jakarta.validation.Valid;
@@ -24,6 +26,10 @@ public class AdminMenuController {
 
     // 전체 메뉴 조회 (삭제되지 않은 메뉴만, del_tf = 'N')
     @GetMapping
+    @AdminActionLog(
+            action = "조회",
+            detail = "관리자 메뉴 목록 조회"
+    )
     public ResponseEntity<List<AdminMenu>> getAllMenus() {
         List<AdminMenu> menus = adminMenuRepository.findByDelTfOrderByOrderSequenceAsc("N");
         return ResponseEntity.ok(menus);
@@ -31,6 +37,10 @@ public class AdminMenuController {
 
     // 메뉴 순서 변경
     @PatchMapping("/{id}/order")
+    @AdminActionLog(
+            action = "수정",
+            detail = "메뉴 ID={id}의 순서를 {orderSequence}번으로 수정"
+    )
     public ResponseEntity<?> updateOrder(
             @PathVariable Long id,
             @RequestBody Map<String, Integer> payload) {
@@ -41,6 +51,10 @@ public class AdminMenuController {
 
     // 메뉴 등록
     @PostMapping
+    @AdminActionLog(
+            action = "등록",
+            detail = "메뉴 ID={id}, 이름={name} 등록"
+    )
     public ResponseEntity<AdminMenu> createMenu(@Valid @RequestBody AdminMenu menu) {
         // 필요시 추가 검증 로직
         AdminMenu savedMenu = adminMenuRepository.save(menu);
@@ -49,6 +63,10 @@ public class AdminMenuController {
 
     // 메뉴 수정
     @PutMapping("/{id}")
+    @AdminActionLog(
+            action = "수정",
+            detail = "메뉴 ID={id} 수정"
+    )
     public ResponseEntity<?> updateMenu(@PathVariable("id") Integer id, @Valid @RequestBody AdminMenu updatedMenu) {
         Optional<AdminMenu> optionalMenu = adminMenuRepository.findById(Long.valueOf(id));
         if (optionalMenu.isPresent()) {
@@ -70,13 +88,20 @@ public class AdminMenuController {
 
     // 메뉴 삭제 (논리 삭제: del_tf를 'Y'로 변경)
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteMenu(@PathVariable("id") Integer id) {
+    @AdminActionLog(
+            action = "삭제",
+            detail = "메뉴 ID={id}, 이름={name} 삭제됨"
+    )
+    public ResponseEntity<AdminMenuResponse> deleteMenu(@PathVariable("id") Integer id) {
         Optional<AdminMenu> optionalMenu = adminMenuRepository.findById(Long.valueOf(id));
         if (optionalMenu.isPresent()) {
             AdminMenu menu = optionalMenu.get();
             menu.setDelTf("Y");
             adminMenuRepository.save(menu);
-            return ResponseEntity.ok().build();
+
+            // 엔티티 → DTO 변환
+            AdminMenuResponse response = AdminMenuResponse.fromEntity(menu);
+            return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.notFound().build();
         }

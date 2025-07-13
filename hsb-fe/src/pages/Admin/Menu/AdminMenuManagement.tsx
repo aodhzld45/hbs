@@ -1,4 +1,5 @@
 // src/pages/Admin/AdminMenuManagement.tsx
+
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../../components/Layout/AdminLayout';
 import { AdminMenu } from '../../../types/Admin/AdminMenu';
@@ -23,98 +24,83 @@ const AdminMenuManagement: React.FC = () => {
   const [editingMenu, setEditingMenu] = useState<AdminMenu | null>(null);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
 
-    const loadMenus = async () => {
-      try {
-        const data = await fetchAdminMenus();
-        const tree = buildMenuTree(data);
+  const loadMenus = async () => {
+    try {
+      const data = await fetchAdminMenus();
+      const tree = buildMenuTree(data);
 
-        const flattened = flattenMenuTree(tree as { id: number; name: string; children?: any[] }[]);
+      const flattened = flattenMenuTree(tree as { id: number; name: string; children?: any[] }[]);
 
-        const menuMap = new Map(data.map(menu => [menu.id, menu]));
-        const merged = flattened.map(f => ({
-          ...menuMap.get(f.id),
-          label: f.label
-        }));
+      const menuMap = new Map(data.map(menu => [menu.id, menu]));
+      const merged = flattened.map(f => ({
+        ...menuMap.get(f.id),
+        label: f.label
+      }));
 
-        setMenus(merged as (AdminMenu & { label?: string })[]);
-      } catch (err) {
-        console.error(err);
-        setError('메뉴 목록을 불러오는데 실패했습니다.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
+      setMenus(merged as (AdminMenu & { label?: string })[]);
+    } catch (err) {
+      console.error(err);
+      setError('메뉴 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadMenus();
   }, []);
 
-
   // 메뉴 순서 변경
-  const moveMenu = async (index: number, direction: 'up' | 'down') => {
-    const current = menus[index];
-    if (!current) return;
-  
-    // 같은 부모 ID 가진 메뉴들만 추출 (같은 depth까지 체크)
+  const moveMenu = async (currentMenu: AdminMenu, direction: 'up' | 'down') => {
     const siblingMenus = menus
       .filter(
-        m => m.parentId === current.parentId && m.depth === current.depth
+        m => m.parentId === currentMenu.parentId && m.depth === currentMenu.depth
       )
       .sort((a, b) => (a.orderSequence ?? 0) - (b.orderSequence ?? 0));
-  
-    const groupIndex = siblingMenus.findIndex(m => m.id === current.id);
-  
+
+    const groupIndex = siblingMenus.findIndex(m => m.id === currentMenu.id);
+
     if (
       (direction === 'up' && groupIndex === 0) ||
       (direction === 'down' && groupIndex === siblingMenus.length - 1)
     ) {
-      return; // 이동 불가 (최상위 or 최하위)
+      return; // 이동 불가
     }
-  
+
     const targetIndex = direction === 'up' ? groupIndex - 1 : groupIndex + 1;
     const target = siblingMenus[targetIndex];
-  
+
     if (!target) return;
-  
-    // 순서 교환
-    const updatedMenus = [...menus];
-    
-    const i1 = updatedMenus.findIndex(m => m.id === current.id);
-    const i2 = updatedMenus.findIndex(m => m.id === target.id);
-    
+
     // orderSequence swap
+    const updatedMenus = [...menus];
+
+    const i1 = updatedMenus.findIndex(m => m.id === currentMenu.id);
+    const i2 = updatedMenus.findIndex(m => m.id === target.id);
+
     const tempOrder = updatedMenus[i1].orderSequence;
     updatedMenus[i1].orderSequence = updatedMenus[i2].orderSequence;
     updatedMenus[i2].orderSequence = tempOrder;
-  
+
     try {
-      // 서버에 순서 업데이트
+      setLoading(true);
       await updateOrderSequence(updatedMenus[i1].id!, updatedMenus[i1].orderSequence!);
       await updateOrderSequence(updatedMenus[i2].id!, updatedMenus[i2].orderSequence!);
-  
-      setLoading(true);
+
       await loadMenus();
-      setLoading(false);
     } catch (error) {
       console.error('순서 변경 실패:', error);
+      alert('순서 변경에 실패했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
-  
-  
-  const moveMenuUp = (index: number) => moveMenu(index, 'up');
-  const moveMenuDown = (index: number) => moveMenu(index, 'down');
 
   const handleSaveNewMenu = async (newMenu: AdminMenu) => {
     try {
-      const created = await createAdminMenu(newMenu);
-      setMenus(prev => [...prev, created]); // reloadMenus로 대체하는 것도 고려 가능
-      setShowCreateModal(false);
-
-      setLoading(true);
+      await createAdminMenu(newMenu);
       await loadMenus();
-      setLoading(false);
-
+      setShowCreateModal(false);
     } catch (err) {
       console.error(err);
       setError('메뉴 등록에 실패했습니다.');
@@ -126,7 +112,7 @@ const AdminMenuManagement: React.FC = () => {
     if (!window.confirm("삭제하시겠습니까?")) return;
     try {
       await deleteAdminMenu(id);
-      setMenus(prev => prev.filter(menu => menu.id !== id));
+      await loadMenus();
     } catch (err) {
       console.error(err);
       setError('메뉴 삭제에 실패했습니다.');
@@ -135,8 +121,8 @@ const AdminMenuManagement: React.FC = () => {
 
   const handleUpdateMenu = async (updatedMenu: AdminMenu) => {
     try {
-      const result = await updateAdminMenu(updatedMenu.id as number, updatedMenu);
-      setMenus(prev => prev.map(menu => (menu.id === result.id ? result : menu)));
+      await updateAdminMenu(updatedMenu.id as number, updatedMenu);
+      await loadMenus();
       setEditingMenu(null);
     } catch (err) {
       console.error(err);
@@ -147,17 +133,13 @@ const AdminMenuManagement: React.FC = () => {
   const handleToggleUseTf = async (menu: AdminMenu) => {
     try {
       const newUseTf = menu.useTf === 'Y' ? 'N' : 'Y';
-  
-      // API 호출
+
       await updateAdminMenu(menu.id!, {
         ...menu,
         useTf: newUseTf,
       });
-  
-      // 다시 메뉴 목록 새로고침
-      setLoading(true);
+
       await loadMenus();
-      setLoading(false);
     } catch (error) {
       console.error('useTf 변경 실패:', error);
       alert('상태 변경에 실패했습니다.');
@@ -195,63 +177,76 @@ const AdminMenuManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {menus.map((menu, index) => (
-                <tr key={menu.id}>
-                  <td className="px-4 py-2 text-sm">{menu.id}</td>
-                  <td className="px-4 py-2 text-sm whitespace-nowrap">{menu.label ?? menu.name}</td>
-                  <td className="px-4 py-2 text-sm">{menu.url}</td>
-                  {/* <td className="px-4 py-2 text-sm">{menu.orderSequence}</td> */}
-                  <td className="px-4 py-2 text-sm">
-                    <div className="flex items-center gap-2">
+              {menus.map((menu) => {
+                const siblingMenus = menus
+                  .filter(
+                    m => m.parentId === menu.parentId && m.depth === menu.depth
+                  )
+                  .sort((a, b) => (a.orderSequence ?? 0) - (b.orderSequence ?? 0));
+
+                const groupIndex = siblingMenus.findIndex(m => m.id === menu.id);
+
+                const isFirst = groupIndex === 0;
+                const isLast = groupIndex === siblingMenus.length - 1;
+
+                return (
+                  <tr key={menu.id}>
+                    <td className="px-4 py-2 text-sm">{menu.id}</td>
+                    <td className="px-4 py-2 text-sm whitespace-nowrap">{menu.label ?? menu.name}</td>
+                    <td className="px-4 py-2 text-sm">{menu.url}</td>
+                    <td className="px-4 py-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <button
+                          disabled={isFirst}
+                          onClick={() => moveMenu(menu, 'up')}
+                          className={`text-gray-600 hover:text-blue-600 ${isFirst ? 'opacity-30 cursor-not-allowed' : ''}`}
+                          title="위로 이동"
+                        >
+                          ▲
+                        </button>
+                        <span>{menu.orderSequence}</span>
+                        <button
+                          disabled={isLast}
+                          onClick={() => moveMenu(menu, 'down')}
+                          className={`text-gray-600 hover:text-blue-600 ${isLast ? 'opacity-30 cursor-not-allowed' : ''}`}
+                          title="아래로 이동"
+                        >
+                          ▼
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 text-sm">{menu.depth}</td>
+                    <td className="px-4 py-2 text-sm">{menu.parentId ?? '-'}</td>
+
+                    <td className="px-4 py-2 text-sm">
                       <button
-                        disabled={index === 0}
-                        onClick={() => moveMenuUp(index)}
-                        className="text-gray-600 hover:text-blue-600"
-                        title="위로 이동"
+                        onClick={() => handleToggleUseTf(menu)}
+                        className={`px-2 py-1 rounded text-xs ${
+                          menu.useTf === 'Y'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-200 text-gray-600'
+                        } hover:bg-green-200`}
                       >
-                        ▲
+                        {menu.useTf === 'Y' ? '사용' : '미사용'}
+                      </button>
+                    </td>
+                    <td className="px-4 py-2 text-sm">
+                      <button
+                        onClick={() => setEditingMenu(menu)}
+                        className="text-blue-500 hover:underline mr-2"
+                      >
+                        수정
                       </button>
                       <button
-                        disabled={index === menus.length - 1}
-                        onClick={() => moveMenuDown(index)}
-                        className="text-gray-600 hover:text-blue-600"
-                        title="아래로 이동"
+                        onClick={() => handleDeleteMenu(menu.id)}
+                        className="text-red-500 hover:underline"
                       >
-                        ▼
+                        삭제
                       </button>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2 text-sm">{menu.depth}</td>
-                  <td className="px-4 py-2 text-sm">{menu.parentId ?? '-'}</td>
-      
-                  <td className="px-4 py-2 text-sm">
-                    <button
-                      onClick={() => handleToggleUseTf(menu)}
-                      className={`px-2 py-1 rounded text-xs ${
-                        menu.useTf === 'Y'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-200 text-gray-600'
-                      } hover:bg-green-200`}
-                    >
-                      {menu.useTf === 'Y' ? '사용' : '미사용'}
-                    </button>
-                  </td>
-                  <td className="px-4 py-2 text-sm">
-                    <button
-                      onClick={() => setEditingMenu(menu)}
-                      className="text-blue-500 hover:underline mr-2"
-                    >
-                      수정
-                    </button>
-                    <button
-                      onClick={() => handleDeleteMenu(menu.id)}
-                      className="text-red-500 hover:underline"
-                    >
-                      삭제
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                );
+              })}
               {menus.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-2 text-center text-gray-500">
