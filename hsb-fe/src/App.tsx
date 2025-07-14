@@ -11,6 +11,7 @@ import AdminList from "./pages/Admin/AdminAccountManagement";
 import AdminCreate from "./pages/Admin/AdminRegister";
 import AdminMenu from "./pages/Admin/Menu/AdminMenuManagement";
 import AdminAuthManagement from './pages/Admin/Role/AdminRoleManagement';
+import AdminLogManager from './pages/Admin/Log/AdminLogManager';
 import UserMenuManager from './pages/Admin/Menu/UserMenuManager';
 import CodeManager from "./pages/Admin/Code/CodeManager"
 import ContactManager from "./pages/Admin/Contact/ContactManager";
@@ -70,6 +71,7 @@ function App() {
               <Route path="/admin/auth-management" element={<AdminAuthManagement />} />
               <Route path="/admin/admin-create" element={<AdminCreate />} />
               <Route path="/admin/admin-menu" element={<AdminMenu />} />
+              <Route path="/admin/log-manager" element={<AdminLogManager />} />
 
               <Route path="/admin/user-menu-manager" element={<UserMenuManager />} />
 
