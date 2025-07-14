@@ -156,14 +156,23 @@ public class AuthController {
     }
 
     // 관리자 계정 수정 (간단한 예시: 이름과 이메일만 수정)
-    @PutMapping("/accounts/{id}")
-    public ResponseEntity<?> updateAdmin(@PathVariable("id") String id, @RequestBody Admin updatedAdmin) {
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateAdmin(@PathVariable("id") String id,
+                                         @RequestBody Admin updatedAdmin) {
         return adminRepository.findById(id)
                 .map(admin -> {
-                    // 필요한 필드만 업데이트 (원하는 대로 수정)
                     admin.setName(updatedAdmin.getName());
                     admin.setEmail(updatedAdmin.getEmail());
-                    // 추가 수정 필드가 있다면 아래 업데이트
+                    admin.setTel(updatedAdmin.getTel());
+                    admin.setMemo(updatedAdmin.getMemo());
+                    admin.setGroupId(updatedAdmin.getGroupId());
+
+                    // 비밀번호가 비어있지 않으면 새 비밀번호로 업데이트
+                    if (updatedAdmin.getPassword() != null && !updatedAdmin.getPassword().isEmpty()) {
+                        String encodedPassword = passwordEncoder.encode(updatedAdmin.getPassword());
+                        admin.setPassword(encodedPassword);
+                    }
+
                     adminRepository.save(admin);
                     return ResponseEntity.ok(admin);
                 })

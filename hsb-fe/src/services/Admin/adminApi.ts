@@ -18,6 +18,12 @@ export const fetchAdminLogin = async (id: string, password: string): Promise<Adm
     return response.data;
   };
 
+// 관리자 수정
+export const updateAdmin = async (adminData: Admin): Promise<Admin> => {
+  const response = await api.put(`/admin/${adminData.id}`, adminData);
+  return response.data;
+};
+
 // 접속 IP 가져오기  
   export const fetchGetIp = async (): Promise<string> => {
     const response = await api.get('/admin/login'); 

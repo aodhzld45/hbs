@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../components/Layout/AdminLayout';  
 import { Admin } from '../../types/Admin/Admin';
 import { RoleGroup } from '../../types/Admin/RoleGroup'
-import { fetchAdminAccounts, registerAdmin  } from '../../services/Admin/adminApi';
+import { fetchAdminAccounts, registerAdmin, updateAdmin  } from '../../services/Admin/adminApi';
 
 import { fetchRoleGroups } from '../../services/Admin/roleApi';
 
@@ -34,7 +34,6 @@ const AdminAccountManagement: React.FC = () => {
     const loadRoles = async () => {
       try {
         const data = await fetchRoleGroups(); // 권한 그룹 목록 조회
-        console.log('관리자 권한 그룹 데이터 = ', data);
         setRoles(data);
       } catch (err) {
         console.error(err);
@@ -57,6 +56,20 @@ const AdminAccountManagement: React.FC = () => {
     }
   };
 
+  const handleUpdateAdmin = async (updatedAdmin: Admin) => {
+    try {
+      const saved = await updateAdmin(updatedAdmin);
+      setAdmins(prev =>
+        prev.map(a => (a.id === saved.id ? saved : a))
+      );
+      setEditingAdmin(null);
+      setShowCreateModal(false);
+    } catch (err) {
+      console.error(err);
+      setError('관리자 수정에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
   if (loading) return <div className="text-center py-8">로딩 중...</div>;
   if (error) return <div className="text-red-500 text-center py-8">{error}</div>;
 
@@ -66,7 +79,10 @@ const AdminAccountManagement: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold mb-6">관리자 계정 관리</h1>
           <button
-            onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                setEditingAdmin(null);
+                setShowCreateModal(true);
+              }}            
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             관리자 계정 등록
@@ -94,7 +110,10 @@ const AdminAccountManagement: React.FC = () => {
                   </td>
                   <td className="px-4 py-2 text-sm">
                   <button
-                      onClick={() => setEditingAdmin(admin)}
+                      onClick={() => {
+                        setEditingAdmin(admin);
+                        setShowCreateModal(true);
+                      }}
                       className="text-blue-500 hover:underline mr-2"
                     >
                       수정
@@ -119,8 +138,9 @@ const AdminAccountManagement: React.FC = () => {
 
       {showCreateModal && (
         <AdminAccountCreateModal
-          onSave={handleSaveNewAdmin}
+          onSave={editingAdmin ? handleUpdateAdmin : handleSaveNewAdmin}
           onCancel={() => setShowCreateModal(false)}
+          initialData={editingAdmin}
           roleGroups={roles}
         />
       )}
