@@ -4,10 +4,9 @@ import { useLocation, Link } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { fetchRoleMenus } from "../../services/Admin/roleApi";
 import { useAuth } from '../../context/AuthContext';
+import { usePermission } from '../../context/PermissionContext';
 import { MenuPermission } from '../../types/Admin/RoleGroup';
 
-import { usePermission } from '../../context/PermissionContext';
-//const { refreshToken } = usePermission(); // ✅
 
 interface Props {
   isOpen: boolean;
@@ -15,44 +14,63 @@ interface Props {
 }
 
 const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
-  const [permissions, setPermissions] = useState<MenuPermission[]>([]);
+  const {
+    refreshToken,
+    menuPermissions,
+    setMenuPermissions,
+    isLoaded,
+    setIsLoaded,
+  } = usePermission();
+  
   const [selectedParent, setSelectedParent] = useState<number | null>(null);
   const location = useLocation();
   const auth = useAuth();
 
-  // 권한 기반 메뉴 로딩
+  /**
+   * 권한 기반 메뉴 로딩
+   */
   useEffect(() => {
     const loadData = async () => {
       try {
-        if (auth.admin?.groupId) {
+        if (!isLoaded && auth.admin?.groupId) {
           const roleMenuRes = await fetchRoleMenus(auth.admin.groupId);
           const readPermissions = roleMenuRes.menuPermissions?.filter((m) => m.read) || [];
-          setPermissions(readPermissions);
+          setMenuPermissions(readPermissions);
+          setIsLoaded(true);
         }
       } catch (error) {
         console.error('사이드바 권한 메뉴 로드 실패:', error);
       }
     };
-    loadData();
-  }, [auth.admin?.groupId]);
 
-  // 현재 경로로부터 parentId 자동 설정
+    loadData();
+  }, [auth.admin?.groupId, isLoaded, refreshToken]);
+
+  const permissions = menuPermissions || [];
+
+  /**
+   * 현재 경로로부터 parentId 자동 설정
+   */
   useEffect(() => {
     const matched = permissions
       .filter((menu) => menu.depth === 2 && location.pathname.startsWith(menu.url))
       .sort((a, b) => b.url.length - a.url.length)[0];
-  
+
     if (matched) {
       setSelectedParent(matched.parentId ?? null);
     }
   }, [location.pathname, permissions]);
 
-  // 1depth 메뉴 필터링 + 정렬
+  /**
+   * 1depth 메뉴 필터링 + 정렬
+   */
   const topMenus = permissions
     .filter((menu) => menu.depth === 1)
     .sort((a, b) => (a.orderSequence ?? 0) - (b.orderSequence ?? 0));
 
-  // 선택된 1depth의 2depth 메뉴 필터링 + 정렬
+  /**
+   * 선택된 1depth의 2depth 메뉴 필터링 + 정렬
+   */
   const secondMenus = permissions
     .filter((menu) => menu.depth === 2 && menu.parentId === selectedParent)
     .sort((a, b) => (a.orderSequence ?? 0) - (b.orderSequence ?? 0));
