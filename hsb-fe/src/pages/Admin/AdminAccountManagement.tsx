@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../components/Layout/AdminLayout';  
 import { Admin } from '../../types/Admin/Admin';
 import { RoleGroup } from '../../types/Admin/RoleGroup'
-import { fetchAdminAccounts, registerAdmin, updateAdmin  } from '../../services/Admin/adminApi';
+import { fetchAdminAccounts, registerAdmin, updateAdmin, deleteAdmin  } from '../../services/Admin/adminApi';
 
 import { fetchRoleGroups } from '../../services/Admin/roleApi';
 
@@ -18,29 +18,30 @@ const AdminAccountManagement: React.FC = () => {
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
   const [roles, setRoles] = useState<RoleGroup[]>([]);
 
+
+  const loadAdmins = async () => {
+    try {
+      const data = await fetchAdminAccounts();
+      setAdmins(data);
+    } catch (err) {
+      console.error(err);
+      setError('관리자 계정 목록을 불러오는 데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadRoles = async () => {
+    try {
+      const data = await fetchRoleGroups(); // 권한 그룹 목록 조회
+      setRoles(data);
+    } catch (err) {
+      console.error(err);
+      setError('권한 그룹 목록을 불러오는 데 실패했습니다.');
+    }
+  };
+
   useEffect(() => {
-    const loadAdmins = async () => {
-      try {
-        const data = await fetchAdminAccounts();
-        setAdmins(data);
-      } catch (err) {
-        console.error(err);
-        setError('관리자 계정 목록을 불러오는 데 실패했습니다.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const loadRoles = async () => {
-      try {
-        const data = await fetchRoleGroups(); // 권한 그룹 목록 조회
-        setRoles(data);
-      } catch (err) {
-        console.error(err);
-        setError('권한 그룹 목록을 불러오는 데 실패했습니다.');
-      }
-    };
-
     loadAdmins();
     loadRoles();
   }, []);
@@ -49,6 +50,7 @@ const AdminAccountManagement: React.FC = () => {
     try {
       const created = await registerAdmin(newAdmin);
       setAdmins(prev => [...prev, created]);
+      alert('관리자가 성공적으로 등록되었습니다.');
       setShowCreateModal(false);
     } catch (err) {
       console.error(err);
@@ -62,6 +64,7 @@ const AdminAccountManagement: React.FC = () => {
       setAdmins(prev =>
         prev.map(a => (a.id === saved.id ? saved : a))
       );
+      alert('관리자가 성공적으로 수정되었습니다.');
       setEditingAdmin(null);
       setShowCreateModal(false);
     } catch (err) {
@@ -69,6 +72,18 @@ const AdminAccountManagement: React.FC = () => {
       setError('관리자 수정에 실패했습니다. 다시 시도해주세요.');
     }
   };
+
+  const handleDelete = async (id :string ) => {
+    if (!window.confirm("삭제하시겠습니까?")) return;
+    try {
+      await deleteAdmin(id);
+      alert('관리자가 삭제되었습니다.');
+      loadAdmins();
+    } catch (error) {
+      console.error();
+      alert("관리자 삭제에 실패했습니다. 다시 시도해주세요.");
+    }
+  }
 
   if (loading) return <div className="text-center py-8">로딩 중...</div>;
   if (error) return <div className="text-red-500 text-center py-8">{error}</div>;
@@ -96,7 +111,7 @@ const AdminAccountManagement: React.FC = () => {
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">이름</th>
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">이메일</th>
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">등록일</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">액션</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">관리</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -118,7 +133,10 @@ const AdminAccountManagement: React.FC = () => {
                     >
                       수정
                     </button>
-                    <button className="text-red-500 hover:underline">
+                    <button
+                      onClick={() => handleDelete(admin.id)}
+                      className="text-red-600 hover:underline text-sm"
+                    >
                       삭제
                     </button>
                   </td>

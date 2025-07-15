@@ -151,7 +151,7 @@ public class AuthController {
     // 전체 관리자 계정 목록 조회
     @GetMapping("/accounts")
     public ResponseEntity<List<Admin>> getAllAdmins() {
-        List<Admin> admins = adminRepository.findAll();
+        List<Admin> admins = adminRepository.findIsDeletedFalse();
         return ResponseEntity.ok(admins);
     }
 
@@ -180,7 +180,7 @@ public class AuthController {
     }
 
     // 관리자 계정 삭제 (논리 삭제: isDeleted 값을 true로 변경)
-    @DeleteMapping("/accounts/{id}")
+    @DeleteMapping("/{id}")
     @AdminActionLog(
             action = "삭제",
             detail = "관리자 계정 {id} 삭제"

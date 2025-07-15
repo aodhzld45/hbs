@@ -24,6 +24,12 @@ export const updateAdmin = async (adminData: Admin): Promise<Admin> => {
   return response.data;
 };
 
+// 관리자 삭제
+export const deleteAdmin = async (id : string) => {
+  const response = await api.delete(`/admin/${id}`);
+  return response.data;
+};
+
 // 접속 IP 가져오기  
   export const fetchGetIp = async (): Promise<string> => {
     const response = await api.get('/admin/login'); 
