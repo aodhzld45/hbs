@@ -9,7 +9,7 @@ import {
     AdminLogItem,
     AdminLogSearchParams,
   } from '../../../types/Admin/AdminLogItem';
-import { fetchAdminLogList } from '../../../services/Admin/adminLogApi';
+import { fetchAdminLogList, fetchExcelDownload } from '../../../services/Admin/adminLogApi';
 
 const AdminLogManager = () => {
 
@@ -18,6 +18,7 @@ const AdminLogManager = () => {
     const [endDate, setEndDate] = useState<Date | null>(null);
     const [keyword, setKeyword] = useState('');
     const [page, setPage] = useState(0);
+    const [excelSize, setExcelSize] = useState(0); 
     const [size] = useState(10); // 한 페이지에 보여줄 게시물 수 지정
     const [totalPages, setTotalPages] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
@@ -49,9 +50,55 @@ const AdminLogManager = () => {
     loadLogList();
     }, [page, keyword, startDate, endDate]);
 
-    const handleExcelDownload = () => {
-        alert("엑셀 다운로드 구현 예정");
-    };
+const handleExcelDownload = async () => {
+  try {
+    const res = await fetchExcelDownload({
+      keyword,
+      page,
+      size: excelSize || 10,  // excelSize 를 반드시 전달
+      start: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
+      end: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
+    });
+
+    const blob = new Blob([res.data], {
+      type: res.headers['content-type'],
+    });
+
+    //  Content-Disposition 헤더에서 filename 추출
+    const rawHeader = res.headers['content-disposition'];
+    const filename = (() => {
+      if (!rawHeader) return 'download.xlsx';
+
+      try {
+        // 1. UTF-8 형식 우선
+        const utf8Match = rawHeader.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match?.[1]) return decodeURIComponent(utf8Match[1]);
+
+        // 2. 일반 형식 fallback
+        const fallbackMatch = rawHeader.match(/filename="?([^"]+)"?/);
+        if (fallbackMatch?.[1]) return decodeURIComponent(fallbackMatch[1]);
+
+      } catch (e) {
+        console.warn(' 파일명 디코딩 실패:', e);
+      }
+
+      // 3. 최종 fallback – 이론상 거의 도달하지 않음
+      return 'download.xlsx';
+    })();
+
+    //  다운로드 트리거
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
+    
+  } catch (error) {
+    console.error('엑셀 다운로드 실패', error);
+    alert('엑셀 다운로드 중 오류가 발생했습니다.');
+  }
+};
 
   return (
 
@@ -66,10 +113,13 @@ const AdminLogManager = () => {
           <span className="text-gray-700">총 {totalCount}개</span>
 
           <div className="flex gap-2 flex-wrap">
-            <DatePicker
+          <DatePicker
               selected={startDate}
               onChange={(date) => setStartDate(date)}
-              dateFormat="yyyy-MM-dd"
+              showTimeSelect
+              timeIntervals={5}
+              timeCaption="시간"
+              dateFormat="yyyy-MM-dd HH:mm"
               placeholderText="시작일"
               className="border px-3 py-2 rounded"
             />
@@ -77,7 +127,10 @@ const AdminLogManager = () => {
             <DatePicker
               selected={endDate}
               onChange={(date) => setEndDate(date)}
-              dateFormat="yyyy-MM-dd"
+              showTimeSelect
+              timeIntervals={5}
+              timeCaption="시간"
+              dateFormat="yyyy-MM-dd HH:mm"
               placeholderText="종료일"
               className="border px-3 py-2 rounded"
             />
@@ -145,7 +198,7 @@ const AdminLogManager = () => {
                   <td className="border p-2 text-left text-blue-600">{log.url}</td>
                   <td className="border p-2">{log.ip}</td>
                   <td className="border p-2">
-                    {format(new Date(log.logDate), 'yyyy-MM-dd HH:mm:ss')}
+                    {format(new Date(log.logDate), 'yyyy-MM-dd HH:mm')}
                   </td>
                 </tr>
               ))
@@ -154,12 +207,23 @@ const AdminLogManager = () => {
         </table>
 
         <div className="flex justify-end gap-2 mt-4">
+          <select
+            value={excelSize}
+            onChange={(e) => setExcelSize(Number(e.target.value))}
+            className="border rounded px-2 py-1"
+          >
+            <option value={10}>10건</option>
+            <option value={30}>30건</option>
+            <option value={50}>50건</option>
+          </select>
           <button
             onClick={handleExcelDownload}
             className="bg-green-600 text-white px-4 py-2 rounded"
           >
             검색결과 엑셀 다운로드
           </button>
+
+
         </div>
 
         <Pagination

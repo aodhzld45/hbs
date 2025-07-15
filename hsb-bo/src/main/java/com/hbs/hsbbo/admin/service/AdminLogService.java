@@ -40,7 +40,10 @@ public class AdminLogService {
         LocalDateTime endDateTime = (end != null) ? end.atTime(23, 59, 59) : null;
 
         Page<AdminLog> result = adminLogRepository.searchAdminLogs(
-                keyword, keyword, keyword, startDateTime, endDateTime, pageable
+                keyword.isEmpty() ? null : keyword,
+                startDateTime,
+                endDateTime,
+                pageable
         );
 
         List<AdminLogResponse> list = result.getContent().stream()

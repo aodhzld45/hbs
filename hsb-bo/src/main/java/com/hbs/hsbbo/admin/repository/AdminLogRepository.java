@@ -16,21 +16,22 @@ public interface AdminLogRepository extends JpaRepository<AdminLog, Long> {
 
     // 관리자 로그 검색 키워드
     @Query("""
-        SELECT l
-        FROM AdminLog l
-        WHERE l.delTf = 'N'
-          AND (:adminId IS NULL OR l.adminId LIKE %:adminId%)
-          AND (:action IS NULL OR l.action LIKE %:action%)
-          AND (:detail IS NULL OR l.detail LIKE %:detail%)
-          AND (
-              (:start IS NULL OR :end IS NULL)
-              OR (l.logDate BETWEEN :start AND :end)
-          )
-    """)
+            SELECT l
+            FROM AdminLog l
+            WHERE l.delTf = 'N'
+              AND (
+                  :keyword IS NULL
+                  OR l.adminId LIKE %:keyword%
+                  OR l.action LIKE %:keyword%
+                  OR l.detail LIKE %:keyword%
+              )
+              AND (
+                  (:start IS NULL OR :end IS NULL)
+                  OR (l.logDate BETWEEN :start AND :end)
+              )
+           """)
     Page<AdminLog> searchAdminLogs(
-            @Param("adminId") String adminId,
-            @Param("action") String action,
-            @Param("detail") String detail,
+            @Param("keyword") String keyword,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end,
             Pageable pageable

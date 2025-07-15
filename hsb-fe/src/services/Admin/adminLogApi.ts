@@ -12,3 +12,14 @@ import {
     const res = await api.get('/admin/admin-log', { params });
     return res.data;
   };
+
+  export const fetchExcelDownload = async (
+    params: AdminLogSearchParams
+  ) => {
+    const response = await api.get('/admin/admin-log/excel', {
+      params,
+      responseType: 'blob',
+    });
+    return response;
+  };
+
