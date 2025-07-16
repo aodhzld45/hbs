@@ -106,28 +106,49 @@ public class StatsRepositoryImpl implements StatsRepository {
     public List<Object[]> hourMenuVisit() {
         return em.createNativeQuery("""
             WITH ranked_menu_visits AS (
-              SELECT\s
-                COALESCE(parent.name, '기타') AS menuName,
+              SELECT
+                COALESCE(
+                  CASE
+                    WHEN ul.url = '/' THEN '메인'
+                    WHEN um.id IS NULL THEN '기타'
+                    WHEN um.parent_id IS NULL THEN um.name
+                    ELSE parent.name
+                  END,
+                  '기타'
+                ) AS menuName,
                 CONCAT(LPAD(ul.hh, 2, '0'), '시') AS hour,
                 COUNT(DISTINCT ul.sid) AS visitCount,
-                ROW_NUMBER() OVER (PARTITION BY ul.hh ORDER BY COUNT(DISTINCT ul.sid) DESC) AS rn
+                ROW_NUMBER() OVER (
+                  PARTITION BY ul.hh
+                  ORDER BY COUNT(DISTINCT ul.sid) DESC
+                ) AS rn
               FROM userlog ul
-              LEFT JOIN user_menu um\s
-                ON um.url IS NOT NULL AND ul.url LIKE CONCAT(um.url, '%')
+              LEFT JOIN user_menu um
+                ON ul.url = um.url
               LEFT JOIN user_menu parent
-                ON um.parent_id = parent.id OR um.id = parent.id
+                ON um.parent_id IS NOT NULL
+               AND um.parent_id = parent.id
               WHERE ul.useTF = 'Y'
                 AND ul.delTF = 'N'
                 AND ul.url NOT LIKE '/admin%'
                 AND ul.ymd = DATE_FORMAT(NOW(), '%Y-%m-%d')
                 AND CAST(ul.hh AS UNSIGNED) BETWEEN 6 AND 23
-              GROUP BY ul.hh, parent.name
+              GROUP BY ul.hh,
+                       COALESCE(
+                         CASE
+                           WHEN ul.url = '/' THEN '메인'
+                           WHEN um.id IS NULL THEN '기타'
+                           WHEN um.parent_id IS NULL THEN um.name
+                           ELSE parent.name
+                         END,
+                         '기타'
+                       )
             )
             SELECT hour, menuName, visitCount
             FROM ranked_menu_visits
             WHERE rn = 1
             ORDER BY hour
-            """, Object[].class)
+                """, Object[].class)
                 .getResultList();
     }
 
