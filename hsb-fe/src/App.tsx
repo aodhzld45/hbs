@@ -17,7 +17,9 @@ import CodeManager from "./pages/Admin/Code/CodeManager"
 import ContactManager from "./pages/Admin/Contact/ContactManager";
 import ContactDetail from "./pages/Admin/Contact/ContactDetail";
 import PopupBannerManager from './pages/Admin/Main/PopupBannerManager';
-import VisualSliderManager from './pages/Admin/Main/VisualSliderManager';
+
+import PageManager from './pages/Admin/Page/PageManager';
+import PageSectionManager from './pages/Admin/Page/PageSectionManager';
 
 // 관리자 공통 게시판 관련 imports
 import BoardManager from './pages/Admin/Board/BoardManager';
@@ -65,6 +67,10 @@ function App() {
             {/* 관리자 보호 라우트 */}
             <Route element={<PrivateRoute />}>
               <Route path="/admin/index" element={<AdminDashboard />} />
+              <Route path="/admin/page-manager" element={<PageManager />} />
+              <Route path="/admin/page-section-manager/:id" element={<PageSectionManager />} />
+
+
               <Route path="/admin/content-manager" element={<ContentManager />} />
               <Route path="/admin/content-manager/:fileId" element={<ContentManagerDetail />} />
               <Route path="/admin/admin-manager" element={<AdminList />} />
@@ -86,7 +92,6 @@ function App() {
               <Route path="/admin/contact/detail/:id" element={<ContactDetail />} />
 
               <Route path='/admin/main/popup-banner-manager' element={<PopupBannerManager />} />
-              <Route path='/admin/main/visual-slider-manager' element={<VisualSliderManager />} />
             </Route>
             
             <Route path="/admin/hbs/:fileId" element={<ContentManagerDetail />} />
