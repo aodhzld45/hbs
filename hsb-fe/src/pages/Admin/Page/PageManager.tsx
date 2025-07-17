@@ -1,18 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   DragDropContext,
   Droppable,
   Draggable,
   DropResult
 } from "@hello-pangea/dnd";
+
+import { PageItem } from '../../../types/Admin/PageItem';
+import { fetchPageList } from "../../../services/Admin/pageApi";
+
+import PageEditModal from "../../../components/Admin/Page/PageEditModal";
 import SectionEditModal from "../../../components/Admin/Page/SectionEditModal";
 
-interface Page {
-  id: number;
-  name: string;
-  url: string;
-  useTf: string;
-}
+import AdminLayout from "../../../components/Layout/AdminLayout";
+
+// interface Page {
+//   id: number;
+//   name: string;
+//   url: string;
+//   useTf: string;
+// }
 
 interface Section {
   id: number;
@@ -22,12 +29,29 @@ interface Section {
 }
 
 const PageManager: React.FC = () => {
-  // 페이지 리스트 (Dummy)
-  const [pages] = useState<Page[]>([
-    { id: 1, name: "메인", url: "/", useTf: "Y" },
-    { id: 2, name: "About", url: "/about", useTf: "Y" },
-    { id: 3, name: "Contact", url: "/contact", useTf: "N" }
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [pageItem, setPageItem] = useState<PageItem[]>([]);
+
+  const [editPageItem, setEditPageItem] = useState<PageItem | null>(null);
+  const [showPageModal, setShowPageModal] = useState(false);
+
+  const loadPageList = async () => {
+    setLoading(true);
+    try {
+      const res = await fetchPageList();
+      setPageItem(res);
+    } catch (error) {
+      console.error(error);
+      alert('페이지 목록 조회에 실패하였습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPageList();
+  }, []);
+
 
   // 현재 선택된 페이지
   const [selectedPageId, setSelectedPageId] = useState<number | null>(null);
@@ -89,24 +113,69 @@ const PageManager: React.FC = () => {
   };
 
   return (
+  <AdminLayout>
     <div className="flex">
       {/* 좌측 페이지 리스트 */}
-      <div className="w-1/3 border-r p-6">
-        <h2 className="text-xl font-bold mb-4">페이지 리스트</h2>
-        <ul className="space-y-2">
-          {pages.map((page) => (
-            <li
-              key={page.id}
-              className={`p-3 rounded cursor-pointer border
-                ${selectedPageId === page.id ? "bg-blue-50 border-blue-600 text-blue-800" : "hover:bg-gray-50"}
-              `}
-              onClick={() => handlePageSelect(page.id)}
-            >
-              <span className="font-semibold">{page.name}</span>
-              <span className="ml-2 text-gray-500 text-sm">({page.url})</span>
-            </li>
-          ))}
-        </ul>
+      <div className="w-1/3 p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">페이지 리스트</h2>
+          <button
+            className="bg-blue-600 text-white px-3 py-1 rounded"
+            onClick={() => {
+              setEditPageItem(null);
+              setShowPageModal(true);
+            }}
+          >
+            + 페이지 추가
+          </button>
+        </div>
+
+        <table className="w-full table-auto border">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border px-2 py-1">페이지명</th>
+              <th className="border px-2 py-1">URL</th>
+              <th className="border px-2 py-1">사용 여부</th>
+              <th className="border px-2 py-1">관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pageItem.map((page) => (
+              <tr
+                key={page.id}
+                className={`cursor-pointer hover:bg-gray-50 ${
+                  selectedPageId === page.id ? "bg-blue-50 border-blue-600 text-blue-800" : ""
+                }`}
+                onClick={() => handlePageSelect(page.id)}
+              >
+                <td className="border px-2 py-1 font-semibold">{page.name}</td>
+                <td className="border px-2 py-1 text-sm text-gray-600">{page.url}</td>
+                <td className="border px-2 py-1">{page.useTf}</td>
+                <td className="border px-2 py-1 text-sm space-x-2">
+                  <button
+                    className="text-blue-500 hover:underline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditPageItem(page);
+                      setShowPageModal(true);
+                    }}
+                  >
+                    수정
+                  </button>
+                  <button
+                    className="text-red-500 hover:underline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // handleDeletePage(page.id);
+                    }}
+                  >
+                    삭제
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* 우측 섹션 관리 */}
@@ -194,13 +263,22 @@ const PageManager: React.FC = () => {
         )}
       </div>
 
-      {/* Level2 편집 모달 */}
+      {/* 섹션 편집 모달 */}
       {editingSectionId !== null && (
         <SectionEditModal
           onClose={() => setEditingSectionId(null)}
         />
       )}
+
+      {showPageModal && (
+        <PageEditModal
+          onClose={() => setShowPageModal(false)}
+          onSuccess={loadPageList}
+          initialData={editPageItem}
+        />
+      )}
     </div>
+    </AdminLayout>
   );
 };
 
