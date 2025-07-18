@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 
 import { PageItem } from "../../../types/Admin/PageItem";
-import { fetchPageCreate } from '../../../services/Admin/pageApi';
+import { fetchPageCreate, fetchPageUpdate } from '../../../services/Admin/pageApi';
 import { useAuth } from '../../../context/AuthContext';
 
 type Props = {
@@ -64,11 +64,12 @@ const PageEditModal: React.FC<Props> = ({
     try {
         if (initialData) {
             // 수정
-            alert('구현예정');
+            await fetchPageUpdate(form.id, formData, admin.id);
+            alert('페이지가 성공적으로 수정되었습니다.');
         }else {
             //등록
             await fetchPageCreate(formData, admin.id);
-            alert('페이지 등록이 완료되었습니다.')
+            alert('페이지가 성공적으로 등록되었습니다.');
         }
         await onSuccess();
         onClose();

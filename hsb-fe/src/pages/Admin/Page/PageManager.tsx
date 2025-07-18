@@ -1,4 +1,16 @@
 import React, { useState, useEffect } from "react";
+
+// 공통 메뉴 목록 불러오기
+import {
+  fetchAdminMenus
+} from '../../../services/Admin/adminMenuApi';
+import { AdminMenu } from '../../../types/Admin/AdminMenu';
+import { useLocation } from "react-router-dom";
+
+// 관리자 정보 불러오기
+import AdminLayout from "../../../components/Layout/AdminLayout";
+import { useAuth } from '../../../context/AuthContext';
+
 import {
   DragDropContext,
   Droppable,
@@ -6,20 +18,11 @@ import {
   DropResult
 } from "@hello-pangea/dnd";
 
+// 좌측 페이지 관련 import
 import { PageItem } from '../../../types/Admin/PageItem';
-import { fetchPageList } from "../../../services/Admin/pageApi";
-
+import { fetchPageList, updatePageUseTf, fetchDeletePage } from "../../../services/Admin/pageApi";
 import PageEditModal from "../../../components/Admin/Page/PageEditModal";
 import SectionEditModal from "../../../components/Admin/Page/SectionEditModal";
-
-import AdminLayout from "../../../components/Layout/AdminLayout";
-
-// interface Page {
-//   id: number;
-//   name: string;
-//   url: string;
-//   useTf: string;
-// }
 
 interface Section {
   id: number;
@@ -30,10 +33,49 @@ interface Section {
 
 const PageManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [pageItem, setPageItem] = useState<PageItem[]>([]);
+  const location = useLocation();
 
+  const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
+  const [currentMenuTitle, setCurrentMenuTitle] = useState<string | null>(null);
+  const [error, setError] = useState<string>('');
+
+  const  admin  = useAuth();
+  const [adminId, setAdminId] = useState(admin.admin?.id || null);
+
+  const [pageItem, setPageItem] = useState<PageItem[]>([]);
   const [editPageItem, setEditPageItem] = useState<PageItem | null>(null);
   const [showPageModal, setShowPageModal] = useState(false);
+
+
+  const loadMenus = async () => {
+    try {
+      const data = await fetchAdminMenus();
+      setMenus(data);
+
+      // 현재 URL과 일치하는 메뉴 찾기
+      const matched = data.find(
+        (menu) => menu.url === location.pathname
+      );
+
+      if (matched) {
+        setCurrentMenuTitle(matched.name);
+      } else {
+        setCurrentMenuTitle(null);
+      }
+ 
+    } catch (err) {
+      console.error(err);
+      setError('메뉴 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 추후에 공통으로 분리 -> 현재 메뉴 불러오기.
+  useEffect(() => {
+    loadMenus();
+    setAdminId(admin.admin?.id || null);
+  }, [admin.admin?.id]);
 
   const loadPageList = async () => {
     setLoading(true);
@@ -45,6 +87,35 @@ const PageManager: React.FC = () => {
       alert('페이지 목록 조회에 실패하였습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleUseTf = async (item: PageItem) => {
+    try {
+      const newUseTf = item.useTf === 'Y' ? 'N' : 'Y';
+  
+      if (!adminId) {
+        alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
+        return;
+      }
+  
+      await updatePageUseTf(item.id, newUseTf, adminId);
+      alert('페이지가 사용여부가 성공적으로 변경되었습니다.');
+      await loadPageList();
+    } catch (error) {
+      console.error('useTf 변경 실패:', error);
+      alert('사용여부 변경에 실패했습니다.');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("삭제하시겠습니까?")) return;
+    try {
+      await fetchDeletePage(id, adminId ?? "관리자 정보 없음");
+      alert('페이지가 성공적으로 삭제되었습니다.');
+      await loadPageList();
+    } catch (e) {
+      alert("삭제 실패");
     }
   };
 
@@ -118,7 +189,7 @@ const PageManager: React.FC = () => {
       {/* 좌측 페이지 리스트 */}
       <div className="w-1/3 p-4">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">페이지 리스트</h2>
+          <h2 className="text-xl font-bold">{currentMenuTitle}</h2>
           <button
             className="bg-blue-600 text-white px-3 py-1 rounded"
             onClick={() => {
@@ -143,14 +214,25 @@ const PageManager: React.FC = () => {
             {pageItem.map((page) => (
               <tr
                 key={page.id}
-                className={`cursor-pointer hover:bg-gray-50 ${
+                className={`text-center cursor-pointer hover:bg-gray-50 ${
                   selectedPageId === page.id ? "bg-blue-50 border-blue-600 text-blue-800" : ""
                 }`}
                 onClick={() => handlePageSelect(page.id)}
               >
                 <td className="border px-2 py-1 font-semibold">{page.name}</td>
                 <td className="border px-2 py-1 text-sm text-gray-600">{page.url}</td>
-                <td className="border px-2 py-1">{page.useTf}</td>
+                <td className="border px-2 py-1">
+                  <button
+                      onClick={() => handleToggleUseTf(page)}
+                      className={`px-3 py-1 rounded text-xs font-medium ${
+                        page.useTf === 'Y'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-200 text-gray-600'
+                      } hover:bg-green-200`}
+                    >
+                      {page.useTf === 'Y' ? '사용' : '미사용'}
+                  </button>
+                </td>
                 <td className="border px-2 py-1 text-sm space-x-2">
                   <button
                     className="text-blue-500 hover:underline"
@@ -166,7 +248,7 @@ const PageManager: React.FC = () => {
                     className="text-red-500 hover:underline"
                     onClick={(e) => {
                       e.stopPropagation();
-                      // handleDeletePage(page.id);
+                      handleDelete(page.id);
                     }}
                   >
                     삭제
