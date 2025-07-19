@@ -93,6 +93,8 @@ public class PageSectionService {
                 sectionFile.setFilePath(savedPath);
                 sectionFile.setFileType(contentType);
                 sectionFile.setFileExtension(extension);
+                sectionFile.setRegAdm(adminId);
+                sectionFile.setRegDate(LocalDateTime.now());
                 sectionFile.setOrderSeq(order++); // 순서 1, 2, 3...
 
                 fileEntities.add(sectionFile);

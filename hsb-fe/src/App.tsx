@@ -68,8 +68,6 @@ function App() {
             <Route element={<PrivateRoute />}>
               <Route path="/admin/index" element={<AdminDashboard />} />
               <Route path="/admin/page-manager" element={<PageManager />} />
-              <Route path="/admin/page-section-manager/:id" element={<PageSectionManager />} />
-
 
               <Route path="/admin/content-manager" element={<ContentManager />} />
               <Route path="/admin/content-manager/:fileId" element={<ContentManagerDetail />} />
