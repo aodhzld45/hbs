@@ -227,4 +227,38 @@ public class PageSectionService {
         return section.getId();
     }
 
+    // 사용여부 변경
+    @Transactional
+    public void updateSectionOrders(List<PageSectionRequest> requestList) {
+        for (PageSectionRequest req : requestList) {
+            pageSectionRepository.findById(req.getId()).ifPresent(section -> {
+                section.setOrderSeq(req.getOrderSeq());
+            });
+        }
+        pageSectionRepository.flush();
+    }
+
+
+    // 사용 여부 변경
+    public Long updateUseTf(Long id, String useTf, String adminId) {
+        PageSection pageSection = pageSectionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 페이지 섹션 ID입니다."));
+        pageSection.setUseTf(useTf);
+        pageSection.setUpAdm(adminId);
+        pageSection.setUpDate(LocalDateTime.now());
+        return pageSectionRepository.save(pageSection).getId();
+    }
+
+    // 삭제
+    public Long deletePage(Long id, String adminId) {
+        return pageSectionRepository.findById(id)
+                .map(page -> {
+                    page.setDelTf("Y");
+                    page.setDelAdm(adminId);
+                    page.setDelDate(LocalDateTime.now());
+                    return pageSectionRepository.save(page).getId();
+                })
+                .orElseThrow(() -> new EntityNotFoundException("페이지 섹션을 찾을 수 없습니다. ID: " + id));
+    }
+
 }

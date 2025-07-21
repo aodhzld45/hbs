@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -36,7 +37,6 @@ public class PageSectionController {
         }
     }
 
-
     // 페이지 섹션 등록
     @PostMapping
     public ResponseEntity<?> createPageSection(
@@ -54,8 +54,23 @@ public class PageSectionController {
         }
     }
 
+    // 드래그앤 드랍 순서 변경
+    @PutMapping("/order")
+    public ResponseEntity<Void> updateSectionOrderRaw(
+            @RequestBody List<PageSectionRequest> requestList) {
+
+        // 유효성 검증은 하지 않음
+        List<PageSectionRequest> trimmedList = requestList.stream()
+                .filter(r -> r.getId() != null && r.getOrderSeq() != null)
+                .collect(Collectors.toList());
+
+        pageSectionService.updateSectionOrders(trimmedList);
+
+        return ResponseEntity.ok().build();
+    }
+
     // 페이지 섹션 수정
-    @PutMapping("{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<?> updatePageSection(
             @PathVariable Long id,
             @ModelAttribute PageSectionRequest request,
@@ -72,5 +87,31 @@ public class PageSectionController {
                     .body("페이지 섹션 수정에 실패했습니다: " + e.getMessage());
         }
     }
+
+    // 사용여부 변경
+    @PatchMapping("/{id}/use-tf")
+    public ResponseEntity<Long> updateUseTf(
+            @PathVariable Long id,
+            @RequestParam String useTf,
+            @RequestParam String adminId
+    ) {
+        Long response = pageSectionService.updateUseTf(id, useTf, adminId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 삭제 (delTf = 'N')
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Long> deletePage(
+            @PathVariable Long id,
+            @RequestParam String adminId
+    ) {
+        Long response = pageSectionService.deletePage(id, adminId);
+        return ResponseEntity.ok(response);
+    }
+
+
+
+
 
 }

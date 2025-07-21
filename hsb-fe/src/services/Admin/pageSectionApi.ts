@@ -42,3 +42,34 @@ export const fetchSectionUpdate = async (formData: FormData, sectionId: number) 
   });
   return res.data;
 };
+
+// 페이지 섹션 순서변경
+export const updatePageSectionOrder = async (
+  sectionOrders: { id: number; orderSeq: number }[]
+): Promise<void> => {
+  await api.put('/page-section/order', sectionOrders);
+};
+
+// 페이지 섹션 사용여부 변경
+export const updatePageSectionUseTf = async (
+  id: number,
+  useTf: "Y" | "N",
+  adminId: string
+  ): Promise<number> => {
+    const response = await api.patch(`/page-section/${id}/use-tf`, null, {
+      params: {useTf, adminId}
+    });
+    return response.data;
+  };
+
+  /**
+ * 페이지 섹션 삭제
+ */
+export const fetchDeletePageSection = async (
+  id: number,
+  adminId: string
+): Promise<number> => {
+ const response = await api.delete(`/page-section/${id}?adminId=${adminId}`);
+
+ return response.data; 
+};

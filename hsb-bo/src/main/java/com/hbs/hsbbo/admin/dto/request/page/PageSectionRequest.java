@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 public class PageSectionRequest {
 
+    private Long id; // PK
     private Long pageId; // FK
 
     @NotBlank

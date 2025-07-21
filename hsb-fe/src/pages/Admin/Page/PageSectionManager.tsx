@@ -7,13 +7,20 @@ import {
 } from "@hello-pangea/dnd";
 import { PageSectionItem } from "../../../types/Admin/PageSectionItem";
 import SectionEditModal from "../../../components/Admin/Page/SectionEditModal";
-import { fetchPageSectonList } from "../../../services/Admin/pageSectionApi";
+import { fetchPageSectonList, updatePageSectionUseTf, fetchDeletePageSection, updatePageSectionOrder } from "../../../services/Admin/pageSectionApi";
+
+// 관리자 정보 불러오기
+import AdminLayout from "../../../components/Layout/AdminLayout";
+import { useAuth } from '../../../context/AuthContext';
 
 type Props = {
   selectedPageId: number;
 };
 
 const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
+  const  admin  = useAuth();
+  const [adminId, setAdminId] = useState(admin.admin?.id || null);
+
   const [sections, setSections] = useState<PageSectionItem[]>([]);
   
   const [keyword, setKeyword] = useState('');
@@ -56,7 +63,7 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
     alert(`섹션 미리보기: ${id}`);
   };
 
-  const onDragEnd = (result: DropResult) => {
+  const onDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
 
     const reordered = Array.from(sections);
@@ -68,12 +75,55 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
     });
 
     setSections(reordered);
-    // 👉 필요 시 서버에 순서 업데이트
+    // 필요 시 서버에 순서 업데이트
+    try {
+      await updatePageSectionOrder(
+        reordered.map((section) => ({
+          id: section.id,
+          orderSeq: section.orderSeq
+        }))
+      );
+    } catch (e) {
+      console.error(e);
+      alert('페이지 섹션 순서 저장에 실패하였습니다.');
+    }
   };
 
+  const handleToggleUseTf = async (item: PageSectionItem) => {
+    try {
+      const newUseTf = item.useTf === 'Y' ? 'N' : 'Y';
+  
+      if (!adminId) {
+        alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
+        return;
+      }
+  
+      await updatePageSectionUseTf(item.id, newUseTf, adminId);
+      alert('페이지 섹션 사용여부가 성공적으로 변경되었습니다.');
+      await loadSections();
+    } catch (error) {
+      console.error('useTf 변경 실패:', error);
+      alert('페이지 섹션 사용여부 변경에 실패했습니다.');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("삭제하시겠습니까?")) return;
+    try {
+      await fetchDeletePageSection(id, adminId ?? "관리자 정보 없음");
+      alert('페이지가 성공적으로 삭제되었습니다.');
+      await loadSections();
+    } catch (e) {
+      alert("삭제 실패");
+    }
+  };
+  
+  
   useEffect(() => {
     if (selectedPageId) loadSections();
+    setAdminId(admin.admin?.id || null);
   }, [selectedPageId]);
+  
 
   return (
     <div className="w-full p-2">
@@ -105,7 +155,8 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
                   <th className="border p-2">순서</th>
                   <th className="border p-2">섹션명</th>
                   <th className="border p-2">레이아웃</th>
-                  <th className="border p-2">액션</th>
+                  <th className="border p-2">사용 여부</th>
+                  <th className="border p-2">관리</th>
                 </tr>
               </thead>
               <tbody>
@@ -125,6 +176,18 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
                         <td className="border p-2">{section.orderSeq}</td>
                         <td className="border p-2">{section.sectionName}</td>
                         <td className="border p-2">{section.layoutType}</td>
+                        <td className="border p-2">
+                        <button
+                            onClick={() => handleToggleUseTf(section)}
+                            className={`px-3 py-1 rounded text-xs font-medium ${
+                              section.useTf === 'Y'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-200 text-gray-600'
+                            } hover:bg-green-200`}
+                          >
+                            {section.useTf === 'Y' ? '사용' : '미사용'}
+                        </button>
+                      </td>
                         <td className="border p-2 space-x-2">
                           <button
                             className="text-blue-600 hover:underline"
@@ -137,6 +200,15 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
                             onClick={() => handlePreviewSection(section.id)}
                           >
                             미리보기
+                          </button>
+                          <button
+                            className="text-red-500 hover:underline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(section.id);
+                            }}
+                          >
+                            삭제
                           </button>
                         </td>
                       </tr>
