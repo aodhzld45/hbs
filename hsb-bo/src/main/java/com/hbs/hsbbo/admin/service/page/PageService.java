@@ -1,6 +1,6 @@
 package com.hbs.hsbbo.admin.service.page;
 
-import com.hbs.hsbbo.admin.domain.entity.page.Page;
+import com.hbs.hsbbo.admin.domain.entity.page.CustomPage;
 import com.hbs.hsbbo.admin.dto.request.page.PageRequest;
 import com.hbs.hsbbo.admin.dto.response.page.PageResponse;
 import com.hbs.hsbbo.admin.repository.page.PageRepository;
@@ -22,7 +22,7 @@ public class PageService {
             throw new IllegalArgumentException("이미 존재하는 URL입니다.");
         }
 
-        Page page = new Page();
+        CustomPage page = new CustomPage();
         page.setName(request.getName());
         page.setUrl(request.getUrl());
         page.setUseTf(request.getUseTf());
@@ -30,7 +30,7 @@ public class PageService {
         page.setRegAdm(adminId);
         page.setRegDate(LocalDateTime.now());
 
-        Page saved = pageRepository.save(page);
+        CustomPage saved = pageRepository.save(page);
         return saved.getId();
     }
 
@@ -42,7 +42,7 @@ public class PageService {
     }
 
     public Long updatePage(Long id, PageRequest request, String adminId) {
-        Page page = pageRepository.findById(id)
+        CustomPage page = pageRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 페이지 ID입니다."));
 
         page.setName(request.getName());
@@ -57,7 +57,7 @@ public class PageService {
 
     // 사용 여부 변경
     public Long updateUseTf(Long id, String useTf, String adminId) {
-        Page page = pageRepository.findById(id)
+        CustomPage page = pageRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 페이지 ID입니다."));
         page.setUseTf(useTf);
         page.setUpAdm(adminId);

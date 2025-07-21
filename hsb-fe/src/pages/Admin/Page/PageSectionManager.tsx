@@ -7,6 +7,7 @@ import {
 } from "@hello-pangea/dnd";
 import { PageSectionItem } from "../../../types/Admin/PageSectionItem";
 import SectionEditModal from "../../../components/Admin/Page/SectionEditModal";
+import { fetchPageSectonList } from "../../../services/Admin/pageSectionApi";
 
 type Props = {
   selectedPageId: number;
@@ -14,13 +15,36 @@ type Props = {
 
 const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
   const [sections, setSections] = useState<PageSectionItem[]>([]);
+  
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(0);
+  const [size] = useState(10); // 한 페이지에 보여줄 게시물 수 지정
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+
   const [showSectionModal, setShowSectionModal] = useState(false);
   const [editSectionItem, setEditSectionItem] = useState<PageSectionItem | null>(null);
 
   const loadSections = async () => {
-    // 👉 API로 섹션 불러오기 로직 필요
-    // const res = await fetchSectionList(selectedPageId);
-    // setSections(res);
+    try {
+      const res = await fetchPageSectonList(selectedPageId, keyword, page, size);
+
+      console.log("응답 데이터 = ####### START #######");
+      console.log(res);
+      console.log("응답 데이터 = ####### END #######");
+
+      const parsed = res.items.map((section: PageSectionItem) => ({
+        ...section,
+        optionJson:
+          typeof section.optionJson === "string"
+            ? JSON.parse(section.optionJson)
+            : section.optionJson,
+      }));
+      setSections(parsed);
+    } catch (error) {
+      console.error(error);
+      alert("페이지 섹션 조회에 실패하였습니다. 관리자에게 문의해주세요.");
+    }
   };
 
   const handleEditSection = (section: PageSectionItem) => {

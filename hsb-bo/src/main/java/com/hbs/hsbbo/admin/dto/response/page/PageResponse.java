@@ -1,6 +1,6 @@
 package com.hbs.hsbbo.admin.dto.response.page;
 
-import com.hbs.hsbbo.admin.domain.entity.page.Page;
+import com.hbs.hsbbo.admin.domain.entity.page.CustomPage;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,7 +25,7 @@ public class PageResponse {
     private String delAdm;
     private LocalDateTime delDate;
 
-    public static PageResponse fromEntity(Page entity) {
+    public static PageResponse fromEntity(CustomPage entity) {
         PageResponse response = new PageResponse();
         response.setId(entity.getId());
         response.setName(entity.getName());

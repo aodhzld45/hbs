@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
-import { fetchSectionCreate } from "../../../services/Admin/pageSectionApi";
+import { fetchSectionCreate, fetchSectionUpdate } from "../../../services/Admin/pageSectionApi";
 import { PageSectionItem } from "../../../types/Admin/PageSectionItem";
+import { FILE_BASE_URL } from '../../../config/config';
+
 
 interface Block {
+  id?: number; // 기존 파일이면 포함
   type: string;
   tag?: string;
   content?: string;
@@ -55,6 +58,37 @@ const SectionEditModal: React.FC<Props> = ({
     initialData?.optionJson?.right || []
   );
 
+  // (기존 optionJson.left/right 기반으로 정확하게 복원)
+  useEffect(() => {
+    if (!initialData) return;
+  
+    const fileMap = new Map<string, string>(); // label -> filePath
+    initialData.files?.forEach((file) => {
+      fileMap.set(file.originalFileName, file.filePath); // key: label
+    });
+  
+    const mergeFilePath = (blocks: any[]) => {
+      return blocks.map((block) => {
+        if ((block.type === "IMAGE" || block.type === "VIDEO") && typeof block.src !== "string") {
+          const matchedPath = fileMap.get(block.label);
+          return {
+            ...block,
+            src: matchedPath ? `${FILE_BASE_URL}${matchedPath}` : block.src, // src에 파일 경로 매핑
+          };
+        }
+        return block;
+      });
+    };
+  
+    const parsedJson = typeof initialData.optionJson === "string"
+      ? JSON.parse(initialData.optionJson)
+      : initialData.optionJson;
+  
+    setLeftBlocks(mergeFilePath(parsedJson.left || []));
+    setRightBlocks(mergeFilePath(parsedJson.right || []));
+  }, [initialData]);
+
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -97,7 +131,8 @@ const SectionEditModal: React.FC<Props> = ({
     value: string | File
   ) => {
     const blocks = side === "left" ? [...leftBlocks] : [...rightBlocks];
-    blocks[index][field] = value as any;
+    const block = blocks[index] as Block; // 💡 타입 명시
+    block[field] = value as never; // 또는 as any
     side === "left" ? setLeftBlocks(blocks) : setRightBlocks(blocks);
   };
 
@@ -128,22 +163,40 @@ const SectionEditModal: React.FC<Props> = ({
       formData.append("useTf", "Y");
       formData.append("adminId", admin?.id || "admin001");
 
-      [...leftBlocks, ...rightBlocks].forEach((block) => {
-        if (
-          (block.type === "IMAGE" || block.type === "VIDEO") &&
-          block.src instanceof File
-        ) {
+      // 3. 기존 파일 유지용 ID 배열 생성 (필요 시)
+      if (initialData) {
+        const existingFileIds = [...leftBlocks, ...rightBlocks]
+          .filter((block) => typeof block.src === 'string' && block.id)
+          .map((block) => String(block.id));
+
+        formData.append("existingFileIds", existingFileIds.join(","));
+      }
+
+
+      // 4. 새로 추가된 파일만 필터링
+      const allBlocks = [...leftBlocks, ...rightBlocks];
+      allBlocks.forEach((block) => {
+        if ((block.type === "IMAGE" || block.type === "VIDEO") && block.src instanceof File) {
           formData.append("files", block.src);
         }
       });
 
-      await fetchSectionCreate(formData);
-      alert("등록 성공");
-      onClose();
-      onSuccess();
+      // 등록/수정 분기 처리
+      const response = initialData 
+      ? await fetchSectionUpdate(formData, initialData.id)
+      : await fetchSectionCreate(formData);
+
+      if (typeof response === "number" && response > 0) {
+        alert(`페이지 섹션이 정상적으로 ${initialData ? "수정" : "등록"}되었습니다.`);
+        onClose();
+        onSuccess();
+      } else {
+        alert((initialData ? "수정 중 오류가 발생했습니다." : "등록 중 오류가 발생했습니다."));
+      }
+
     } catch (err) {
-      console.error("등록 실패:", err);
-      alert("등록 중 오류가 발생했습니다.");
+      console.error(initialData ? "수정 실패:" : "등록 실패:", err);
+      alert(initialData ? "페이지 섹션 수정 중 오류가 발생했습니다." : "페이지 섹션 등록 중 오류가 발생했습니다.");
     }
   };
 
@@ -214,20 +267,53 @@ const SectionEditModal: React.FC<Props> = ({
           />
         </>
       )}
-  
+
       {(block.type === "IMAGE" || block.type === "VIDEO") && (
-        <input
-          type="file"
-          accept={block.type === "IMAGE" ? "image/*" : "video/*"}
-          className="w-full border p-2 mb-2"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              handleBlockChange(side, idx, "src", file);
-            }
-          }}
-        />
+        <div className="space-y-2">
+          {/* 파일 선택 input */}
+          <div className="flex items-center gap-4">
+            <input
+              type="file"
+              accept={block.type === "IMAGE" ? "image/*" : "video/*"}
+              className="w-full border p-2 mb-2"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleBlockChange(side, idx, "src", file);
+                  handleBlockChange(side, idx, "label", file.name);
+                }
+              }}
+            />
+
+            {/* 기존 파일 다운로드 링크 */}
+            {typeof block.src === "string" && block.label && (
+              <a
+                href={`${FILE_BASE_URL}/api/file/download?filePath=${encodeURIComponent((block.src as string).replace(FILE_BASE_URL, ''))}&originalName=${encodeURIComponent(block.label)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 text-sm hover:underline whitespace-nowrap"
+                download
+              >
+                📎 {block.label}
+              </a>
+            )}
+          </div>
+
+          {/* 미리보기 */}
+          {typeof block.src === "string" && (
+            <div className="border p-2 bg-white rounded space-y-1">
+              {block.type === "IMAGE" ? (
+                <img src={block.src} alt="preview" className="max-h-48" />
+              ) : (
+                <video src={block.src} controls className="max-h-48" />
+              )}
+            </div>
+          )}
+        </div>
       )}
+
+  
+
     </div>
   );
   
@@ -343,7 +429,7 @@ const SectionEditModal: React.FC<Props> = ({
               type="submit"
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
             >
-              저장
+              {initialData ? '수정하기' : '등록하기'}
             </button>
             <button
               type="button"

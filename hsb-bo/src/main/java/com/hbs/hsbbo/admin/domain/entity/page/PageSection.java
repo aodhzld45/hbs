@@ -19,7 +19,7 @@ public class PageSection {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "page_id")
-    private Page page;
+    private CustomPage page;
 
     @Column(name = "section_name")
     private String sectionName;

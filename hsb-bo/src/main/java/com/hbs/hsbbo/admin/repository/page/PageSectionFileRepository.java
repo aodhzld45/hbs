@@ -26,6 +26,9 @@ public interface PageSectionFileRepository extends JpaRepository<PageSectionFile
                 .collect(Collectors.toMap(id -> id, existIds::contains));
     }
 
+    // 다중 섹션 ID 기반 파일 조회
+    List<PageSectionFile> findBySectionIdInAndDelTf(List<Long> sectionIds, String delTf);
+
     // 특정 섹션의 전체 파일 조회
     List<PageSectionFile> findBySectionIdAndDelTf(Long sectionId, String delTf);
 

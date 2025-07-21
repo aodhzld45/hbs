@@ -14,7 +14,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Page {
+public class CustomPage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

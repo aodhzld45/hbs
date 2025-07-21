@@ -1,6 +1,7 @@
 package com.hbs.hsbbo.admin.controller.page;
 
 import com.hbs.hsbbo.admin.dto.request.page.PageSectionRequest;
+import com.hbs.hsbbo.admin.dto.response.page.PageSectionListResponse;
 import com.hbs.hsbbo.admin.service.page.PageSectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -16,6 +18,24 @@ import java.util.List;
 public class PageSectionController {
 
     private final PageSectionService pageSectionService;
+
+    // 페이지 ID 기준 섹션 리스트 조회
+    @GetMapping
+    public ResponseEntity<?> getPageSectionsByPageId(
+            @RequestParam Long pageId,
+            @RequestParam(required = false, defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            PageSectionListResponse responseList = pageSectionService.getPageSectionList(pageId, keyword, page, size);
+            return ResponseEntity.ok(responseList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("message", "리스트 조회에 실패했습니다."));
+        }
+    }
+
 
     // 페이지 섹션 등록
     @PostMapping
@@ -31,6 +51,25 @@ public class PageSectionController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("페이지 섹션 등록에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    // 페이지 섹션 수정
+    @PutMapping("{id}")
+    public ResponseEntity<?> updatePageSection(
+            @PathVariable Long id,
+            @ModelAttribute PageSectionRequest request,
+            @RequestParam String adminId,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files
+    ) {
+        try {
+            Long sectionId = pageSectionService.updatePageSection(id, request, files, adminId);
+
+            return ResponseEntity.ok(sectionId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("페이지 섹션 수정에 실패했습니다: " + e.getMessage());
         }
     }
 

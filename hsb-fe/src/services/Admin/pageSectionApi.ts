@@ -1,4 +1,24 @@
 import api from "../api";
+import { PageSectionItem } from "../../types/Admin/PageSectionItem";
+
+// 페이지 섹션 목록
+export const fetchPageSectonList = async (
+  pageId: number,
+  keyword: string = '',
+  page: number,
+  size: number
+): Promise<{ items: PageSectionItem[]; totalCount: number; totalPages: number; }> => {
+  const res = await api.get('/page-section', {
+    params: {
+      pageId,
+      keyword,
+      page,
+      size,
+    },
+  });
+
+  return res.data;
+};
 
 // 페이지 섹션 등록 API
 export const fetchSectionCreate = async (formData: FormData): Promise<string> => {
@@ -14,3 +34,11 @@ export const fetchSectionCreate = async (formData: FormData): Promise<string> =>
       throw error;
     }
   };
+
+// 페이지 섹션 수정
+export const fetchSectionUpdate = async (formData: FormData, sectionId: number) => {
+  const res = await api.put(`/page-section/${sectionId}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+};
