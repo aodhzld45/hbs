@@ -53,6 +53,14 @@ const DynamicSection: React.FC<Props> = ({ layoutType, optionJson }) => {
     return null;
   };
 
+  if (layout === 'GRID') {
+    return (
+      <div className={`grid grid-cols-2 gap-4 w-full ${tailwindOptions?.backgroundColor ?? ''}`}>
+        {[...left, ...right].map(renderBlock)}
+      </div>
+    );
+  }
+
   return (
     <div className={`w-full ${tailwindOptions?.backgroundColor ?? ''}`}>
       <div
