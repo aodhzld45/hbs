@@ -45,6 +45,7 @@ export interface PageSectionFileItem {
 export type LayoutType = 'SINGLE' | 'TWO_COLUMN' | 'GRID';
 
 export interface Block {
+  id?: number; // 기존 파일이면 포함
   type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'BUTTON';
   tag?: string;
   content?: string;
@@ -52,6 +53,16 @@ export interface Block {
   label?: string;
   className?: string;
 }
+
+// interface Block {
+//   id?: number; // 기존 파일이면 포함
+//   type: string;
+//   tag?: string;
+//   content?: string;
+//   src?: string | File;
+//   label?: string;
+//   className?: string;
+// }
 
 export interface TailwindOptions {
   backgroundColor?: string;

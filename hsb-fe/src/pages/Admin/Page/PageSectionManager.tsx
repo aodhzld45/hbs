@@ -5,13 +5,17 @@ import {
   Draggable,
   DropResult
 } from "@hello-pangea/dnd";
-import { PageSectionItem } from "../../../types/Admin/PageSectionItem";
+import { FILE_BASE_URL } from '../../../config/config';
+
+import { Block, PageSectionItem } from "../../../types/Admin/PageSectionItem";
 import SectionEditModal from "../../../components/Admin/Page/SectionEditModal";
 import { fetchPageSectonList, updatePageSectionUseTf, fetchDeletePageSection, updatePageSectionOrder } from "../../../services/Admin/pageSectionApi";
 
 // 관리자 정보 불러오기
-import AdminLayout from "../../../components/Layout/AdminLayout";
 import { useAuth } from '../../../context/AuthContext';
+
+// 미리보기용
+import SectionPreviewModal from "./SectionPreviewModal";
 
 type Props = {
   selectedPageId: number;
@@ -31,6 +35,7 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
 
   const [showSectionModal, setShowSectionModal] = useState(false);
   const [editSectionItem, setEditSectionItem] = useState<PageSectionItem | null>(null);
+  const [previewSection, setPreviewSection] = useState<PageSectionItem | null>(null);
 
   const loadSections = async () => {
     try {
@@ -59,8 +64,37 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
     setShowSectionModal(true);
   };
 
-  const handlePreviewSection = (id: number) => {
-    alert(`섹션 미리보기: ${id}`);
+  const handlePreviewSection = (section: PageSectionItem) => {
+    const parsed = typeof section.optionJson === 'string'
+      ? JSON.parse(section.optionJson)
+      : section.optionJson;
+  
+    const fileMap = new Map<string, string>();
+    section.files?.forEach(file => {
+      fileMap.set(file.originalFileName, file.filePath);
+    });
+  
+    const mapBlockSrc = (blocks: Block[]): Block[] => {
+      return blocks.map((block) => {
+        if ((block.type === 'IMAGE' || block.type === 'VIDEO') && typeof block.src !== 'string') {
+          const matched = fileMap.get(block.label ?? '');
+          return {
+            ...block,
+            src: matched ? `${FILE_BASE_URL}${matched}` : '', // 절대 경로
+          };
+        }
+        return block;
+      });
+    };
+  
+    setPreviewSection({
+      ...section,
+      optionJson: {
+        ...parsed,
+        left: mapBlockSrc(parsed.left || []),
+        right: mapBlockSrc(parsed.right || []),
+      },
+    });
   };
 
   const onDragEnd = async (result: DropResult) => {
@@ -197,7 +231,7 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
                           </button>
                           <button
                             className="text-green-600 hover:underline"
-                            onClick={() => handlePreviewSection(section.id)}
+                            onClick={() => setPreviewSection(section)}
                           >
                             미리보기
                           </button>
@@ -231,7 +265,39 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
           initialData={editSectionItem}
         />
       )}
+
+      {/* 미리보기 출력 영역 */}
+      {/* {previewSection && (
+        <div className="mt-6 border rounded p-4 bg-gray-50">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-md font-semibold">
+              🔍 섹션 미리보기: {previewSection.sectionName}
+            </h3>
+            <button
+              className="text-sm text-gray-500 hover:text-gray-800"
+              onClick={() => setPreviewSection(null)}
+            >
+              닫기 ✖
+            </button>
+          </div>
+
+          <DynamicSection
+            layoutType={previewSection.layoutType}
+            optionJson={previewSection.optionJson}
+          />
+        </div>
+      )} */}
+
+      {previewSection && (
+        <SectionPreviewModal
+          isOpen={!!previewSection}
+          onClose={() => setPreviewSection(null)}
+          section={previewSection}
+        />
+      )}
     </div>
+
+
   );
 };
 

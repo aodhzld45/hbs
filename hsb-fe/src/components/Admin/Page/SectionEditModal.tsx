@@ -46,6 +46,7 @@ const SectionEditModal: React.FC<Props> = ({
       backgroundColor: "bg-white",
       textColor: "text-gray-800",
       fontSize: "text-base",
+      fontWeight: "font-normal", 
       alignment: "text-left",
       paddingY: "py-8",
     },
@@ -208,6 +209,7 @@ const SectionEditModal: React.FC<Props> = ({
     },
     { name: "텍스트색", key: "textColor", options: ["text-gray-800", "text-white"] },
     { name: "폰트크기", key: "fontSize", options: ["text-sm", "text-base", "text-xl"] },
+    { name: "폰트굵기", key: "fontWeight", options: ["font-light","font-medium", "font-bold"] },
     {
       name: "정렬",
       key: "alignment",
