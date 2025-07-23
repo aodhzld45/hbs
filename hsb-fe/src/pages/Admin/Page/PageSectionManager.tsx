@@ -22,14 +22,13 @@ type Props = {
 };
 
 const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
-  const  admin  = useAuth();
+  const admin = useAuth();
   const [adminId, setAdminId] = useState(admin.admin?.id || null);
 
   const [sections, setSections] = useState<PageSectionItem[]>([]);
-  
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(0);
-  const [size] = useState(10); // 한 페이지에 보여줄 게시물 수 지정
+  const [size] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -40,17 +39,13 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
   const loadSections = async () => {
     try {
       const res = await fetchPageSectonList(selectedPageId, keyword, page, size);
-
-      console.log("응답 데이터 = ####### START #######");
-      console.log(res);
-      console.log("응답 데이터 = ####### END #######");
-
       const parsed = res.items.map((section: PageSectionItem) => ({
         ...section,
         optionJson:
           typeof section.optionJson === "string"
             ? JSON.parse(section.optionJson)
             : section.optionJson,
+        files: section.files ?? [], // ✅ files 누락 보완
       }));
       setSections(parsed);
     } catch (error) {
@@ -65,34 +60,37 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
   };
 
   const handlePreviewSection = (section: PageSectionItem) => {
-    const parsed = typeof section.optionJson === 'string'
+    const parsedJson = typeof section.optionJson === 'string'
       ? JSON.parse(section.optionJson)
       : section.optionJson;
-  
+
     const fileMap = new Map<string, string>();
-    section.files?.forEach(file => {
+    (section.files ?? []).forEach(file => {
       fileMap.set(file.originalFileName, file.filePath);
     });
-  
+
     const mapBlockSrc = (blocks: Block[]): Block[] => {
       return blocks.map((block) => {
-        if ((block.type === 'IMAGE' || block.type === 'VIDEO') && typeof block.src !== 'string') {
+        if ((block.type === 'IMAGE' || block.type === 'VIDEO')) {
+          if (typeof block.src === 'string') {
+            return block; // 이미 경로가 문자열이면 그대로 유지
+          }
           const matched = fileMap.get(block.label ?? '');
           return {
             ...block,
-            src: matched ? `${FILE_BASE_URL}${matched}` : '', // 절대 경로
+            src: matched ? `${FILE_BASE_URL}${matched}` : '',
           };
         }
         return block;
       });
     };
-  
+
     setPreviewSection({
       ...section,
       optionJson: {
-        ...parsed,
-        left: mapBlockSrc(parsed.left || []),
-        right: mapBlockSrc(parsed.right || []),
+        ...parsedJson,
+        left: mapBlockSrc(parsedJson.left || []),
+        right: mapBlockSrc(parsedJson.right || []),
       },
     });
   };
@@ -109,7 +107,6 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
     });
 
     setSections(reordered);
-    // 필요 시 서버에 순서 업데이트
     try {
       await updatePageSectionOrder(
         reordered.map((section) => ({
@@ -126,12 +123,12 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
   const handleToggleUseTf = async (item: PageSectionItem) => {
     try {
       const newUseTf = item.useTf === 'Y' ? 'N' : 'Y';
-  
+
       if (!adminId) {
         alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
         return;
       }
-  
+
       await updatePageSectionUseTf(item.id, newUseTf, adminId);
       alert('페이지 섹션 사용여부가 성공적으로 변경되었습니다.');
       await loadSections();
@@ -151,13 +148,18 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
       alert("삭제 실패");
     }
   };
-  
-  
+
+  const handleSuccess = async (updatedSection?: PageSectionItem) => {
+    if (updatedSection) {
+      handlePreviewSection(updatedSection); // 등록/수정 후 곧바로 렌더링 가능하게
+    }
+    await loadSections(); // 목록 갱신
+  };
+
   useEffect(() => {
     if (selectedPageId) loadSections();
     setAdminId(admin.admin?.id || null);
   }, [selectedPageId]);
-  
 
   return (
     <div className="w-full p-2">
@@ -211,7 +213,7 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
                         <td className="border p-2">{section.sectionName}</td>
                         <td className="border p-2">{section.layoutType}</td>
                         <td className="border p-2">
-                        <button
+                          <button
                             onClick={() => handleToggleUseTf(section)}
                             className={`px-3 py-1 rounded text-xs font-medium ${
                               section.useTf === 'Y'
@@ -220,8 +222,8 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
                             } hover:bg-green-200`}
                           >
                             {section.useTf === 'Y' ? '사용' : '미사용'}
-                        </button>
-                      </td>
+                          </button>
+                        </td>
                         <td className="border p-2 space-x-2">
                           <button
                             className="text-blue-600 hover:underline"
@@ -231,8 +233,8 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
                           </button>
                           <button
                             className="text-green-600 hover:underline"
-                            onClick={() => setPreviewSection(section)}
-                          >
+                            onClick={() => handlePreviewSection(section)}
+                            >
                             미리보기
                           </button>
                           <button
@@ -256,7 +258,6 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
         </Droppable>
       </DragDropContext>
 
-      {/* 모달 */}
       {showSectionModal && (
         <SectionEditModal
           pageId={selectedPageId}
@@ -266,28 +267,6 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
         />
       )}
 
-      {/* 미리보기 출력 영역 */}
-      {/* {previewSection && (
-        <div className="mt-6 border rounded p-4 bg-gray-50">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-md font-semibold">
-              🔍 섹션 미리보기: {previewSection.sectionName}
-            </h3>
-            <button
-              className="text-sm text-gray-500 hover:text-gray-800"
-              onClick={() => setPreviewSection(null)}
-            >
-              닫기 ✖
-            </button>
-          </div>
-
-          <DynamicSection
-            layoutType={previewSection.layoutType}
-            optionJson={previewSection.optionJson}
-          />
-        </div>
-      )} */}
-
       {previewSection && (
         <SectionPreviewModal
           isOpen={!!previewSection}
@@ -296,8 +275,6 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
         />
       )}
     </div>
-
-
   );
 };
 
