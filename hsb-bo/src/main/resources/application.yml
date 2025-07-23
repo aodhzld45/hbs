@@ -62,3 +62,17 @@ cloud:
 
     region:
       static: ap-northeast-2
+
+logging:
+  charset:
+    console: UTF-8
+    file: UTF-8
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true

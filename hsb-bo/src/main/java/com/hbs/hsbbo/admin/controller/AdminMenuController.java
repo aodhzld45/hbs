@@ -5,6 +5,8 @@ import com.hbs.hsbbo.admin.domain.entity.AdminMenu;
 import com.hbs.hsbbo.admin.dto.response.AdminMenuResponse;
 import com.hbs.hsbbo.admin.repository.AdminMenuRepository;
 import com.hbs.hsbbo.admin.service.AdminMenuService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Tag(name = "관리자 메뉴 관리 API", description = "관리자 메뉴 등록, 수정, 삭제, 순서 변경 등의 API")
 @RestController
 @RequestMapping("/api/admin/menus")
 public class AdminMenuController {
@@ -25,6 +28,7 @@ public class AdminMenuController {
     private AdminMenuRepository adminMenuRepository;
 
     // 전체 메뉴 조회 (삭제되지 않은 메뉴만, del_tf = 'N')
+    @Operation(summary = "관리자 메뉴 전체 조회 - 트리형태", description = "삭제되지 않은(del_tf = 'N') 전체 메뉴 조회")
     @GetMapping
     @AdminActionLog(
             action = "조회",
@@ -36,6 +40,7 @@ public class AdminMenuController {
     }
 
     // 메뉴 순서 변경
+    @Operation(summary = "메뉴 순서 변경", description = "관리자 메뉴의 정렬 순서를 변경")
     @PatchMapping("/{id}/order")
     @AdminActionLog(
             action = "수정",
@@ -50,6 +55,7 @@ public class AdminMenuController {
     }
 
     // 메뉴 등록
+    @Operation(summary = "메뉴 등록", description = "새로운 관리자 메뉴를 등록 뎁스 설정 가능")
     @PostMapping
     @AdminActionLog(
             action = "등록",
@@ -62,6 +68,7 @@ public class AdminMenuController {
     }
 
     // 메뉴 수정
+    @Operation(summary = "메뉴 수정", description = "기존 메뉴의 정보를 수정")
     @PutMapping("/{id}")
     @AdminActionLog(
             action = "수정",
@@ -87,6 +94,7 @@ public class AdminMenuController {
     }
 
     // 메뉴 삭제 (논리 삭제: del_tf를 'Y'로 변경)
+    @Operation(summary = "메뉴 삭제", description = "메뉴를 논리 삭제(del_tf = 'Y') 처리")
     @DeleteMapping("/{id}")
     @AdminActionLog(
             action = "삭제",

@@ -53,6 +53,9 @@ dependencies {
 	implementation 'org.apache.poi:poi-ooxml:5.2.3'
 	implementation 'org.apache.poi:poi:5.2.3'
 
+	// API 문서화를 위한 Swagger UI 라이브러리 추가
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+
 	// Aws s3 파일 관련 의존성 추가
 	implementation 'software.amazon.awssdk:s3:2.20.0'
 	// Spring Cloud AWS Starter (올바른 artifactId)
