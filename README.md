@@ -1,25 +1,3 @@
-# 빠른 시작 
-
-## BO
-```commandline
-docker build -t hbs .
-```
-
-```commandline
-docker run -p 8080:8080 hbs
-```
-
----
-## FE
-```commandline
-docker build -t hbs-front .
-```
-
-```commandline
-docker run -p 3000:80 hbs-front  
-```
-
-
 
 ## 🏷️ 커밋 메시지 태그 규칙
 
@@ -38,13 +16,20 @@ docker run -p 3000:80 hbs-front
 | `test`     | 테스트 코드 작성                                           |
 | `hotfix`   | 긴급 버그 수정 (배포 후 치명적인 문제 해결 등)             |
 
+### 📘 API 문서(Swagger UI)
+
+Spring Boot + OpenAPI 기반의 자동 API 문서입니다.
+
+- **접속 주소**: [http://168.138.214.83:8080/swagger-ui/index.html](http://168.138.214.83:8080/swagger-ui/index.html)
+- 실시간으로 컨트롤러 기반 API 명세를 확인 가능
+- 인증이 필요한 API는 `/api/admin/**` 영역이며, JWT 토큰 필요
 
 ## 요구사항 정리
 
 # 📺 HBS 내부 콘텐츠 시스템
 
 > **내부 콘텐츠 관리 및 이벤트 시스템**  
-> 내부 콘텐츠를 업로드하고 효율적으로 관리하며, 이벤트 신청 및 추첨 기능까지 제공하는 통합 CMS 프로젝트입니다.
+> 내부 콘텐츠를 업로드하고 효율적으로 관리하며, 이벤트 신청 및 추첨 기능(보류)까지 제공하는 통합 CMS 프로젝트입니다.
 
 ---
 
