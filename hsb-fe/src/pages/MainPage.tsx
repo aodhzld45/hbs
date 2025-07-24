@@ -11,7 +11,7 @@ import { PopupBannerItem } from '../types/Admin/PopupBannerItem'
 import { fetchVisiblePopupBanners } from '../services/Admin/popupBannerApi';
 import { FILE_BASE_URL } from '../config/config';
 import { fetchPageSectonList } from '../services/Admin/pageSectionApi';
-import { PageSectionItem } from '../types/Admin/PageSectionItem';
+import { Block, PageSectionItem } from '../types/Admin/PageSectionItem';
 import DynamicSection from './Admin/Page/DynamicSection';
 
 const MainPage = () => {
@@ -40,15 +40,54 @@ const MainPage = () => {
       }
     };
 
-    const loadSections = async () => {
-      try {
-        const res = await fetchPageSectonList(4,'', 0, 10); //  Main Page의 pageId = 4
-        console.log(res);
-        setSections(res.items || []);
-      } catch (e) {
-        console.error("섹션 불러오기 실패", e);
-      }
-    };
+  const loadSections = async () => {
+    try {
+      const res = await fetchPageSectonList(4, '', 0, 10);
+
+      const parsed = res.items.map((section: PageSectionItem) => {
+        const parsedJson =
+          typeof section.optionJson === "string"
+            ? JSON.parse(section.optionJson)
+            : section.optionJson;
+
+        const fileMap = new Map<string, string>();
+        (section.files ?? []).forEach(file => {
+          fileMap.set(file.originalFileName, file.filePath);
+        });
+
+        const mapBlockSrc = (blocks: Block[] = []) => {
+          return blocks.map((block) => {
+            if (block.type === "IMAGE" || block.type === "VIDEO") {
+              if (typeof block.src === "string" && block.src.trim() !== "") {
+                return block; // 이미 문자열이면 그대로
+              }
+              const matched = fileMap.get(block.label ?? "");
+              return {
+                ...block,
+                src: matched ? `${FILE_BASE_URL}${matched}` : undefined,
+              };
+            }
+            return block;
+          });
+        };
+
+        return {
+          ...section,
+          optionJson: {
+            ...parsedJson,
+            left: mapBlockSrc(parsedJson.left),
+            right: mapBlockSrc(parsedJson.right),
+          },
+          files: section.files ?? [],
+        };
+      });
+
+      setSections(parsed);
+    } catch (error) {
+      console.error(error);
+      alert("페이지 섹션 조회에 실패하였습니다. 관리자에게 문의해주세요.");
+    }
+  };
 
     loadPopups();
     loadSections();

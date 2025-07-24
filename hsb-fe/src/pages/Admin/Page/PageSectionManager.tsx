@@ -45,7 +45,7 @@ const PageSectionManager: React.FC<Props> = ({ selectedPageId }) => {
           typeof section.optionJson === "string"
             ? JSON.parse(section.optionJson)
             : section.optionJson,
-        files: section.files ?? [], // ✅ files 누락 보완
+        files: section.files ?? [], // files 누락 보완
       }));
       setSections(parsed);
     } catch (error) {
