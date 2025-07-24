@@ -145,6 +145,7 @@ const PageManager: React.FC = () => {
         <table className="w-full table-auto border">
           <thead className="bg-gray-100">
             <tr>
+              <th className="border px-2 py-1">ID</th>
               <th className="border px-2 py-1">페이지명</th>
               <th className="border px-2 py-1">URL</th>
               <th className="border px-2 py-1">사용 여부</th>
@@ -160,6 +161,7 @@ const PageManager: React.FC = () => {
                 }`}
                 onClick={() => handlePageSelect(page.id)}
               >
+                <td className="border px-2 py-1 font-bold">{page.id}</td>
                 <td className="border px-2 py-1 font-semibold">{page.name}</td>
                 <td className="border px-2 py-1 text-sm text-gray-600">{page.url}</td>
                 <td className="border px-2 py-1">

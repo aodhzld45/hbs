@@ -10,11 +10,15 @@ import 'swiper/css/pagination';
 import { PopupBannerItem } from '../types/Admin/PopupBannerItem'
 import { fetchVisiblePopupBanners } from '../services/Admin/popupBannerApi';
 import { FILE_BASE_URL } from '../config/config';
+import { fetchPageSectonList } from '../services/Admin/pageSectionApi';
+import { PageSectionItem } from '../types/Admin/PageSectionItem';
+import DynamicSection from './Admin/Page/DynamicSection';
 
 const MainPage = () => {
   const [bannerPopups, setBannerPopups] = useState<PopupBannerItem[]>([]);
   const [popupPopups, setPopupPopups] = useState<PopupBannerItem[]>([]);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [sections, setSections] = useState<PageSectionItem[]>([]); //  섹션 상태 추가
 
   useEffect(() => {
     const loadPopups = async () => {
@@ -36,8 +40,22 @@ const MainPage = () => {
       }
     };
 
+    const loadSections = async () => {
+      try {
+        const res = await fetchPageSectonList(4,'', 0, 10); //  Main Page의 pageId = 4
+        console.log(res);
+        setSections(res.items || []);
+      } catch (e) {
+        console.error("섹션 불러오기 실패", e);
+      }
+    };
+
     loadPopups();
+    loadSections();
+
   }, []);
+
+  
 
   return (
     <Layout>
@@ -108,6 +126,24 @@ const MainPage = () => {
             <SkillBadge label="Git / GitHub Actions / Jenkins" />
           </div>
         </div>
+      </div>
+
+      {/*  등록된 페이지 섹션 동적 렌더링 */}
+      <div className="py-12 space-y-12 bg-white dark:bg-[#121212]">
+        {sections.map((section) => {
+          const parsedOptionJson =
+            typeof section.optionJson === "string"
+              ? JSON.parse(section.optionJson)
+              : section.optionJson;
+
+          return (
+            <DynamicSection
+              key={section.id}
+              layoutType={section.layoutType}
+              optionJson={parsedOptionJson}
+            />
+          );
+        })}
       </div>
 
       {/* 메인 배너 부분 */}
