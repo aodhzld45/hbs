@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate,useParams } from 'react-router-dom';
 import { fetchHbsDetail } from '../../services/hbsApi'
-import { HbsContent, ContentType } from '../../types/HbsContent';
+import { HbsContent, ContentType } from '../../types/Contents/HbsContent';
 import { FILE_BASE_URL } from '../../config/config';
 import Layout from '../Layout/Layout';
 import CommentSection from '../Common/CommentSection';

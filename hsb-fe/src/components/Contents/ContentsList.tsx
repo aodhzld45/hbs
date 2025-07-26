@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import ContentsCard from './ContentsCard';
 import Layout from '../Layout/Layout';
 import { fetchFilteredContents } from '../../services/hbsApi';
-import { HbsContent, ContentTypeTitleMap, ContentType, FileType } from '../../types/HbsContent';
+import { HbsContent, ContentTypeTitleMap, ContentType, FileType } from '../../types/Contents/HbsContent';
 import Pagination from '../Common/Pagination';
 
 const ContentsList = () => {
