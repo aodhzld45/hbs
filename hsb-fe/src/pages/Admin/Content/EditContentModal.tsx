@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HbsContent, FileType, ContentType } from '../../../types/HbsContent';
+import { HbsContent, FileType, ContentType } from '../../../types/Contents/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
 
 

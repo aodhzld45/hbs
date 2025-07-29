@@ -1,5 +1,5 @@
 import api from './api';
-import { HbsContent } from '../types/HbsContent';
+import { HbsContent } from '../types/Contents/HbsContent';
 
 // hbs 목록 api 요청 
 export const fetchHbsList = async (): Promise<HbsContent[]> => {

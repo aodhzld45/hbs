@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 
 import { fetchHbsDetail, fetchHbsUpdate, fetchHbsDelete } from '../../../services/hbsApi';
 
-import { HbsContent } from '../../../types/HbsContent';
+import { HbsContent } from '../../../types/Contents/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
 
 import AdminLayout from '../../../components/Layout/AdminLayout';

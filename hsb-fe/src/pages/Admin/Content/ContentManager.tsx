@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../../components/Layout/AdminLayout';
-import { FileType, ContentType, HbsContent } from '../../../types/HbsContent';
+import { FileType, ContentType, HbsContent } from '../../../types/Contents/HbsContent';
 import { FILE_BASE_URL } from '../../../config/config';
 import { useNavigate } from 'react-router-dom';
 import { fetchHbsCreate, fetchS3Create, fetchFilteredContents } from '../../../services/hbsApi';

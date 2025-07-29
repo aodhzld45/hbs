@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ContentType, FileType, HbsContent } from '../../types/HbsContent';
+import { ContentType, FileType, HbsContent } from '../../types/Contents/HbsContent';
 import { useNavigate } from 'react-router-dom';
 import { FILE_BASE_URL } from '../../config/config';
 import Pagination from '../Common/Pagination';
