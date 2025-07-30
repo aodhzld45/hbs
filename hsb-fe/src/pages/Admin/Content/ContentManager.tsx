@@ -55,15 +55,6 @@ function ContentManager() {
     setContentType(type === 'LINK' ? 'YOUTUBE' : 'HBS');
   };
 
-  // const loadContents = async () => {
-  //   try {
-  //     const res = await api.get('/content-files');
-  //     setContents(res.data);
-  //   } catch (err) {
-  //     console.error(err);
-  //   }
-  // };
-
   const loadContents = async (
     fileType: FileType | '',
     contentType: ContentType | '',
@@ -86,17 +77,25 @@ function ContentManager() {
     loadContents(filterFileType, filterContentType, keyword, page, size);
   }, []);
 
+  // 콘텐츠 등록 함수
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const htmlContent = content;
-
-    if (!title || !description || !htmlContent) return alert('제목과 설명을 입력해주세요.');
+    if (!title || !description || !content) {
+      alert('제목과 설명을 입력해주세요.');
+      return;
+    }
 
     if (fileType === 'LINK') {
-      if (!fileUrl || !youtubeEmbedUrl) return alert('유튜브 링크를 입력해주세요.');
+      if (!fileUrl || !youtubeEmbedUrl) {
+        alert('유튜브 링크를 입력해주세요.');
+        return;
+      }
     } else {
-      if (!mainFile || (fileType === 'VIDEO' && !thumbnailFile)) return alert('필수 파일을 선택해주세요.');
+      if (!mainFile || (fileType === 'VIDEO' && !thumbnailFile)) {
+        alert('필수 파일을 선택해주세요.');
+        return;
+      }
     }
 
     const formData = new FormData();
@@ -104,20 +103,23 @@ function ContentManager() {
     formData.append('description', description);
     formData.append('fileType', fileType);
     formData.append('contentType', contentType);
-    formData.append('content', htmlContent);
+    formData.append('content', content);
 
     if (fileType === 'LINK') {
       formData.append('fileUrl', youtubeEmbedUrl);
       formData.append('thumbnailUrl', youtubeImgUrl);
     } else {
       formData.append('file', mainFile as Blob);
-      if (fileType === 'VIDEO') formData.append('thumbnail', thumbnailFile as Blob);
+      if (fileType === 'VIDEO') {
+        formData.append('thumbnail', thumbnailFile as Blob);
+      }
     }
 
     try {
       await fetchHbsCreate(formData);
-      //await fetchS3Create(formData);
-      alert('등록 완료');
+      alert('콘텐츠 등록이 성공적으로 완료되었습니다.');
+
+      // 입력값 초기화
       setTitle('');
       setDescription('');
       setMainFile(null);
@@ -126,68 +128,13 @@ function ContentManager() {
       setYoutubeEmbedUrl('');
       setYoutubeImgUrl('');
       setYoutubeId('');
-      const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-      
-        if (!title || !description || !content) {
-          alert('제목과 설명을 입력해주세요.');
-          return;
-        }
-      
-        if (fileType === 'LINK') {
-          if (!fileUrl || !youtubeEmbedUrl) {
-            alert('유튜브 링크를 입력해주세요.');
-            return;
-          }
-        } else {
-          if (!mainFile || (fileType === 'VIDEO' && !thumbnailFile)) {
-            alert('필수 파일을 선택해주세요.');
-            return;
-          }
-        }
-      
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('description', description);
-        formData.append('fileType', fileType);
-        formData.append('contentType', contentType);
-        formData.append('content', content);
-      
-        if (fileType === 'LINK') {
-          formData.append('fileUrl', youtubeEmbedUrl);
-          formData.append('thumbnailUrl', youtubeImgUrl);
-        } else {
-          formData.append('file', mainFile as Blob);
-          if (fileType === 'VIDEO') {
-            formData.append('thumbnail', thumbnailFile as Blob);
-          }
-        }
-      
-        try {
-          await fetchHbsCreate(formData);
-          alert('등록 완료');
-      
-          // 입력값 초기화
-          setTitle('');
-          setDescription('');
-          setMainFile(null);
-          setThumbnailFile(null);
-          setFileUrl('');
-          setYoutubeEmbedUrl('');
-          setYoutubeImgUrl('');
-          setYoutubeId('');
-          setContent('');
-      
-          // 콘텐츠 리스트 재로딩 (현재 필터 조건 유지)
-          loadContents(filterFileType, filterContentType, keyword, page, size);
-        } catch (err) {
-          console.error(err);
-          alert('등록 실패');
-        }
-      };
-          } catch (err) {
+      setContent('');
+
+      // 콘텐츠 리스트 재로딩
+      loadContents(filterFileType, filterContentType, keyword, page, size);
+    } catch (err) {
       console.error(err);
-      alert('등록 실패');
+      alert('콘텐츠 등록에 실패하였습니다. 관리자에게 문의 바랍니다.');
     }
   };
 
