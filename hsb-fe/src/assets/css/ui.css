@@ -1,0 +1,19 @@
+.input-search {
+  @apply border px-3 py-2 rounded text-sm;
+}
+
+.button-primary {
+  @apply bg-gray-700 text-white px-4 py-2 rounded text-sm hover:bg-gray-800;
+}
+
+.table-base {
+  @apply w-full table-auto border;
+}
+
+.table-th {
+  @apply border p-2 bg-gray-100;
+}
+
+.table-td {
+  @apply border p-2 text-sm text-center;
+}
