@@ -1,41 +1,25 @@
-import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ContactItem } from '../../../types/Common/ContactItem'; 
+// 상태 값 및 API 호출 관련 import
+import { useContactManager } from './hooks/useContactManager';
 import AdminLayout from '../../../components/Layout/AdminLayout';
-import { fetchContactList } from '../../../services/Common/ContactApi';
 import Pagination from '../../../components/Common/Pagination';
+// 공통검색 import
+import SearchInput from '../Common/SearchInput';
 
 const ContactManager = () => {
   const navigate = useNavigate();
-  const [keyword, setKeyword] = useState('');
-  const [page, setPage] = useState(0);
-  const [size] = useState(10);
-  const [message, setMessage] = useState('');
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const [contents, setContents] = useState<ContactItem[]>([]);
 
-  const loadContacts = async (
-    keyword: string,
-    page: number,
-    size: number
-  ) => {
-    try {
-      const res = await fetchContactList(keyword, page, size);
-      setContents(res.items);
-      setTotalCount(res.totalCount);
-      setTotalPages(res.totalPages);
-      setMessage(res.message);
-    } catch (error) {
-      console.error(error);
-      alert('문의 관리 목록 조회 실패');
-    }
-  }
-
-  useEffect(() => {
-    loadContacts(keyword, page, size);
-  }, []);
-
+  const {
+    keyword,
+    setKeyword,
+    page,
+    setPage,
+    size,
+    totalPages,
+    totalCount,
+    contents,
+    loadContacts,
+  } = useContactManager();
 
   return (
     <AdminLayout>
@@ -43,34 +27,20 @@ const ContactManager = () => {
 
         <h2 className="text-2xl font-bold mb-4">문의 관리</h2>
 
+        {/* 목록 Count 및 검색 필드 영역 */}
         <div className="flex justify-between items-center mb-4">
-            <span className="text-gray-700">총 {totalCount}개</span>
-    
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                      setPage(0);
-                      loadContacts(keyword,page,size);
-                  }
-                }}
-                placeholder="검색어 입력"
-                className="border px-3 py-2 rounded"
-              />
-              <button
-                onClick={() => {
-                  setPage(0);
-                  loadContacts(keyword,page,size);
-                }}
-                className="bg-gray-700 text-white px-4 rounded"
-              >
-                검색
-              </button>
-            </div>
+          <span className="text-gray-700">총 {totalCount}개</span>
+          <div className="flex gap-2">
+            <SearchInput
+              value={keyword}
+              onChange={setKeyword}
+              onSearch={() => {
+                setPage(0);
+                loadContacts(keyword, 0, size);
+              }}
+            />
           </div>
+        </div>
 
           <table className="w-full table-auto border">
               <thead className="bg-gray-100">
@@ -137,11 +107,12 @@ const ContactManager = () => {
               </tbody>
           </table>
 
+          {/* 페이징 영역  */}
           <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={setPage}
-                className='dark:text-gray-400'
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            className='dark:text-gray-400'
           />
       </div>
     </AdminLayout>

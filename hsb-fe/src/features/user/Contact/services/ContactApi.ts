@@ -1,13 +1,12 @@
-import api from '../api';
-import { ContactItem } from '../../types/Common/ContactItem'; 
-
+import api from '../../../../services/api';
+import { ContactUserItem } from '../types/ContactUserItem';
 
 // 문의 관리 목록 조회 API 요청
 export const fetchContactList = async (
   keyword: string = '',
   page: number,
   size: number
-): Promise<{ items: ContactItem[]; totalCount: number; totalPages: number; message: string; }> => {
+): Promise<{ items: ContactUserItem[]; totalCount: number; totalPages: number; message: string; }> => {
 
   const res = await api.get(`/contact`, {
     params: {
@@ -26,14 +25,14 @@ export const fetchContactList = async (
 };
 
 // 문의 관리 상세 API 요청
-export const fetchContactDetail = async (id: number): Promise<ContactItem> => {
+export const fetchContactDetail = async (id: number): Promise<ContactUserItem> => {
   const res = await api.get('/contact/detail', { params: { id } });
   return res.data;
 };
 
 
 // 문의 등록 API 요청
-export const fetchContactCreate = async(data: ContactItem) => {
+export const fetchContactCreate = async(data: ContactUserItem) => {
     const formData = new FormData();
     formData.append('companyName', data.companyName);
     formData.append('contactName', data.contactName);

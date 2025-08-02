@@ -14,8 +14,10 @@ import AdminAuthManagement from './pages/Admin/Role/AdminRoleManagement';
 import AdminLogManager from './pages/Admin/Log/AdminLogManager';
 import UserMenuManager from './pages/Admin/Menu/UserMenuManager';
 import CodeManager from "./pages/Admin/Code/CodeManager"
-import ContactManager from "./pages/Admin/Contact/ContactManager";
-import ContactDetail from "./pages/Admin/Contact/ContactDetail";
+
+import ContactManager from "./features/admin/Contact/index";
+import ContactDetail from "./features/admin/Contact/components/ContactDetail";
+
 import PopupBannerManager from './pages/Admin/Main/PopupBannerManager';
 
 import PageManager from './pages/Admin/Page/PageManager';
@@ -33,7 +35,8 @@ import BoardList from './components/Board/BoardList';
 import UserBoardDetail from './components/Board/BoardDetail';
 import ContentsList from './components/Contents/ContentsList';
 import ContentDetail from './components/Contents/ContentDetail';
-import ContactForm from './components/Contact/ContactForm';
+
+import ContactForm from './features/user/Contact/index';
 
 // 각종 테스트용 imports
 import TestPage from './pages/User/TestPage';
