@@ -19,6 +19,7 @@ public class UserMenuTreeResponse {
     private String url;
     private int orderSeq;
     private int depth;
+    private Long parentId;
     private String useTf;
     private String delTf;
     private List<UserMenuTreeResponse> children;
@@ -30,6 +31,7 @@ public class UserMenuTreeResponse {
                 menu.getUrl(),
                 menu.getOrderSeq(),
                 menu.getDepth(),
+                menu.getParentId(),
                 menu.getUseTf(),
                 menu.getDelTf(),
                 new ArrayList<>()

@@ -3,8 +3,8 @@ import { UserMenuNode } from '../../../types/Admin/UserMenuNode';
 import { fetchUserMenuTree, fetchUserMenuOrder } from '../../../services/Admin/userMenuApi';
 import UserMenuForm from '../../../components/Admin/Menu/UserMenuForm';
 import AdminLayout from '../../../components/Layout/AdminLayout';
-import UserMenuTreeView from '../../../components/Admin/Menu/UserMenuTreeView ';
-
+// import UserMenuTreeView from '../../../components/Admin/Menu/UserMenuTreeView';
+import UserMenuTableView from '../../../components/Admin/Menu/UserMenuTableView';
 const UserMenuManager: React.FC = () => {
   const [menuTree, setMenuTree] = useState<UserMenuNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,9 +79,18 @@ const UserMenuManager: React.FC = () => {
           <p>로딩 중...</p>
         ) : (
           <>
-            <section className="mb-8">
+            {/* <section className="mb-8">
               <h3 className="text-lg font-semibold mb-2">📂 메뉴 트리</h3>
               <UserMenuTreeView 
+                menus={menuTree}
+                onSelect={setSelectedMenu}
+                onMove={handleMove}
+              />
+            </section> */}
+
+            <section className="mb-8">
+              <h3 className="text-lg font-semibold mb-2">📋 메뉴 목록</h3>
+              <UserMenuTableView
                 menus={menuTree}
                 onSelect={setSelectedMenu}
                 onMove={handleMove}

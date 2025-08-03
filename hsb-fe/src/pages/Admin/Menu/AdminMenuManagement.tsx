@@ -13,7 +13,7 @@ import {
 import AdminMenuCreateModal from '../../../components/Admin/Menu/AdminMenuCreateModal';
 import AdminMenuEditModal from '../../../components/Admin/Menu/AdminMenuEditModal';
 
-import { flattenMenuTree, FlattenedMenuOption } from '../../../utils/menuTreeFlattener';
+import { flattenMenuTree } from '../../../utils/menuTreeFlattener';
 import { buildMenuTree } from '../../../utils/buildMenuTree';
 
 const AdminMenuManagement: React.FC = () => {
