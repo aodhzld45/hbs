@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+
 import { Code, ServerCog, ClipboardList, BarChart4 } from 'lucide-react';
 import Layout from '../components/Layout/Layout';
 
@@ -10,6 +12,7 @@ import 'swiper/css/pagination';
 import { PopupBannerItem } from '../types/Admin/PopupBannerItem'
 import { fetchVisiblePopupBanners } from '../services/Admin/popupBannerApi';
 import { FILE_BASE_URL } from '../config/config';
+import { fetchPageByUrl } from '../services/Admin/pageApi';
 import { fetchPageSectonList } from '../services/Admin/pageSectionApi';
 import { Block, PageSectionItem } from '../types/Admin/PageSectionItem';
 import DynamicSection from './Admin/Page/DynamicSection';
@@ -18,31 +21,39 @@ const MainPage = () => {
   const [bannerPopups, setBannerPopups] = useState<PopupBannerItem[]>([]);
   const [popupPopups, setPopupPopups] = useState<PopupBannerItem[]>([]);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+
+  const location = useLocation(); // 현재 pathname: '/', '/about' 등
   const [sections, setSections] = useState<PageSectionItem[]>([]); //  섹션 상태 추가
 
-  useEffect(() => {
-    const loadPopups = async () => {
-      try {
-        const res = await fetchVisiblePopupBanners();
-        const filtered = res.filter((popup) => popup.useTf === 'Y');
+  //  팝업배너 로딩 함수
+  const loadPopupBanners = async () => {
+    try {
+      const res = await fetchVisiblePopupBanners();
+      const filtered = res.filter((popup) => popup.useTf === 'Y');
 
-        const bannerList = filtered.filter(p => p.type === 'banner');
-        const popupList = filtered.filter(p => p.type === 'popup');
+      setBannerPopups(filtered.filter(p => p.type === 'banner'));
+      const popupList = filtered.filter(p => p.type === 'popup');
 
-        setBannerPopups(bannerList);
-
-        if (popupList.length > 0) {
-          setPopupPopups(popupList);
-          setIsPopupOpen(true);
-        }
-      } catch (e) {
-        console.error(e);
+      if (popupList.length > 0) {
+        setPopupPopups(popupList);
+        setIsPopupOpen(true);
       }
-    };
+    } catch (e) {
+      console.error("팝업 로딩 실패", e);
+    }
+  };
 
+  // 섹션 로딩 함수
   const loadSections = async () => {
     try {
-      const res = await fetchPageSectonList(4, '', 0, 10);
+      const url = location.pathname;
+      const pageRes = await fetchPageByUrl(url); //  URL 기반 Page ID 조회
+      console.log("페이지 정보:", pageRes);
+      const pageId = pageRes.id;
+
+      const res = await fetchPageSectonList(pageId, '', 0, 10, 'Y');
+
+      console.log("페이지 섹션 목록:", res);
 
       const parsed = res.items.map((section: PageSectionItem) => {
         const parsedJson =
@@ -59,7 +70,7 @@ const MainPage = () => {
           return blocks.map((block) => {
             if (block.type === "IMAGE" || block.type === "VIDEO") {
               if (typeof block.src === "string" && block.src.trim() !== "") {
-                return block; // 이미 문자열이면 그대로
+                return block;
               }
               const matched = fileMap.get(block.label ?? "");
               return {
@@ -84,16 +95,15 @@ const MainPage = () => {
 
       setSections(parsed);
     } catch (error) {
-      console.error(error);
+      console.error("페이지 섹션 조회 실패", error);
       alert("페이지 섹션 조회에 실패하였습니다. 관리자에게 문의해주세요.");
     }
   };
 
-    loadPopups();
+  useEffect(() => {
+    loadPopupBanners();
     loadSections();
-
-  }, []);
-
+  }, [location.pathname]); // pathname 변경되면 재호출
   
 
   return (
