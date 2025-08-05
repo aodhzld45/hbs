@@ -1,12 +1,10 @@
-// src/components/Layout/AdminSidebar.tsx
 import React, { useEffect, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Menu } from 'lucide-react';
-import { fetchRoleMenus } from "../../services/Admin/roleApi";
+import { fetchRoleMenus } from '../../services/Admin/roleApi';
 import { useAuth } from '../../context/AuthContext';
 import { usePermission } from '../../context/PermissionContext';
 import { MenuPermission } from '../../types/Admin/RoleGroup';
-
 
 interface Props {
   isOpen: boolean;
@@ -21,14 +19,15 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
     isLoaded,
     setIsLoaded,
   } = usePermission();
-  
+
   const [selectedParent, setSelectedParent] = useState<number | null>(null);
   const location = useLocation();
   const auth = useAuth();
 
-  /**
-   * 권한 기반 메뉴 로딩
-   */
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
+
+
+  /** 권한 기반 메뉴 로딩 */
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -42,15 +41,12 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
         console.error('사이드바 권한 메뉴 로드 실패:', error);
       }
     };
-
     loadData();
   }, [auth.admin?.groupId, isLoaded, refreshToken]);
 
   const permissions = menuPermissions || [];
 
-  /**
-   * 현재 경로로부터 parentId 자동 설정
-   */
+  /** 현재 경로에 맞는 상위 메뉴 자동 선택 */
   useEffect(() => {
     const matched = permissions
       .filter((menu) => menu.depth === 2 && location.pathname.startsWith(menu.url))
@@ -61,38 +57,28 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
     }
   }, [location.pathname, permissions]);
 
-  /**
-   * 1depth 메뉴 필터링 + 정렬
-   */
   const topMenus = permissions
     .filter((menu) => menu.depth === 1)
     .sort((a, b) => (a.orderSequence ?? 0) - (b.orderSequence ?? 0));
 
-  /**
-   * 선택된 1depth의 2depth 메뉴 필터링 + 정렬
-   */
   const secondMenus = permissions
     .filter((menu) => menu.depth === 2 && menu.parentId === selectedParent)
     .sort((a, b) => (a.orderSequence ?? 0) - (b.orderSequence ?? 0));
 
   return (
-    <aside className={`transition-all duration-300 bg-gray-100 border-r h-full ${
-      isOpen ? 'w-64' : 'w-16'
-    } overflow-hidden`}>
-      <div className="p-4 flex justify-between items-center">
-        <button onClick={toggleSidebar}>
-          <Menu size={20} />
-        </button>
-        {isOpen && (
-          <div className="text-center w-full">
-            <span className="text-lg font-bold">HBS CMS</span>
-          </div>
-        )}
-      </div>
+    <aside
+      className={`
+        h-full bg-gray-100 border-r transition-all duration-300
+        fixed top-0 left-0 z-50 md:static md:z-auto
+        ${isOpen ? 'w-64' : 'w-0 overflow-hidden'}
+      `}
+    >
+
+      {/* 메뉴 영역 */}
       <nav className="p-2 space-y-1">
         {topMenus.map((menu) => {
           const isSelected = selectedParent === menu.menuId;
-  
+
           return (
             <div key={menu.menuId}>
               <button
@@ -103,15 +89,22 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
                   ${isSelected ? 'bg-blue-100 text-blue-600 font-bold' : 'hover:bg-gray-200'}
                 `}
               >
-                {isOpen ? menu.name : menu.name.charAt(0)}
+                {menu.name}
               </button>
-  
+
+              {/* 2depth 메뉴 */}
               {isSelected && isOpen && (
                 <div className="ml-4">
                   {secondMenus.map((child) => (
                     <Link
                       key={child.menuId}
                       to={child.url}
+                      onClick={() => {
+                        // 모바일일 때만 사이드바 닫기
+                        if (window.innerWidth < 768) {
+                          toggleSidebar();
+                        }
+                      }}
                       className={`block p-1 text-sm rounded border-b last:border-0 ${
                         location.pathname.startsWith(child.url)
                           ? 'bg-blue-100 text-blue-600 font-bold'

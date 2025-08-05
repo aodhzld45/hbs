@@ -1,9 +1,14 @@
 // src/components/Layout/AdminHeader.tsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const AdminHeader: React.FC = () => {
+interface Props {
+  toggleSidebar: () => void;
+}
+
+const AdminHeader: React.FC<Props> = ({ toggleSidebar }) => {
   const { admin, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -13,35 +18,43 @@ const AdminHeader: React.FC = () => {
   };
 
   return (
-    <header className="bg-blue-600 text-white py-4 px-8 flex items-center justify-between">
-      {/* 좌측: HBS 텍스트 */}
-      <div className="text-xl font-bold">
-        <Link to="/admin/index">HBS</Link>
+    <header className="bg-blue-600 text-white py-4 px-4 flex items-center justify-between">
+      {/* 좌측: 햄버거 + 로고 */}
+      <div className="flex items-center space-x-4">
+        {/* 햄버거 버튼 */}
+        <button
+          onClick={toggleSidebar}
+          className="block"
+        >
+          <Menu size={24} />
+        </button>
+
+        {/* 로고 */}
+        <div className="text-xl font-bold">
+          <Link to="/admin/index">HBS</Link>
+        </div>
       </div>
 
-      {/* 우측: 관리자 이름, 내 정보 조회, 로그아웃, 홈페이지 링크 */}
-      <div className="flex items-center space-x-4">
-        {/* 로그인한 관리자 이름 출력, 없으면 기본 텍스트 사용 */}
+      {/* 우측 메뉴 - PC 전용 */}
+      <div className="hidden md:flex items-center space-x-4">
         <span className="text-lg">
           {admin?.name ? admin.name : '관리자'}
         </span>
-        {/* 내 정보 조회 버튼 - 클릭 시 내 정보 페이지로 이동 */}
-        <button 
+        <button
           onClick={() => navigate('/admin/profile')}
           className="hover:underline"
         >
           내 정보 조회
         </button>
-        {/* 로그아웃 버튼 */}
-        <button 
+        <button
           onClick={handleLogout}
-          className="hover:underline">
+          className="hover:underline"
+        >
           로그아웃
         </button>
-        {/* 외부 홈페이지 링크 */}
-        <a 
-          href="/" 
-          target="_blank" 
+        <a
+          href="/"
+          target="_blank"
           rel="noopener noreferrer"
           className="hover:underline"
         >
