@@ -73,6 +73,12 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
         ${isOpen ? 'w-64' : 'w-0 overflow-hidden'}
       `}
     >
+      {/* 상단 로고 및 토글 버튼 */}
+      <div className="p-4 flex justify-between items-center bg-white border-b md:hidden">
+        <button onClick={toggleSidebar}>
+          <Menu size={20} />
+        </button>
+      </div>
 
       {/* 메뉴 영역 */}
       <nav className="p-2 space-y-1">
