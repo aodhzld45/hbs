@@ -38,10 +38,19 @@ public class PageSectionService {
     private final FileUtil fileUtil;
 
 
-    public PageSectionListResponse getPageSectionList(Long pageId, String keyword, int page, int size) {
+    public PageSectionListResponse getPageSectionList(Long pageId, String keyword, int page, int size, String useTf) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("orderSeq").ascending());
 
-        Page<PageSection> sectionPage = pageSectionRepository.findByPageIdAndKeyword(pageId, keyword, pageable);
+        Page<PageSection> sectionPage;
+
+        if ("Y".equalsIgnoreCase(useTf)) {
+            // 사용자 요청: 사용중인 섹션만
+            sectionPage = pageSectionRepository.findByPageIdAndUseTfAndKeyword(pageId, keyword, pageable);
+        } else {
+            // 관리자 요청: 전체 조회 (삭제 제외)
+            sectionPage = pageSectionRepository.findByPageIdAndKeyword(pageId, keyword, pageable);
+        }
+
         List<PageSection> sections = sectionPage.getContent();
         List<Long> sectionIds = sections.stream().map(PageSection::getId).toList();
 
@@ -49,7 +58,18 @@ public class PageSectionService {
         Map<Long, Boolean> fileMap = pageSectionFileRepository.existsBySectionIds(sectionIds);
 
         // 파일 목록 조회 및 DTO 변환 후 매핑
-        List<PageSectionFile> allFiles = pageSectionFileRepository.findBySectionIdInAndDelTf(sectionIds, "N");
+        //List<PageSectionFile> allFiles = pageSectionFileRepository.findBySectionIdInAndDelTf(sectionIds, "N");
+
+        List<PageSectionFile> allFiles;
+
+        if ("Y".equalsIgnoreCase(useTf)) {
+            // 사용자 요청: 사용 중인 파일만
+            allFiles = pageSectionFileRepository.findBySectionIdInAndDelTfAndUseTf(sectionIds, "N", "Y");
+        } else {
+            // 관리자 요청: 삭제 안 된 모든 파일
+            allFiles = pageSectionFileRepository.findBySectionIdInAndDelTf(sectionIds, "N");
+        }
+
         Map<Long, List<PageSectionFileResponse>> fileGroupMap = allFiles.stream()
                 .map(PageSectionFileResponse::from)
                 .collect(Collectors.groupingBy(PageSectionFileResponse::getSectionId)); // 섹션 ID 기준 그룹화

@@ -41,6 +41,11 @@ public class PageService {
                 .collect(Collectors.toList());
     }
 
+    public CustomPage findByUrl(String url) {
+        return pageRepository.findByUrlAndDelTf(url, "N")
+                .orElseThrow(() -> new EntityNotFoundException("해당 URL의 페이지를 찾을 수 없습니다: " + url));
+    }
+
     public Long updatePage(Long id, PageRequest request, String adminId) {
         CustomPage page = pageRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 페이지 ID입니다."));

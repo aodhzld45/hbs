@@ -6,7 +6,8 @@ export const fetchPageSectonList = async (
   pageId: number,
   keyword: string = '',
   page: number,
-  size: number
+  size: number,
+  useTf?: string 
 ): Promise<{ items: PageSectionItem[]; totalCount: number; totalPages: number; }> => {
   const res = await api.get('/page-section', {
     params: {
@@ -14,6 +15,7 @@ export const fetchPageSectonList = async (
       keyword,
       page,
       size,
+      ...(useTf && { useTf }) // 전달된 경우만 추가
     },
   });
 

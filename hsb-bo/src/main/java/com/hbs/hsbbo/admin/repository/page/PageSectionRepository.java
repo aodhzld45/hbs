@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PageSectionRepository extends JpaRepository<PageSection, Long> {
-    // 페이지 ID -> 섹션 전체 조회 페이징 포함.
+    // 관리자용 전체 섹션 조회 (use_tf 관계없이 del_tf = 'N')
     @Query("""
     SELECT s FROM PageSection s
     WHERE s.page.id = :pageId
@@ -18,4 +18,18 @@ public interface PageSectionRepository extends JpaRepository<PageSection, Long> 
     Page<PageSection> findByPageIdAndKeyword(@Param("pageId") Long pageId,
                                              @Param("keyword") String keyword,
                                              Pageable pageable);
+
+    // 사용자용 활성 섹션 조회 (use_tf = 'Y' AND del_tf = 'N')
+    @Query("""
+    SELECT s FROM PageSection s
+    WHERE s.page.id = :pageId
+      AND s.delTf = 'N'
+      AND s.useTf = 'Y'
+      AND (:keyword IS NULL OR s.sectionName LIKE %:keyword%)
+    """)
+    Page<PageSection> findByPageIdAndUseTfAndKeyword(@Param("pageId") Long pageId,
+                                                     @Param("keyword") String keyword,
+                                                     Pageable pageable);
 }
+
+

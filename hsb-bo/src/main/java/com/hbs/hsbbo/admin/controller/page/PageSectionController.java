@@ -26,10 +26,12 @@ public class PageSectionController {
             @RequestParam Long pageId,
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String useTf
+        )
+    {
         try {
-            PageSectionListResponse responseList = pageSectionService.getPageSectionList(pageId, keyword, page, size);
+            PageSectionListResponse responseList = pageSectionService.getPageSectionList(pageId, keyword, page, size, useTf);
             return ResponseEntity.ok(responseList);
         } catch (Exception e) {
             e.printStackTrace();

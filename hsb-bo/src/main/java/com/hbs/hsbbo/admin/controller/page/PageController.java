@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.controller.page;
 
+import com.hbs.hsbbo.admin.domain.entity.page.CustomPage;
 import com.hbs.hsbbo.admin.dto.request.page.PageRequest;
 import com.hbs.hsbbo.admin.dto.response.page.PageResponse;
 import com.hbs.hsbbo.admin.service.page.PageService;
@@ -23,6 +24,12 @@ public class PageController {
         Long id = pageService.createPage(request, adminId);
 
         return ResponseEntity.ok(id);
+    }
+
+    @GetMapping("/by-url")
+    public ResponseEntity<?> getPageByUrl(@RequestParam String url) {
+        CustomPage page = pageService.findByUrl(url);
+        return ResponseEntity.ok(PageResponse.fromEntity(page));
     }
 
     // 페이지 전체 리스트 불러오기

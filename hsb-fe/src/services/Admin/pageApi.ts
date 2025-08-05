@@ -2,6 +2,16 @@ import api from '../api';
 import { PageItem } from "../../types/Admin/PageItem";
 
 /**
+ * URL 기준으로 페이지 정보 조회 (예: '/about' → Page ID)
+ */
+export const fetchPageByUrl = async (url: string): Promise<PageItem> => {
+  const response = await api.get('/page/by-url', {
+    params: { url }
+  });
+  return response.data;
+};
+
+/**
  * 페이지 전체 목록 조회 (관리자용)
  */
   export const fetchPageList = async (): Promise<PageItem[]> => {
