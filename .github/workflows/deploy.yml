@@ -215,10 +215,10 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "bo-jar/hsb-bo.jar"                 # 로컬 아티팩트 파일
-          target: "/home/hbs/hbs-be/hsb-bo.jar"       # 서버의 '파일' 경로로 명시!
-          strip_components: 1
+          source: "bo-jar/hsb-bo.jar"   # 로컬 아티팩트 파일
+          target: "/home/hbs/hbs-be/"   # ← 디렉터리(슬래시 필수)
           overwrite: true
+          strip_components: 0           # 단일 파일 전송일 땐 0
 
       # --- BO 서비스: 중지 → 시작(재시작보다 안전) + 상태 확인 ---
       - name: Restart backend service (stop -> start)
