@@ -170,7 +170,7 @@ jobs:
           path: hsb-bo/build/libs/hsb-bo.jar   # ← 고정 파일명 업로드
 
   deploy:
-    name: Deploy to Server
+    name: Deploy to Server (nohup)
     runs-on: ubuntu-latest
     environment: HSBS_PROD
     needs: [ build-fe, build-bo ]
@@ -187,13 +187,13 @@ jobs:
           name: bo-jar
           path: bo-jar
 
-      # (진단) 러너에 내려받은 파일들 확인
+      # (선택) 러너에서 파일 확인
       - name: Check artifacts on runner
         run: |
-          ls -al ./fe-build | head || true
           ls -al ./bo-jar || true
           test -f ./bo-jar/hsb-bo.jar && sha256sum ./bo-jar/hsb-bo.jar
 
+      # ---- FE 배포(원래대로) ----
       - name: Clean FE build dir on server
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -211,25 +211,25 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "./fe-build/**"        # ./ 명시
+          source: "./fe-build/**"
           target: "/home/hbs/hbs-fe/build"
           strip_components: 1
           overwrite: true
 
-      # ★ BO 전송: target은 '디렉터리', strip_components는 0 (깨짐 방지)
-      - name: Copy BO jar to server directory (/home/hbs/hbs-be/)
+      # ---- BO: JAR만 업로드 (디렉터리 타깃 + strip 0) ----
+      - name: Copy BO jar to server (/home/hbs/hbs-be/)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "bo-jar/hsb-bo.jar"
-          target: "/home/hbs/hbs-be/"    # 디렉터리(슬래시 필수)
+          source: "bo-jar/hsb-bo.jar"   # 업로드된 아티팩트의 파일명
+          target: "/home/hbs/hbs-be/"   # 디렉터리(슬래시 필수)
           overwrite: true
           strip_components: 0
 
-      # 전송 후 무결성/이름 정리: 고정 링크로 맞추고, 잘못된 폴더/파일 제거
-      - name: Link current jar and cleanup
+      # ---- BO: nohup으로 재기동 ----
+      - name: Restart backend with nohup (kill if exists)
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -239,39 +239,45 @@ jobs:
             set -euo pipefail
             cd /home/hbs/hbs-be
 
-            # 과거에 잘못 생긴 '폴더'를 정리
-            if [ -d hsb-bo.jar ]; then
-              rm -rf hsb-bo.jar
+            # 0) 기존 프로세스 종료 (포트/파일 기준 둘 다 대응)
+            # by jar name
+            if pgrep -f "java .*hsb-bo.jar" >/dev/null 2>&1; then
+              pkill -f "java .*hsb-bo.jar" || true
+              sleep 2
+            fi
+            # by port (8080)
+            if ss -ltnp | grep -q ":8080 "; then
+              # fuser 없으면 설치: sudo apt-get -y install psmisc
+              fuser -k 8080/tcp || true
+              sleep 2
             fi
 
-            # 심볼릭 링크로 고정 이름 제공 (systemd가 항상 이 경로 실행)
-            ln -sfn /home/hbs/hbs-be/hsb-bo.jar /home/hbs/hbs-be/hsb-bo.jar  # idempotent
-            # 위 한 줄은 idempotent 하지만 의미가 약하니, 아래처럼 실제 파일을 링크로 통일:
-            if [ ! -L hsb-bo.jar ]; then
-              rm -f hsb-bo.jar
-              ln -s hsb-bo.jar hsb-bo.jar  # no-op; 필요 시 실파일명 -> 링크로 교체
+            # 1) 최신 파일을 고정 이름으로 배치
+            #   (지금 업로드된 파일명이 hsb-bo.jar 라고 가정)
+            #   혹시 폴더가 남아 있다면 제거
+            [ -d hsb-bo.jar ] && rm -rf hsb-bo.jar
+            # 권한 보정
+            chmod 644 hsb-bo.jar
+
+            # 2) 로그 로테이트
+            if [ -f app.log ]; then
+              ts=$(date +%Y%m%d-%H%M%S)
+              mv app.log "app.$ts.log" || true
             fi
+            : > app.log
 
-            # 실제 파일이 링크가 아니라면(=그냥 파일)도 OK이므로 상태만 표시
-            ls -l /home/hbs/hbs-be/hsb-bo.jar
-            file /home/hbs/hbs-be/hsb-bo.jar || true
-            sha256sum /home/hbs/hbs-be/hsb-bo.jar || true
+            # 3) 실행 (필요시 JVM 메모리 옵션 조정)
+            nohup /usr/bin/java -Xms256m -Xmx512m -jar hsb-bo.jar \
+              --spring.profiles.active=prod \
+              --server.port=8080 \
+              >> app.log 2>&1 &
 
-      # --- BO 서비스: 중지 → 시작 + 상태 확인 ---
-      - name: Restart backend service (stop -> start)
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            set -euo pipefail
-            echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl daemon-reload
-            echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl stop hsb-bo || true
-            sleep 2
-            echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl start hsb-bo
-            echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl status hsb-bo --no-pager -l || true
-            ps -ef | grep '[j]ava' || true
+            # 4) 실행 확인
+            sleep 3
+            pgrep -f "java .*hsb-bo.jar" || (echo "JAR not running" && tail -n 100 app.log && exit 1)
+            echo "Started. PID(s):" $(pgrep -f "java .*hsb-bo.jar")
+            tail -n 50 app.log || true
+
 
 
 
