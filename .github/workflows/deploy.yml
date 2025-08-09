@@ -80,43 +80,43 @@ jobs:
       - name: Create application-prod.yml from secrets
         shell: bash
         run: |
-          cat > src/main/resources/application-prod.yml <<YAML
+          cat > src/main/resources/application-prod.yml <<'YAML'
           spring:
-            datasource:
-              url: ${{ secrets.SPRING_DATASOURCE_URL }}
-              username: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
-              password: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+          datasource:
+            url: ${{ secrets.SPRING_DATASOURCE_URL }}
+            username: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
+            password: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
 
-            jpa:
+          jpa:
+            hibernate:
+              ddl-auto: none
+            properties:
               hibernate:
-                ddl-auto: none
-              properties:
-                hibernate:
-                  format_sql: true
-                  dialect: org.hibernate.dialect.MySQL8Dialect
-                  physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-              show-sql: true
+                format_sql: true
+                dialect: org.hibernate.dialect.MySQL8Dialect
+                physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+            show-sql: true
 
-            servlet:
-              multipart:
-                max-file-size: 50MB
-                max-request-size: 50MB
+          servlet:
+            multipart:
+              max-file-size: 50MB
+              max-request-size: 50MB
 
-            mail:
-              host: ${{ secrets.MAIL_HOST }}
-              port: ${{ secrets.MAIL_PORT }}
-              username: ${{ secrets.MAIL_USERNAME }}
-              password: ${{ secrets.MAIL_PASSWORD }}
-              properties:
-                mail.smtp.auth: true
-                mail.smtp.starttls.enable: true
-              default-encoding: UTF-8
+          mail:
+            host: ${{ secrets.MAIL_HOST }}
+            port: ${{ secrets.MAIL_PORT }}
+            username: ${{ secrets.MAIL_USERNAME }}
+            password: ${{ secrets.MAIL_PASSWORD }}
+            properties:
+              mail.smtp.auth: true
+              mail.smtp.starttls.enable: true
+            default-encoding: UTF-8
 
-            http:
-              encoding:
-                charset: UTF-8
-                enabled: true
-                force: true
+          http:
+            encoding:
+              charset: UTF-8
+              enabled: true
+              force: true
 
           server:
             servlet:
