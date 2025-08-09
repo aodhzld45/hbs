@@ -80,87 +80,79 @@ jobs:
         shell: bash
         run: |
           cat > src/main/resources/application-prod.yml <<'YAML'
-spring:
-  datasource:
-    url: ${{ secrets.SPRING_DATASOURCE_URL }}
-    username: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
-    password: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
-  jpa:
-    hibernate:
-      ddl-auto: none
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.MySQL8Dialect
-        physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-    show-sql: true
-  servlet:
-    multipart:
-      max-file-size: 50MB
-      max-request-size: 50MB
-  mail:
-    host: ${{ secrets.MAIL_HOST }}
-    port: ${{ secrets.MAIL_PORT }}
-    username: ${{ secrets.MAIL_USERNAME }}
-    password: ${{ secrets.MAIL_PASSWORD }}
-    properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
-    default-encoding: UTF-8
-  http:
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
-
-jwt:
-  secret: ${{ secrets.JWT_SECRET }}
-  expiration: 3600000
-
-file:
-  upload-path: ${{ secrets.FILE_UPLOAD_PATH }}
-
-server:
-  servlet:
-    session:
-      timeout: 30m
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: always
-
-cloud:
-  aws:
-    credentials:
-      access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    region:
-      static: ${{ secrets.AWS_REGION }}
-
-logging:
-  charset:
-    console: UTF-8
-    file: UTF-8
-
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    operations-sorter: alpha
-    tags-sorter: alpha
-    display-request-duration: true
-
-app:
-  cors:
-    enabled: ${{ secrets.APP_CORS_ENABLED }}
-    allowed-origins: ${{ secrets.APP_CORS_ALLOWED }}
-YAML
+          spring:
+            datasource:
+              url: ${{ secrets.SPRING_DATASOURCE_URL }}
+              username: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
+              password: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+            jpa:
+              hibernate:
+                ddl-auto: none
+              properties:
+                hibernate:
+                  format_sql: true
+                  dialect: org.hibernate.dialect.MySQL8Dialect
+                  physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+              show-sql: true
+            servlet:
+              multipart:
+                max-file-size: 50MB
+                max-request-size: 50MB
+            mail:
+              host: ${{ secrets.MAIL_HOST }}
+              port: ${{ secrets.MAIL_PORT }}
+              username: ${{ secrets.MAIL_USERNAME }}
+              password: ${{ secrets.MAIL_PASSWORD }}
+              properties:
+                mail.smtp.auth: true
+                mail.smtp.starttls.enable: true
+              default-encoding: UTF-8
+            http:
+              encoding:
+                charset: UTF-8
+                enabled: true
+                force: true
+          jwt:
+            secret: ${{ secrets.JWT_SECRET }}
+            expiration: 3600000
+          file:
+            upload-path: ${{ secrets.FILE_UPLOAD_PATH }}
+          server:
+            servlet:
+              session:
+                timeout: 30m
+          management:
+            endpoints:
+              web:
+                exposure:
+                  include: health,info
+            endpoint:
+              health:
+                show-details: always
+          cloud:
+            aws:
+              credentials:
+                access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+              region:
+                static: ${{ secrets.AWS_REGION }}
+          logging:
+            charset:
+              console: UTF-8
+              file: UTF-8
+          springdoc:
+            api-docs:
+              path: /api-docs
+            swagger-ui:
+              path: /swagger-ui.html
+              operations-sorter: alpha
+              tags-sorter: alpha
+              display-request-duration: true
+          app:
+            cors:
+              enabled: ${{ secrets.APP_CORS_ENABLED }}
+              allowed-origins: ${{ secrets.APP_CORS_ALLOWED }}
+          YAML
 
       - name: Verify prod yml exists
         run: test -f src/main/resources/application-prod.yml
