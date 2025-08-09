@@ -32,7 +32,6 @@ jobs:
           cache: "npm"
           cache-dependency-path: hsb-fe/package-lock.json
 
-      # Secrets -> .env.production (CRA)
       - name: Inject .env.production from GitHub Secrets
         shell: bash
         run: |
@@ -151,8 +150,8 @@ jobs:
               display-request-duration: true
           app:
             cors:
-              enabled: ${{ secrets.APP_CORS_ENABLED }}         # 프록시 사용 시 false 권장
-              allowed-origins: ${{ secrets.APP_CORS_ALLOWED }} # 필요 시만 값
+              enabled: ${{ secrets.APP_CORS_ENABLED }}
+              allowed-origins: ${{ secrets.APP_CORS_ALLOWED }}
           YAML
 
       - name: Verify prod yml exists
@@ -168,7 +167,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bo-jar
-          path: hsb-bo/build/libs/*SNAPSHOT.jar
+          path: hsb-bo/build/libs/hsb-bo.jar   # ← 고정 파일명 업로드
 
   deploy:
     name: Deploy to Server
@@ -195,6 +194,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            set -euo pipefail
             mkdir -p /home/hbs/hbs-fe/build
             rm -rf /home/hbs/hbs-fe/build/*
 
@@ -215,35 +215,19 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "bo-jar/*.jar"
+          source: "bo-jar/hsb-bo.jar"       # ← 고정 파일명
           target: "/home/hbs/hbs-be/"
           overwrite: true
 
-      # (선택) 예전 JAR 정리
-      - name: Cleanup old JARs on server (optional)
+      - name: Restart backend service
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            set -euo pipefail
             cd /home/hbs/hbs-be
-            ls -1 *.jar | grep -v 'hsb-bo-0.0.1-SNAPSHOT.jar' | xargs -r rm -f || true
-
-      - name: Rename JAR and restart services
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            set -e
-            cd /home/hbs/hbs-be
-            LATEST_JAR="$(ls -t *.jar | head -n 1)"
-            if [ -z "$LATEST_JAR" ]; then
-              echo "No jar found in /home/hbs/hbs-be"; exit 1;
-            fi
-            mv -f "$LATEST_JAR" hsb-bo-0.0.1-SNAPSHOT.jar
+            ls -l hsb-bo.jar
             sudo systemctl restart hsb-bo
-            # Apache는 정적 파일만 교체면 보통 불필요
-            # sudo systemctl reload apache2
+            sudo systemctl status hsb-bo --no-pager -l || true
