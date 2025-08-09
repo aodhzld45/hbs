@@ -1,0 +1,179 @@
+name: CI/CD - HSBS_PROD
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-fe:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    environment: HSBS_PROD
+    defaults:
+      run:
+        working-directory: hsb-fe
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload FE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fe-build
+          path: hsb-fe/build
+
+  build-bo:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    environment: HSBS_PROD
+    defaults:
+      run:
+        working-directory: hsb-bo
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Create application-prod.yml from secrets
+        run: |
+          cat > src/main/resources/application-prod.yml <<'YAML'
+          spring:
+            datasource:
+              url: ${{ secrets.SPRING_DATASOURCE_URL }}
+              username: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
+              password: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+          spring:
+            jpa:
+              hibernate:
+                ddl-auto: none
+              properties:
+                hibernate:
+                  format_sql: true
+                  dialect: org.hibernate.dialect.MySQL8Dialect
+                  physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+              show-sql: true
+            servlet:
+              multipart:
+                max-file-size: 50MB
+                max-request-size: 50MB
+            mail:
+              host: ${{ secrets.MAIL_HOST }}
+              port: ${{ secrets.MAIL_PORT }}
+              username: ${{ secrets.MAIL_USERNAME }}
+              password: ${{ secrets.MAIL_PASSWORD }}
+              properties:
+                mail.smtp.auth: true
+                mail.smtp.starttls.enable: true
+              default-encoding: UTF-8
+            http:
+              encoding:
+                charset: UTF-8
+                enabled: true
+                force: true
+          jwt:
+            secret: ${{ secrets.JWT_SECRET }}
+            expiration: 3600000
+          file:
+            upload-path: ${{ secrets.FILE_UPLOAD_PATH }}
+          server:
+            servlet:
+              session:
+                timeout: 30m
+          management:
+            endpoints:
+              web.exposure.include: health,info
+            endpoint.health.show-details: always
+          cloud:
+            aws:
+              credentials:
+                access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+              region:
+                static: ${{ secrets.AWS_REGION }}
+          logging:
+            charset:
+              console: UTF-8
+              file: UTF-8
+          springdoc:
+            api-docs.path: /api-docs
+            swagger-ui:
+              path: /swagger-ui.html
+              operations-sorter: alpha
+              tags-sorter: alpha
+              display-request-duration: true
+          YAML
+
+      - name: Grant Gradle wrapper execute permission
+        run: chmod +x ./gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew clean build -x test
+
+      - name: Upload BO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bo-jar
+          path: hsb-bo/build/libs/*SNAPSHOT.jar
+
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    environment: HSBS_PROD
+    needs: [ build-fe, build-bo ]
+    steps:
+      - name: Download FE artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: fe-build
+          path: fe-build
+
+      - name: Download BO artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bo-jar
+          path: bo-jar
+
+      - name: Copy FE to server (/home/hbs/hbs-fe/build)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "fe-build/*"
+          target: "/home/hbs/hbs-fe/build"
+          strip_components: 1
+
+      - name: Copy BO jar to server (/home/hbs/hbs-be/hsb-bo-0.0.1-SNAPSHOT.jar)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "bo-jar/*.jar"
+          target: "/home/hbs/hbs-be/hsb-bo-0.0.1-SNAPSHOT.jar"
+
+      - name: Restart services
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo systemctl restart hsb-bo
+            # 정적 파일만 교체하므로 Apache reload는 생략 가능. 필요 시 아래 주석 해제
+            # sudo systemctl reload apache2
