@@ -22,6 +22,8 @@ jobs:
         working-directory: hsb-fe
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -30,14 +32,12 @@ jobs:
           cache: "npm"
           cache-dependency-path: hsb-fe/package-lock.json
 
-      # ⬇️ GitHub Secrets를 .env.production으로 주입 (CRA 기준)
+      # Secrets -> .env.production (CRA)
       - name: Inject .env.production from GitHub Secrets
         shell: bash
         run: |
           cat > .env.production <<'ENV'
           REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}
-          # 필요 시 추가:
-          # REACT_APP_SOME_KEY=${{ secrets.REACT_APP_SOME_KEY }}
           ENV
           echo "Created .env.production"
 
@@ -46,6 +46,11 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          CI: ""   # CRA 경고를 에러로 취급하지 않음
+
+      - name: Verify FE build exists
+        run: test -d build && ls -lah build
 
       - name: Upload FE artifact
         uses: actions/upload-artifact@v4
@@ -62,6 +67,8 @@ jobs:
         working-directory: hsb-bo
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -142,7 +149,14 @@ jobs:
               operations-sorter: alpha
               tags-sorter: alpha
               display-request-duration: true
+          app:
+            cors:
+              enabled: ${{ secrets.APP_CORS_ENABLED }}         # 프록시 사용 시 false 권장
+              allowed-origins: ${{ secrets.APP_CORS_ALLOWED }} # 필요 시만 값
           YAML
+
+      - name: Verify prod yml exists
+        run: test -f src/main/resources/application-prod.yml
 
       - name: Grant Gradle wrapper execute permission
         run: chmod +x ./gradlew
@@ -174,6 +188,16 @@ jobs:
           name: bo-jar
           path: bo-jar
 
+      - name: Clean FE build dir on server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            mkdir -p /home/hbs/hbs-fe/build
+            rm -rf /home/hbs/hbs-fe/build/*
+
       - name: Copy FE to server (/home/hbs/hbs-fe/build)
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -195,6 +219,17 @@ jobs:
           target: "/home/hbs/hbs-be/"
           overwrite: true
 
+      # (선택) 예전 JAR 정리
+      - name: Cleanup old JARs on server (optional)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /home/hbs/hbs-be
+            ls -1 *.jar | grep -v 'hsb-bo-0.0.1-SNAPSHOT.jar' | xargs -r rm -f || true
+
       - name: Rename JAR and restart services
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -204,13 +239,11 @@ jobs:
           script: |
             set -e
             cd /home/hbs/hbs-be
-            # 최신 업로드된 SNAPSHOT.jar를 고정 파일명으로 교체
             LATEST_JAR="$(ls -t *.jar | head -n 1)"
             if [ -z "$LATEST_JAR" ]; then
               echo "No jar found in /home/hbs/hbs-be"; exit 1;
             fi
             mv -f "$LATEST_JAR" hsb-bo-0.0.1-SNAPSHOT.jar
             sudo systemctl restart hsb-bo
-            # 정적 파일만 교체하므로 Apache reload는 보통 불필요
-            # 필요 시 아래 주석 해제
+            # Apache는 정적 파일만 교체면 보통 불필요
             # sudo systemctl reload apache2
