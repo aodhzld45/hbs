@@ -215,8 +215,9 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "bo-jar/hsb-bo.jar"       # ← 고정 파일명
-          target: "/home/hbs/hbs-be/"
+          source: "bo-jar/hsb-bo.jar"                 # 로컬 아티팩트 파일
+          target: "/home/hbs/hbs-be/hsb-bo.jar"       # 서버의 '파일' 경로로 명시!
+          strip_components: 1
           overwrite: true
 
       - name: Restart backend service
