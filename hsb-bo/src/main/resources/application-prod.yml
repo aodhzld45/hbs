@@ -1,0 +1,48 @@
+spring:
+  datasource:
+    url: ${{ secrets.SPRING_DATASOURCE_URL }}
+    username: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
+    password: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+
+
+  mail:
+    host: ${{ secrets.MAIL_HOST }}
+    port: ${{ secrets.MAIL_PORT }}
+    username: ${{ secrets.MAIL_USERNAME }}
+    password: ${{ secrets.MAIL_PASSWORD }}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+    default-encoding: UTF-8
+
+file:
+  upload-path: ${{ secrets.FILE_UPLOAD_PATH }}
+
+jwt:
+  secret: ${{ secrets.JWT_SECRET }}
+  expiration: 3600000
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    region:
+      static: ${{ secrets.AWS_REGION }}
+
+logging:
+  charset:
+    console: UTF-8
+    file: UTF-8
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true
+app:
+  cors:
+    enabled: ${{ secrets.APP_CORS_ENABLED }}
+    allowed-origins: ${{ secrets.APP_CORS_ALLOWED }}
