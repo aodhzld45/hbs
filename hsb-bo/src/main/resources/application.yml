@@ -1,8 +1,16 @@
 spring:
-  datasource:
-    url: jdbc:mysql://{DB서버 URL}:3306/{DB명}
-    username: { DB계정 }
-    password: { DB암호 }
+  profiles:
+    active: local # 기본 실행환경(local, dev, prod)
+    group:
+      local: local
+      dev: dev
+      prod: prod
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
   jpa:
     hibernate:
       ddl-auto: none
@@ -12,32 +20,12 @@ spring:
         dialect: org.hibernate.dialect.MySQL8Dialect
         physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true
-  servlet:
-    multipart:
-      max-file-size: 50MB
-      max-request-size: 50MB
-
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: { 메일 계정 }
-    password: { 앱 키 }
-    properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
-    default-encoding: UTF-8
 
   http:
     encoding:
       charset: UTF-8
       enabled: true
       force: true
-jwt:
-  secret: my-very-secret-key-for-hsb-jwt-signing
-  expiration: 3600000  # 1시간 (밀리초 단위)
-file:
-  # 로컬
-  upload-path: C:/upload/hsb
 
 server:
   servlet:
@@ -52,21 +40,6 @@ management:
   endpoint:
     health:
       show-details: always
-
-cloud:
-  aws:
-    credentials:
-      # aws s3 발급 접근 키
-      access-key: { 접근 키 }
-      secret-key: { 시크릿 키}
-
-    region:
-      static: ap-northeast-2
-
-logging:
-  charset:
-    console: UTF-8
-    file: UTF-8
 
 springdoc:
   api-docs:

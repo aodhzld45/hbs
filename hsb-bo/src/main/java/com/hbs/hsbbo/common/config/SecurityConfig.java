@@ -1,12 +1,13 @@
 package com.hbs.hsbbo.common.config;
 
-
-import com.hbs.hsbbo.admin.service.AdminService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,39 +17,42 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Autowired
-    private AdminService adminService;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @Value("${app.cors.enabled:false}")
+    private boolean corsEnabled;
+
+    @Value("${app.cors.allowed-origins:}")
+    private String allowedOriginsCsv;
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 
-    // AuthenticationManager 빈을 정의하는 방식 (Spring Boot 2.0 이상 권장)
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfiguration) throws Exception {
-        return authConfiguration.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration cfg) throws Exception {
+        return cfg.getAuthenticationManager();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors()
-                .and()
-                .csrf().disable()
-                .authorizeHttpRequests(
-                    authorize -> authorize
-                    .requestMatchers("/api/admin/login").permitAll()
-                    .requestMatchers("/api/admin/**").authenticated()
-                    .anyRequest().permitAll()
+                .cors(c -> { if (!corsEnabled) c.disable(); })   // 프로퍼티로 on/off
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/admin/login",
+                                "/v3/api-docs/**","/swagger-ui/**","/swagger-ui.html",
+                                "/files/**").permitAll()
+                        .requestMatchers("/api/admin/**").authenticated()
+                        .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -57,24 +61,21 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                {배포서버 ip},
-                "http://localhost:3000"
-        ));
-        config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
-        config.setAllowedHeaders(List.of("*", "Authorization")); // Authorization 명시 추가
-        config.setExposedHeaders(List.of("Content-Disposition"));
-        config.setAllowCredentials(true);
+        if (!corsEnabled) return req -> null;
+        CorsConfiguration cfg = new CorsConfiguration();
+        if (allowedOriginsCsv != null && !allowedOriginsCsv.isBlank()) {
+            Arrays.stream(allowedOriginsCsv.split(","))
+                    .map(String::trim).filter(s -> !s.isEmpty())
+                    .forEach(cfg::addAllowedOrigin);
+        }
+        cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
+        cfg.setAllowedHeaders(List.of("*"));
+        cfg.setExposedHeaders(List.of("Content-Disposition"));
+        cfg.setAllowCredentials(true);
+        cfg.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-
-        //  모든 경로에 대해 적용
-        source.registerCorsConfiguration("/**", config);
-
-        return source;
+        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
+        src.registerCorsConfiguration("/**", cfg);
+        return src;
     }
-
-    // AuthenticationManagerBuilder를 직접 사용하는 방법도 있으나,
-    // 최신 Spring Security에서는 AuthenticationConfiguration을 활용하는 방법을 권장합니다.
 }
