@@ -62,4 +62,15 @@ public class UserMenuController {
                            @RequestParam String adminId) {
         userMenuService.deleteMenu(id, adminId);
     }
+
+    // 배포 확인용 임시 핑 (나중에 삭제 OK)
+    @GetMapping("/_deploy-check")
+    public Map<String, Object> deployCheck() {
+        return Map.of(
+                "service", "user-menus",
+                "status", "ok",
+                "time", java.time.Instant.now().toString()
+        );
+    }
+
 }

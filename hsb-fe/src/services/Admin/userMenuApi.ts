@@ -33,3 +33,9 @@ export const fetchUserMenuDelete = async (id: number, adminId: string) => {
     });
     return res.data;
 };
+
+// 배포 확인용 ㅎㅎ
+export const fetchUserMenuDeployCheck = async () => {
+  const res = await api.get('/user-menus/_deploy-check');
+  return res.data; // { service, status, time }
+};

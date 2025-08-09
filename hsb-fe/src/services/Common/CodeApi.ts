@@ -1,8 +1,5 @@
 import api from '../api';
 
-import { CodeGroup } from "../../types/Common/CodeGroup"; 
-import { CodeDetail } from "../../types/Common/CodeDetail"; 
-
 /** CodeGroup */
 export const fetchCodeGroups = async () => {
   const res = await api.get("/common/codes/groups");

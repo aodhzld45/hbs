@@ -1,12 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../../components/Layout/Layout';
 import DynamicSelectBox from "../../components/Common/DynamicSelectBox";
+import { fetchUserMenuDeployCheck } from '../../services/Admin/userMenuApi';
+
+
 
 const TestPage = () => {
   // DynamicSelectBox 선택값
   const [selected1, setSelected1] = useState<string | null>(null);
   const [selected2, setSelected2] = useState<string | null>(null);
   const [selected3, setSelected3] = useState<string | null>(null);
+
+  const [resp, setResp] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+    const onClick = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchUserMenuDeployCheck();
+      setResp(data);
+      console.log('배포 체크 응답:', data);
+      alert(`배포 OK: ${data?.status} @ ${data?.time}`);
+    } catch (e) {
+      console.error('배포 체크 실패:', e);
+      alert('배포 체크 실패(콘솔 확인)');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   // payload 객체
   const payload = {
@@ -66,6 +88,10 @@ const TestPage = () => {
             }
           ]}
         />
+
+        <button onClick={onClick} disabled={loading}>
+          {loading ? '확인 중...' : '배포 체크'}
+        </button>
 
         {/* payload 확인용 출력 */}
         <div className="mt-6 p-4 border rounded bg-gray-50">
