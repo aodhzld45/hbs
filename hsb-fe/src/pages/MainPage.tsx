@@ -57,12 +57,9 @@ const MainPage = () => {
     try {
       const url = location.pathname;
       const pageRes = await fetchPageByUrl(url); //  URL 기반 Page ID 조회
-      console.log("페이지 정보:", pageRes);
       const pageId = pageRes.id;
 
       const res = await fetchPageSectonList(pageId, '', 0, 10, 'Y');
-
-      console.log("페이지 섹션 목록:", res);
 
       const parsed = res.items.map((section: PageSectionItem) => {
         const parsedJson =

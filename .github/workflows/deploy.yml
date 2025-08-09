@@ -5,6 +5,13 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+concurrency:
+  group: hsbs_prod-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   build-fe:
     name: Build Frontend
@@ -20,6 +27,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
+          cache-dependency-path: hsb-fe/package-lock.json
+
+      # ⬇️ GitHub Secrets를 .env.production으로 주입 (CRA 기준)
+      - name: Inject .env.production from GitHub Secrets
+        shell: bash
+        run: |
+          cat > .env.production <<'ENV'
+          REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}
+          # 필요 시 추가:
+          # REACT_APP_SOME_KEY=${{ secrets.REACT_APP_SOME_KEY }}
+          ENV
+          echo "Created .env.production"
 
       - name: Install deps
         run: npm ci
@@ -48,8 +68,10 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
 
       - name: Create application-prod.yml from secrets
+        shell: bash
         run: |
           cat > src/main/resources/application-prod.yml <<'YAML'
           spring:
@@ -57,7 +79,6 @@ jobs:
               url: ${{ secrets.SPRING_DATASOURCE_URL }}
               username: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
               password: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
-          spring:
             jpa:
               hibernate:
                 ddl-auto: none
@@ -96,8 +117,12 @@ jobs:
                 timeout: 30m
           management:
             endpoints:
-              web.exposure.include: health,info
-            endpoint.health.show-details: always
+              web:
+                exposure:
+                  include: health,info
+            endpoint:
+              health:
+                show-details: always
           cloud:
             aws:
               credentials:
@@ -110,7 +135,8 @@ jobs:
               console: UTF-8
               file: UTF-8
           springdoc:
-            api-docs.path: /api-docs
+            api-docs:
+              path: /api-docs
             swagger-ui:
               path: /swagger-ui.html
               operations-sorter: alpha
@@ -154,26 +180,37 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "fe-build/*"
+          source: "fe-build/**"
           target: "/home/hbs/hbs-fe/build"
           strip_components: 1
+          overwrite: true
 
-      - name: Copy BO jar to server (/home/hbs/hbs-be/hsb-bo-0.0.1-SNAPSHOT.jar)
+      - name: Copy BO jar to server directory (/home/hbs/hbs-be/)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: "bo-jar/*.jar"
-          target: "/home/hbs/hbs-be/hsb-bo-0.0.1-SNAPSHOT.jar"
+          target: "/home/hbs/hbs-be/"
+          overwrite: true
 
-      - name: Restart services
+      - name: Rename JAR and restart services
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            set -e
+            cd /home/hbs/hbs-be
+            # 최신 업로드된 SNAPSHOT.jar를 고정 파일명으로 교체
+            LATEST_JAR="$(ls -t *.jar | head -n 1)"
+            if [ -z "$LATEST_JAR" ]; then
+              echo "No jar found in /home/hbs/hbs-be"; exit 1;
+            fi
+            mv -f "$LATEST_JAR" hsb-bo-0.0.1-SNAPSHOT.jar
             sudo systemctl restart hsb-bo
-            # 정적 파일만 교체하므로 Apache reload는 생략 가능. 필요 시 아래 주석 해제
+            # 정적 파일만 교체하므로 Apache reload는 보통 불필요
+            # 필요 시 아래 주석 해제
             # sudo systemctl reload apache2
