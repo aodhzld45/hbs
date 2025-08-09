@@ -32,7 +32,6 @@ jobs:
           cache: "npm"
           cache-dependency-path: hsb-fe/package-lock.json
 
-      # FE 환경변수 파일 생성
       - name: Inject .env.production from GitHub Secrets
         shell: bash
         run: |
@@ -80,35 +79,40 @@ jobs:
       - name: Grant Gradle wrapper execute permission
         run: chmod +x ./gradlew
 
-      # ✅ (진단1) 레포에 있는 application-prod.yml 실제 내용 출력
-      - name: Show repo application-prod.yml (before build)
+      # (진단1) 현재 체크아웃된 커밋 / 레포의 prod yml 실제 내용 확인
+      - name: Show commit & repo application-prod.yml (before build)
         run: |
-          echo "== hsb-bo/src/main/resources/application-prod.yml =="
-          sed -n '1,200p' src/main/resources/application-prod.yml || echo "file not found"
-          echo "== find any duplicate yml/yaml =="
-          grep -R --line-number --include='application-prod.y*ml' '' src/main/resources || true
+          echo "== commit ==" && git rev-parse HEAD && git log -1 --oneline
+          echo "== search all application-prod.yml/.yaml under resources =="
+          git ls-files | grep -E '^hsb-bo/src/main/resources/.*/?application-prod\.ya?ml$' || true
+          echo "== file content (src/main/resources/application-prod.yml) =="
+          sed -n '1,200p' src/main/resources/application-prod.yml || echo "not found"
+          echo "== legacy tokens in resources =="
+          grep -R --line-number -E 'DB_HOST_PROD|DB_USER_PROD|DB_PASS_PROD|AWS_ACCESS_KEY_PROD' src/main/resources || true
+
+      # (진단 보강) 어떤 리소스가 복사되는지 Gradle 로그로 확인
+      - name: Gradle processResources (verbose)
+        run: ./gradlew :hsb-bo:processResources --info --stacktrace
 
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
-      # ✅ (진단2) 방금 빌드된 JAR 내부에서 prod yml 확인
+      # (진단2) 빌드된 JAR 내부의 prod yml 내용 확인
       - name: Inspect built jar (application-prod.yml)
         run: |
           JAR=build/libs/hsb-bo.jar
-          echo "== list yml in jar =="
-          jar tf "$JAR" | grep -E 'application.*\.ya?ml' || true
+          echo "== list yml in jar ==" && jar tf "$JAR" | grep -E 'application.*\.ya?ml' || true
           rm -rf _jarcheck && mkdir _jarcheck
           (cd _jarcheck && jar -xf "../$JAR" BOOT-INF/classes/application-prod.yml)
           echo "== content of application-prod.yml inside JAR =="
           sed -n '1,200p' _jarcheck/BOOT-INF/classes/application-prod.yml || true
-          echo "== jar sha256 =="
-          sha256sum "$JAR"
+          echo "== JAR sha256 ==" && sha256sum "$JAR"
 
       - name: Upload BO artifact
         uses: actions/upload-artifact@v4
         with:
           name: bo-jar
-          path: hsb-bo/build/libs/hsb-bo.jar   # 빌드 산출물 파일명 고정
+          path: hsb-bo/build/libs/hsb-bo.jar
 
   deploy:
     name: Deploy to Server (nohup)
@@ -168,7 +172,7 @@ jobs:
           overwrite: true
           strip_components: 0
 
-      # ✅ (진단3a) 서버에 복사된 JAR 해시 확인
+      # (진단3a) 서버에 복사된 JAR 해시
       - name: Server jar checksum (after copy)
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -177,10 +181,9 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /home/hbs/hbs-be || exit 1
-            echo "== server jar sha256 =="
-            sha256sum hsb-bo.jar || true
+            echo "== server jar sha256 ==" && sha256sum hsb-bo.jar || true
 
-      # ✅ (진단3b) 서버 JAR 내부 prod yml 내용 확인
+      # (진단3b) 서버 JAR 내부 prod yml 내용
       - name: Inspect prod yml on server (inside jar)
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -220,60 +223,22 @@ jobs:
           script: |
             #!/usr/bin/env bash
             set -u
-
             cd /home/hbs/hbs-be || exit 1
-
-            if ! command -v fuser >/dev/null 2>&1; then
-              sudo apt-get update -y >/dev/null 2>&1 || true
-              sudo apt-get install -y psmisc >/dev/null 2>&1 || true
-            fi
-
-            # stop
             if [ -f app.pid ]; then
               oldpid="$(cat app.pid || true)"
               if [ -n "${oldpid:-}" ] && ps -p "$oldpid" >/dev/null 2>&1; then
-                echo "[stop] kill PID $oldpid"
                 kill "$oldpid" >/dev/null 2>&1 || true
-                for i in {1..5}; do
-                  ps -p "$oldpid" >/dev/null 2>&1 || break
-                  sleep 1
-                done
+                for i in {1..5}; do ps -p "$oldpid" >/dev/null 2>&1 || break; sleep 1; done
                 ps -p "$oldpid" >/dev/null 2>&1 && kill -9 "$oldpid" || true
               fi
               rm -f app.pid
             fi
             fuser -k 8080/tcp >/dev/null 2>&1 || true
-
-            # log rotate
-            if [ -f app.log ]; then
-              ts="$(date +%Y%m%d-%H%M%S)"
-              mv app.log "app.$ts.log" || true
-            fi
             : > app.log
-
-            # jar
-            if [ ! -f hsb-bo.jar ]; then
-              echo "[error] hsb-bo.jar not found"; ls -al
-              exit 0
-            fi
-            chmod 644 hsb-bo.jar 2>/dev/null || true
-
-            # start
+            [ -f hsb-bo.jar ] || { echo "[error] hsb-bo.jar not found"; ls -al; exit 0; }
             nohup /usr/bin/java -Xms256m -Xmx512m -jar hsb-bo.jar \
               --spring.profiles.active=prod \
-              --server.port=8080 \
-              >> app.log 2>&1 &
-
-            newpid=$!
-            echo "$newpid" > app.pid
-            echo "[start] PID $newpid"
-
-            ok=0
-            for i in {1..20}; do
-              ss -ltn 2>/dev/null | grep -q ":8080 " && { ok=1; break; }
-              sleep 1
-            done
-
-            echo "[status] listening=$ok"
-            ps -p "$newpid" -o pid,cmd= || true
+              --server.port=8080 >> app.log 2>&1 &
+            echo $! > app.pid
+            for i in {1..20}; do ss -ltn 2>/dev/null | grep -q ":8080 " && break; sleep 1; done
             tail -n 120 app.log || true
