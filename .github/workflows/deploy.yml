@@ -230,5 +230,6 @@ jobs:
             set -euo pipefail
             cd /home/hbs/hbs-be
             ls -l hsb-bo.jar
-            sudo systemctl restart hsb-bo
-            sudo systemctl status hsb-bo --no-pager -l || true
+            echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl daemon-reload
+            echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl restart hsb-bo
+            echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl status hsb-bo --no-pager -l || true
