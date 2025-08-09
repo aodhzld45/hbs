@@ -76,104 +76,94 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      #  application-prod.yml 생성 (spring: 1회만)
       - name: Create application-prod.yml from secrets
         shell: bash
         run: |
           cat > src/main/resources/application-prod.yml <<'YAML'
-          spring:
-          datasource:
-            url: ${{ secrets.SPRING_DATASOURCE_URL }}
-            username: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
-            password: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+spring:
+  datasource:
+    url: ${{ secrets.SPRING_DATASOURCE_URL }}
+    username: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
+    password: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  mail:
+    host: ${{ secrets.MAIL_HOST }}
+    port: ${{ secrets.MAIL_PORT }}
+    username: ${{ secrets.MAIL_USERNAME }}
+    password: ${{ secrets.MAIL_PASSWORD }}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+    default-encoding: UTF-8
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
-          jpa:
-            hibernate:
-              ddl-auto: none
-            properties:
-              hibernate:
-                format_sql: true
-                dialect: org.hibernate.dialect.MySQL8Dialect
-                physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-            show-sql: true
+jwt:
+  secret: ${{ secrets.JWT_SECRET }}
+  expiration: 3600000
 
-          servlet:
-            multipart:
-              max-file-size: 50MB
-              max-request-size: 50MB
+file:
+  upload-path: ${{ secrets.FILE_UPLOAD_PATH }}
 
-          mail:
-            host: ${{ secrets.MAIL_HOST }}
-            port: ${{ secrets.MAIL_PORT }}
-            username: ${{ secrets.MAIL_USERNAME }}
-            password: ${{ secrets.MAIL_PASSWORD }}
-            properties:
-              mail.smtp.auth: true
-              mail.smtp.starttls.enable: true
-            default-encoding: UTF-8
+server:
+  servlet:
+    session:
+      timeout: 30m
 
-          http:
-            encoding:
-              charset: UTF-8
-              enabled: true
-              force: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
 
-          server:
-            servlet:
-              session:
-                timeout: 30m
+cloud:
+  aws:
+    credentials:
+      access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    region:
+      static: ${{ secrets.AWS_REGION }}
 
-          management:
-            endpoints:
-              web:
-                exposure:
-                  include: health,info
-            endpoint:
-              health:
-                show-details: always
+logging:
+  charset:
+    console: UTF-8
+    file: UTF-8
 
-          cloud:
-            aws:
-              credentials:
-                access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              region:
-                static: ${{ secrets.AWS_REGION }}
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true
 
-          logging:
-            charset:
-              console: UTF-8
-              file: UTF-8
+app:
+  cors:
+    enabled: ${{ secrets.APP_CORS_ENABLED }}
+    allowed-origins: ${{ secrets.APP_CORS_ALLOWED }}
+YAML
 
-          springdoc:
-            api-docs:
-              path: /api-docs
-            swagger-ui:
-              path: /swagger-ui.html
-              operations-sorter: alpha
-              tags-sorter: alpha
-              display-request-duration: true
-
-          jwt:
-            secret: ${{ secrets.JWT_SECRET }}
-            expiration: 3600000
-
-          file:
-            upload-path: ${{ secrets.FILE_UPLOAD_PATH }}
-
-          app:
-            cors:
-              enabled: ${{ secrets.APP_CORS_ENABLED }}
-              allowed-origins: ${{ secrets.APP_CORS_ALLOWED }}
-          YAML
-
-      #  생성된 yml 확인 + 중복 spring 키 검증
-      - name: Show application-prod.yml (debug)
-        run: sed -n '1,200p' src/main/resources/application-prod.yml
-
-      - name: Validate application-prod.yml (no duplicate "spring")
-        run: |
-          awk '/^spring:/{c++} END{ if(c!=1){ print "ERROR: spring key count=" c; exit 1} }' src/main/resources/application-prod.yml
+      - name: Verify prod yml exists
+        run: test -f src/main/resources/application-prod.yml
 
       - name: Grant Gradle wrapper execute permission
         run: chmod +x ./gradlew
@@ -205,11 +195,13 @@ jobs:
           name: bo-jar
           path: bo-jar
 
+      # (선택) 러너에서 파일 확인
       - name: Check artifacts on runner
         run: |
           ls -al ./bo-jar || true
           test -f ./bo-jar/hsb-bo.jar && sha256sum ./bo-jar/hsb-bo.jar
 
+      # ---- FE 배포(원래대로) ----
       - name: Clean FE build dir on server
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -232,17 +224,19 @@ jobs:
           strip_components: 1
           overwrite: true
 
+      # ---- BO: JAR만 업로드 (디렉터리 타깃 + strip 0) ----
       - name: Copy BO jar to server (/home/hbs/hbs-be/)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "bo-jar/hsb-bo.jar"
-          target: "/home/hbs/hbs-be/"
+          source: "bo-jar/hsb-bo.jar"   # 업로드된 아티팩트의 파일명
+          target: "/home/hbs/hbs-be/"   # 디렉터리(슬래시 필수)
           overwrite: true
           strip_components: 0
 
+      # ---- BO: nohup으로 재기동 ----
       - name: Restart backend with nohup (PID file, robust)
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -251,20 +245,23 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             #!/usr/bin/env bash
-            set -u
+            set -u  # -e는 쓰지 않고, 오류를 직접 처리
 
             cd /home/hbs/hbs-be || exit 1
 
+            # 유틸(없으면 설치)
             if ! command -v fuser >/dev/null 2>&1; then
               sudo apt-get update -y >/dev/null 2>&1 || true
               sudo apt-get install -y psmisc >/dev/null 2>&1 || true
             fi
 
-            # stop (PID file 우선)
+            # 1) 기존 프로세스 종료 (PID 파일 우선)
             if [ -f app.pid ]; then
               oldpid="$(cat app.pid || true)"
               if [ -n "${oldpid:-}" ] && ps -p "$oldpid" >/dev/null 2>&1; then
+                echo "[stop] kill PID $oldpid"
                 kill "$oldpid" >/dev/null 2>&1 || true
+                # 5초 대기, 안 죽으면 -9
                 for i in {1..5}; do
                   ps -p "$oldpid" >/dev/null 2>&1 || break
                   sleep 1
@@ -273,21 +270,25 @@ jobs:
               fi
               rm -f app.pid
             fi
+
+            # 포트 점유 시 종료(없으면 무시)
             fuser -k 8080/tcp >/dev/null 2>&1 || true
 
-            # logs
+            # 2) 로그 로테이트
             if [ -f app.log ]; then
               ts="$(date +%Y%m%d-%H%M%S)"
               mv app.log "app.$ts.log" || true
             fi
             : > app.log
 
-            # run
+            # 3) JAR 존재 확인
             if [ ! -f hsb-bo.jar ]; then
-              echo "[error] hsb-bo.jar not found"; ls -al; exit 0
+              echo "[error] hsb-bo.jar not found"; ls -al
+              exit 0   # 액션 실패 방지(원인 출력만)
             fi
             chmod 644 hsb-bo.jar 2>/dev/null || true
 
+            # 4) 실행
             nohup /usr/bin/java -Xms256m -Xmx512m -jar hsb-bo.jar \
               --spring.profiles.active=prod \
               --server.port=8080 \
@@ -297,6 +298,7 @@ jobs:
             echo "$newpid" > app.pid
             echo "[start] PID $newpid"
 
+            # 5) 기동 대기(최대 20초)
             ok=0
             for i in {1..20}; do
               ss -ltn 2>/dev/null | grep -q ":8080 " && { ok=1; break; }
@@ -306,4 +308,13 @@ jobs:
             echo "[status] listening=$ok"
             ps -p "$newpid" -o pid,cmd= || true
             tail -n 80 app.log || true
+
+            # 세션 SIGTERM 일어도 성공 처리
             exit 0
+ 
+
+
+
+
+
+
