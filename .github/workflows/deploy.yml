@@ -167,7 +167,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bo-jar
-          path: hsb-bo/build/libs/hsb-bo.jar   # ← 고정 파일명 업로드
+          path: hsb-bo/build/libs/hsb-bo.jar   # 고정 파일명 업로드
 
   deploy:
     name: Deploy to Server
@@ -179,48 +179,55 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: fe-build
-          path: fe-build
+        # path 기본값은 ./fe-build
 
       - name: Download BO artifact
         uses: actions/download-artifact@v4
         with:
           name: bo-jar
-          path: bo-jar
+        # path 기본값은 ./bo-jar
 
-      - name: Clean FE build dir on server
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            set -euo pipefail
-            mkdir -p /home/hbs/hbs-fe/build
-            rm -rf /home/hbs/hbs-fe/build/*
-
-      - name: Copy FE to server (/home/hbs/hbs-fe/build)
+      # --- FE 배포: Apache 문서 루트에 반영 ---
+      - name: Copy FE to server (/var/www/html)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: "fe-build/**"
-          target: "/home/hbs/hbs-fe/build"
+          target: "/var/www/html"
           strip_components: 1
           overwrite: true
 
+      - name: Restart Apache (apache2/httpd 호환)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            if command -v systemctl >/dev/null 2>&1; then
+              (echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl restart apache2) || \
+              (echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl restart httpd)
+              (echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl status apache2 --no-pager -l || true)
+              (echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl status httpd --no-pager -l || true)
+            fi
+
+      # --- BO 배포: 디렉터리 대상으로 복사(파일명 고정: hsb-bo.jar) ---
       - name: Copy BO jar to server directory (/home/hbs/hbs-be/)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "bo-jar/hsb-bo.jar"                 # 로컬 아티팩트 파일
-          target: "/home/hbs/hbs-be/hsb-bo.jar"       # 서버의 '파일' 경로로 명시!
+          source: "bo-jar/hsb-bo.jar"
+          target: "/home/hbs/hbs-be/"
           strip_components: 1
           overwrite: true
 
-      - name: Restart backend service
+      # --- BO 서비스: 중지 → 시작(재시작보다 안전) + 상태 확인 ---
+      - name: Restart backend service (stop -> start)
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -231,5 +238,9 @@ jobs:
             cd /home/hbs/hbs-be
             ls -l hsb-bo.jar
             echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl daemon-reload
-            echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl restart hsb-bo
+            echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl stop hsb-bo || true
+            sleep 2
+            echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl start hsb-bo
             echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl status hsb-bo --no-pager -l || true
+            # 실행중 JAR 경로와 프로세스 수 점검(로그 확인용)
+            ps -ef | grep '[j]ava' || true
