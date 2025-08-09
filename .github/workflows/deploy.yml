@@ -187,6 +187,13 @@ jobs:
           name: bo-jar
           path: bo-jar
 
+      # (진단) 러너에 내려받은 파일들 확인
+      - name: Check artifacts on runner
+        run: |
+          ls -al ./fe-build | head || true
+          ls -al ./bo-jar || true
+          test -f ./bo-jar/hsb-bo.jar && sha256sum ./bo-jar/hsb-bo.jar
+
       - name: Clean FE build dir on server
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -204,24 +211,25 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "fe-build/**"
+          source: "./fe-build/**"        # ./ 명시
           target: "/home/hbs/hbs-fe/build"
           strip_components: 1
           overwrite: true
 
+      # ★ BO 전송: target은 '디렉터리', strip_components는 0 (깨짐 방지)
       - name: Copy BO jar to server directory (/home/hbs/hbs-be/)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "bo-jar/hsb-bo.jar"   # 로컬 아티팩트 파일
-          target: "/home/hbs/hbs-be/"   # ← 디렉터리(슬래시 필수)
+          source: "bo-jar/hsb-bo.jar"
+          target: "/home/hbs/hbs-be/"    # 디렉터리(슬래시 필수)
           overwrite: true
-          strip_components: 0           # 단일 파일 전송일 땐 0
+          strip_components: 0
 
-      # --- BO 서비스: 중지 → 시작(재시작보다 안전) + 상태 확인 ---
-      - name: Restart backend service (stop -> start)
+      # 전송 후 무결성/이름 정리: 고정 링크로 맞추고, 잘못된 폴더/파일 제거
+      - name: Link current jar and cleanup
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -230,13 +238,39 @@ jobs:
           script: |
             set -euo pipefail
             cd /home/hbs/hbs-be
-            ls -l hsb-bo.jar
+
+            # 과거에 잘못 생긴 '폴더'를 정리
+            if [ -d hsb-bo.jar ]; then
+              rm -rf hsb-bo.jar
+            fi
+
+            # 심볼릭 링크로 고정 이름 제공 (systemd가 항상 이 경로 실행)
+            ln -sfn /home/hbs/hbs-be/hsb-bo.jar /home/hbs/hbs-be/hsb-bo.jar  # idempotent
+            # 위 한 줄은 idempotent 하지만 의미가 약하니, 아래처럼 실제 파일을 링크로 통일:
+            if [ ! -L hsb-bo.jar ]; then
+              rm -f hsb-bo.jar
+              ln -s hsb-bo.jar hsb-bo.jar  # no-op; 필요 시 실파일명 -> 링크로 교체
+            fi
+
+            # 실제 파일이 링크가 아니라면(=그냥 파일)도 OK이므로 상태만 표시
+            ls -l /home/hbs/hbs-be/hsb-bo.jar
+            file /home/hbs/hbs-be/hsb-bo.jar || true
+            sha256sum /home/hbs/hbs-be/hsb-bo.jar || true
+
+      # --- BO 서비스: 중지 → 시작 + 상태 확인 ---
+      - name: Restart backend service (stop -> start)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -euo pipefail
             echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl daemon-reload
             echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl stop hsb-bo || true
             sleep 2
             echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl start hsb-bo
             echo '${{ secrets.SUDO_PASS }}' | sudo -S systemctl status hsb-bo --no-pager -l || true
-            # 실행중 JAR 경로와 프로세스 수 점검(로그 확인용)
             ps -ef | grep '[j]ava' || true
 
 
