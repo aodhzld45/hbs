@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: prod # 기본 실행환경(local, dev, prod)
+    active: local # 기본 실행환경(local, dev, prod)
     group:
       local: local
       dev: dev
