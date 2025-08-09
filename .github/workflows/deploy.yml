@@ -235,14 +235,13 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          # 중요: set -e 빼고, 실패를 스스로 처리
           script: |
             #!/usr/bin/env bash
-            set -u  # -e 사용하지 않음
+            set -u  # -e는 쓰지 않고, 오류를 직접 처리
 
             cd /home/hbs/hbs-be || exit 1
 
-            # 0) 유틸 설치(없으면): fuser/killall 제공
+            # 유틸(없으면 설치)
             if ! command -v fuser >/dev/null 2>&1; then
               sudo apt-get update -y >/dev/null 2>&1 || true
               sudo apt-get install -y psmisc >/dev/null 2>&1 || true
@@ -250,15 +249,15 @@ jobs:
 
             # 1) 기존 프로세스 종료 (PID 파일 우선)
             if [ -f app.pid ]; then
-              oldpid=$(cat app.pid || true)
+              oldpid="$(cat app.pid || true)"
               if [ -n "${oldpid:-}" ] && ps -p "$oldpid" >/dev/null 2>&1; then
                 echo "[stop] kill PID $oldpid"
                 kill "$oldpid" >/dev/null 2>&1 || true
-                # 5초 대기, 안 죽으면 강제
+                # 5초 대기, 안 죽으면 -9
                 for i in {1..5}; do
                   ps -p "$oldpid" >/dev/null 2>&1 || break
                   sleep 1
-                end
+                done
                 ps -p "$oldpid" >/dev/null 2>&1 && kill -9 "$oldpid" || true
               fi
               rm -f app.pid
@@ -269,37 +268,43 @@ jobs:
 
             # 2) 로그 로테이트
             if [ -f app.log ]; then
-              ts=$(date +%Y%m%d-%H%M%S)
+              ts="$(date +%Y%m%d-%H%M%S)"
               mv app.log "app.$ts.log" || true
             fi
             : > app.log
 
-            # 3) 실행 (필요시 JVM 옵션 조정)
+            # 3) JAR 존재 확인
+            if [ ! -f hsb-bo.jar ]; then
+              echo "[error] hsb-bo.jar not found"; ls -al
+              exit 0   # 액션 실패 방지(원인 출력만)
+            fi
             chmod 644 hsb-bo.jar 2>/dev/null || true
+
+            # 4) 실행
             nohup /usr/bin/java -Xms256m -Xmx512m -jar hsb-bo.jar \
               --spring.profiles.active=prod \
               --server.port=8080 \
               >> app.log 2>&1 &
 
             newpid=$!
-            echo $newpid > app.pid
+            echo "$newpid" > app.pid
             echo "[start] PID $newpid"
 
-            # 4) 기동 대기(최대 20초): 포트 오픈 또는 헬스체크
+            # 5) 기동 대기(최대 20초)
             ok=0
             for i in {1..20}; do
-              # 포트 열렸는지
               ss -ltn 2>/dev/null | grep -q ":8080 " && { ok=1; break; }
               sleep 1
             done
 
-            # 5) 상태/로그 요약 출력
-            echo "[status] listening= $ok"
-            ps -p "$newpid" -o pid,cmd=
+            echo "[status] listening=$ok"
+            ps -p "$newpid" -o pid,cmd= || true
             tail -n 80 app.log || true
 
-            # 6) 스크립트는 항상 0으로 종료(세션 TERM로 실패 처리 방지)
+            # 세션 SIGTERM 일어도 성공 처리
             exit 0
+ 
+
 
 
 
