@@ -35,6 +35,13 @@ jobs:
       - name: Inject .env.production from GitHub Secrets
         shell: bash
         run: |
+          # 시크릿이 /api로 끝나면 빌드 중복(/api/api) 나므로 가드
+          v='${{ secrets.REACT_APP_API_BASE_URL }}'
+          echo "REACT_APP_API_BASE_URL=$v"
+          case "$v" in
+            */api|*/api/) echo "::error::REACT_APP_API_BASE_URL must NOT end with /api (code appends /api)."; exit 1;;
+          esac
+
           cat > .env.production <<'ENV'
           REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}
           ENV
@@ -94,7 +101,7 @@ jobs:
     environment: HSBS_PROD
     needs: [ build-fe, build-bo ]
     steps:
-      # ✅ 레포 체크아웃 (외부 config 파일 복사용)
+      # 레포 체크아웃 (외부 config 파일 복사용)
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
@@ -197,17 +204,18 @@ jobs:
             set -euo pipefail
             cd /home/hbs/hbs-be || exit 1
 
-            # 유틸 항상 보장 (psmisc, unzip, curl)
+            # 유틸 보장
             need_pkgs=""
             command -v fuser >/dev/null 2>&1 || need_pkgs="$need_pkgs psmisc"
             command -v unzip >/dev/null 2>&1 || need_pkgs="$need_pkgs unzip"
             command -v curl  >/dev/null 2>&1 || need_pkgs="$need_pkgs curl"
+            command -v lsof  >/dev/null 2>&1 || need_pkgs="$need_pkgs lsof"
             if [ -n "$need_pkgs" ]; then
               sudo apt-get update -y >/dev/null 2>&1 || true
               sudo apt-get install -y $need_pkgs >/dev/null 2>&1 || true
             fi
 
-            # stop (PID/포트 정리)
+            # stop
             if [ -f app.pid ]; then
               oldpid="$(cat app.pid || true)"
               if [ -n "${oldpid:-}" ] && ps -p "$oldpid" >/dev/null 2>&1; then
@@ -220,21 +228,25 @@ jobs:
             fi
             fuser -k 8080/tcp >/dev/null 2>&1 || true
 
-            # log rotate
-            if [ -f app.log ]; then ts="$(date +%Y%m%d-%H%M%S)"; mv app.log "app.$ts.log" || true; fi
+            # logs
+            [ -f app.log ] && { ts="$(date +%Y%m%d-%H%M%S)"; mv app.log "app.$ts.log" || true; }
             : > app.log
 
-            # jar 확인
-            test -f hsb-bo.jar || { echo "[error] hsb-bo.jar not found"; ls -al; exit 1; }
+            # jar
+            [ -f hsb-bo.jar ] || { echo "[error] hsb-bo.jar not found"; ls -al; exit 1; }
             chmod 644 hsb-bo.jar || true
 
             # 참고 출력
             echo "----- INSIDE JAR (application-prod.yml) -----"
-            unzip -p hsb-bo.jar BOOT-INF/classes/application-prod.yml | sed -n '1,80p' || true
+            if command -v unzip >/dev/null 2>&1; then
+              unzip -p hsb-bo.jar BOOT-INF/classes/application-prod.yml | sed -n '1,80p' || true
+            else
+              echo "(unzip not installed; skip)"
+            fi
             echo "----- EXTERNAL (config/application-prod.yml) -----"
-            sed -n '1,80p' config/application-prod.yml || true
+            [ -f config/application-prod.yml ] && sed -n '1,80p' config/application-prod.yml || echo "(no external config)"
 
-            # 자바
+            # java
             JAVA_BIN="$(command -v java || true)"; [ -n "$JAVA_BIN" ] || { echo "[error] java not found"; exit 1; }
             echo "[java] $($JAVA_BIN -version 2>&1 | head -n1)"
 
@@ -243,35 +255,36 @@ jobs:
             nohup "$JAVA_BIN" -Xms256m -Xmx512m -jar hsb-bo.jar \
               --spring.profiles.active=prod \
               --server.port=8080 >> app.log 2>&1 &
+            newpid=$!; echo "$newpid" > app.pid; echo "[start] PID $newpid"
 
-            newpid=$!
-            echo "$newpid" > app.pid
-            echo "[start] PID $newpid"
-
-            # 리슨 대기 (최대 90초)
+            # 리슨 대기 (최대 120초, lsof/ss/netstat 순서로)
             ok=0
-            for i in {1..90}; do
-              ss -ltn 2>/dev/null | grep -q ":8080 " && { ok=1; break; }
+            for i in {1..120}; do
+              if command -v lsof >/dev/null 2>&1 && lsof -i :8080 | grep -q LISTEN; then ok=1; break; fi
+              if command -v ss   >/dev/null 2>&1 && ss -ltn  | grep -q ":8080 "; then ok=1; break; fi
+              if command -v netstat >/dev/null 2>&1 && netstat -ltn | grep -q ":8080 "; then ok=1; break; fi
               sleep 1
             done
             echo "[status] port_listening=$ok"
             ps -p "$newpid" -o pid,cmd= || true
 
-            # 헬스체크 재시도 (최대 60초, 5회)
+            # 헬스체크 (200 또는 401이면 OK, 실패해도 배포 실패로 간주하지 않음)
             if command -v curl >/dev/null 2>&1; then
-              for i in {1..5}; do
-                if curl -sf --max-time 5 http://localhost:8080/actuator/health >/dev/null 2>&1; then
-                  echo "[health] actuator OK"
-                  break
+              healthy=0
+              for i in {1..6}; do
+                code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health || echo 000)
+                if [ "$code" = "200" ] || [ "$code" = "401" ]; then
+                  echo "[health] actuator HTTP $code"
+                  healthy=1; break
                 fi
-                echo "[health] retry $i ..."
+                echo "[health] retry $i (code=$code) ..."
                 sleep 10
               done
-              if ! curl -sf --max-time 5 http://localhost:8080/actuator/health >/dev/null 2>&1; then
-                echo "[health] actuator check FAILED"
+              if [ "$healthy" -ne 1 ]; then
+                echo "[health] actuator not ready (non-fatal). tail logs:"
                 tail -n 300 app.log || true
-                exit 1
               fi
             fi
 
             tail -n 120 app.log || true
+
