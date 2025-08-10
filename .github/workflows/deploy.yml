@@ -168,7 +168,7 @@ jobs:
           source: "hsb-bo/src/main/resources/application-prod.yml"
           target: "/home/hbs/hbs-be/config/"
           overwrite: true
-          strip_components: 3            # => config/application-prod.yml 로 배치
+          strip_components: 4            # => config/resource/application-prod.yml 로 배치
 
       - name: Restart backend with nohup (prod profile + env)
         uses: appleboy/ssh-action@v1.2.0
@@ -197,10 +197,14 @@ jobs:
             set -euo pipefail
             cd /home/hbs/hbs-be || exit 1
 
-            # 유틸(없으면 설치)
-            if ! command -v fuser >/dev/null 2>&1; then
+            # 유틸 항상 보장 (psmisc, unzip, curl)
+            need_pkgs=""
+            command -v fuser >/dev/null 2>&1 || need_pkgs="$need_pkgs psmisc"
+            command -v unzip >/dev/null 2>&1 || need_pkgs="$need_pkgs unzip"
+            command -v curl  >/dev/null 2>&1 || need_pkgs="$need_pkgs curl"
+            if [ -n "$need_pkgs" ]; then
               sudo apt-get update -y >/dev/null 2>&1 || true
-              sudo apt-get install -y psmisc unzip >/dev/null 2>&1 || true
+              sudo apt-get install -y $need_pkgs >/dev/null 2>&1 || true
             fi
 
             # stop (PID/포트 정리)
@@ -209,10 +213,7 @@ jobs:
               if [ -n "${oldpid:-}" ] && ps -p "$oldpid" >/dev/null 2>&1; then
                 echo "[stop] kill PID $oldpid"
                 kill "$oldpid" >/dev/null 2>&1 || true
-                for i in {1..5}; do
-                  ps -p "$oldpid" >/dev/null 2>&1 || break
-                  sleep 1
-                done
+                for i in {1..5}; do ps -p "$oldpid" >/dev/null 2>&1 || break; sleep 1; done
                 ps -p "$oldpid" >/dev/null 2>&1 && kill -9 "$oldpid" || true
               fi
               rm -f app.pid
@@ -220,59 +221,55 @@ jobs:
             fuser -k 8080/tcp >/dev/null 2>&1 || true
 
             # log rotate
-            if [ -f app.log ]; then
-              ts="$(date +%Y%m%d-%H%M%S)"
-              mv app.log "app.$ts.log" || true
-            fi
+            if [ -f app.log ]; then ts="$(date +%Y%m%d-%H%M%S)"; mv app.log "app.$ts.log" || true; fi
             : > app.log
 
-            # jar 존재 확인 (고정명)
-            if [ ! -f hsb-bo.jar ]; then
-              echo "[error] hsb-bo.jar not found"; ls -al
-              exit 1
-            fi
-            chmod 644 hsb-bo.jar 2>/dev/null || true
+            # jar 확인
+            test -f hsb-bo.jar || { echo "[error] hsb-bo.jar not found"; ls -al; exit 1; }
+            chmod 644 hsb-bo.jar || true
 
-            # 참고: JAR 내부와 외부 config를 출력해 최종 적용 파일 확인
+            # 참고 출력
             echo "----- INSIDE JAR (application-prod.yml) -----"
             unzip -p hsb-bo.jar BOOT-INF/classes/application-prod.yml | sed -n '1,80p' || true
             echo "----- EXTERNAL (config/application-prod.yml) -----"
             sed -n '1,80p' config/application-prod.yml || true
 
-            # 자바 경로 탐지
-            JAVA_BIN="$(command -v java || true)"
-            if [ -z "$JAVA_BIN" ]; then
-              echo "[error] java not found in PATH"; exit 1
-            fi
+            # 자바
+            JAVA_BIN="$(command -v java || true)"; [ -n "$JAVA_BIN" ] || { echo "[error] java not found"; exit 1; }
             echo "[java] $($JAVA_BIN -version 2>&1 | head -n1)"
 
-            # 실행 (prod 명시 + 8080 고정) - 외부 config가 classpath보다 우선 적용됨
+            # run
             echo "[run] nohup java -jar hsb-bo.jar --spring.profiles.active=prod --server.port=8080"
             nohup "$JAVA_BIN" -Xms256m -Xmx512m -jar hsb-bo.jar \
               --spring.profiles.active=prod \
-              --server.port=8080 \
-              >> app.log 2>&1 &
+              --server.port=8080 >> app.log 2>&1 &
 
             newpid=$!
             echo "$newpid" > app.pid
             echo "[start] PID $newpid"
 
-            # 포트 리슨 대기
+            # 리슨 대기 (최대 90초)
             ok=0
-            for i in {1..20}; do
+            for i in {1..90}; do
               ss -ltn 2>/dev/null | grep -q ":8080 " && { ok=1; break; }
               sleep 1
             done
             echo "[status] port_listening=$ok"
             ps -p "$newpid" -o pid,cmd= || true
 
-            # actuator health (있으면 체크)
+            # 헬스체크 재시도 (최대 60초, 5회)
             if command -v curl >/dev/null 2>&1; then
-              if curl -sf --max-time 3 http://localhost:8080/actuator/health >/dev/null 2>&1; then
-                echo "[health] actuator OK"
-              else
+              for i in {1..5}; do
+                if curl -sf --max-time 5 http://localhost:8080/actuator/health >/dev/null 2>&1; then
+                  echo "[health] actuator OK"
+                  break
+                fi
+                echo "[health] retry $i ..."
+                sleep 10
+              done
+              if ! curl -sf --max-time 5 http://localhost:8080/actuator/health >/dev/null 2>&1; then
                 echo "[health] actuator check FAILED"
-                tail -n 200 app.log || true
+                tail -n 300 app.log || true
                 exit 1
               fi
             fi
