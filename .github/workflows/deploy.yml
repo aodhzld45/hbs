@@ -94,6 +94,11 @@ jobs:
     environment: HSBS_PROD
     needs: [ build-fe, build-bo ]
     steps:
+      # ✅ 레포 체크아웃 (외부 config 파일 복사용)
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       # FE
       - name: Download FE artifact
         uses: actions/download-artifact@v4
@@ -139,7 +144,7 @@ jobs:
           source: "bo-jar/hsb-bo.jar"   # 러너 경로
           target: "/home/hbs/hbs-be/"   # 서버 디렉터리
           overwrite: true
-          strip_components: 1           # ✅ /home/hbs/hbs-be/hsb-bo.jar 로 바로 복사
+          strip_components: 1           # => /home/hbs/hbs-be/hsb-bo.jar 로 바로 복사
 
       # 외부 config도 함께 배포(항상 최신 설정 강제 적용)
       - name: Ensure config dir on server
@@ -151,6 +156,9 @@ jobs:
           script: |
             mkdir -p /home/hbs/hbs-be/config
 
+      - name: Verify prod yml exists on runner
+        run: ls -al hsb-bo/src/main/resources/application-prod.yml
+
       - name: Copy application-prod.yml to server (external config)
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -160,7 +168,7 @@ jobs:
           source: "hsb-bo/src/main/resources/application-prod.yml"
           target: "/home/hbs/hbs-be/config/"
           overwrite: true
-          strip_components: 3            # config/application-prod.yml 로 배치
+          strip_components: 3            # => config/application-prod.yml 로 배치
 
       - name: Restart backend with nohup (prod profile + env)
         uses: appleboy/ssh-action@v1.2.0
