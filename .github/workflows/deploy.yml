@@ -79,40 +79,14 @@ jobs:
       - name: Grant Gradle wrapper execute permission
         run: chmod +x ./gradlew
 
-      # (진단1) 현재 체크아웃된 커밋 / 레포의 prod yml 실제 내용 확인
-      - name: Show commit & repo application-prod.yml (before build)
-        run: |
-          echo "== commit ==" && git rev-parse HEAD && git log -1 --oneline
-          echo "== search all application-prod.yml/.yaml under resources =="
-          git ls-files | grep -E '^hsb-bo/src/main/resources/.*/?application-prod\.ya?ml$' || true
-          echo "== file content (src/main/resources/application-prod.yml) =="
-          sed -n '1,200p' src/main/resources/application-prod.yml || echo "not found"
-          echo "== legacy tokens in resources =="
-          grep -R --line-number -E 'DB_HOST_PROD|DB_USER_PROD|DB_PASS_PROD|AWS_ACCESS_KEY_PROD' src/main/resources || true
-
-      # (진단 보강) 어떤 리소스가 복사되는지 Gradle 로그로 확인
-      - name: Gradle processResources (verbose)
-        run: ./gradlew :hsb-bo:processResources --info --stacktrace
-
       - name: Build with Gradle
         run: ./gradlew clean build -x test
-
-      # (진단2) 빌드된 JAR 내부의 prod yml 내용 확인
-      - name: Inspect built jar (application-prod.yml)
-        run: |
-          JAR=build/libs/hsb-bo.jar
-          echo "== list yml in jar ==" && jar tf "$JAR" | grep -E 'application.*\.ya?ml' || true
-          rm -rf _jarcheck && mkdir _jarcheck
-          (cd _jarcheck && jar -xf "../$JAR" BOOT-INF/classes/application-prod.yml)
-          echo "== content of application-prod.yml inside JAR =="
-          sed -n '1,200p' _jarcheck/BOOT-INF/classes/application-prod.yml || true
-          echo "== JAR sha256 ==" && sha256sum "$JAR"
 
       - name: Upload BO artifact
         uses: actions/upload-artifact@v4
         with:
           name: bo-jar
-          path: hsb-bo/build/libs/hsb-bo.jar
+          path: hsb-bo/build/libs/hsb-bo.jar   # 빌드 산출물 파일명 고정
 
   deploy:
     name: Deploy to Server (nohup)
@@ -120,24 +94,13 @@ jobs:
     environment: HSBS_PROD
     needs: [ build-fe, build-bo ]
     steps:
+      # FE
       - name: Download FE artifact
         uses: actions/download-artifact@v4
         with:
           name: fe-build
           path: fe-build
 
-      - name: Download BO artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: bo-jar
-          path: bo-jar
-
-      - name: Check artifacts on runner
-        run: |
-          ls -al ./bo-jar || true
-          test -f ./bo-jar/hsb-bo.jar && sha256sum ./bo-jar/hsb-bo.jar
-
-      # FE 배포
       - name: Clean FE build dir on server
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -160,45 +123,30 @@ jobs:
           strip_components: 1
           overwrite: true
 
-      # BO 배포
+      # BO
+      - name: Download BO artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bo-jar
+          path: bo-jar
+
+      - name: Check BO artifact on runner
+        run: |
+          ls -al bo-jar
+          test -f bo-jar/hsb-bo.jar || (echo "hsb-bo.jar not found" && exit 1)
+
       - name: Copy BO jar to server (/home/hbs/hbs-be/)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "bo-jar/hsb-bo.jar"
+          source: "bo-jar/hsb-bo.jar"   # 고정 파일명
           target: "/home/hbs/hbs-be/"
           overwrite: true
           strip_components: 0
 
-      # (진단3a) 서버에 복사된 JAR 해시
-      - name: Server jar checksum (after copy)
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            cd /home/hbs/hbs-be || exit 1
-            echo "== server jar sha256 ==" && sha256sum hsb-bo.jar || true
-
-      # (진단3b) 서버 JAR 내부 prod yml 내용
-      - name: Inspect prod yml on server (inside jar)
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            cd /home/hbs/hbs-be || exit 1
-            rm -rf _jarcheck && mkdir _jarcheck
-            (cd _jarcheck && jar -xf ../hsb-bo.jar BOOT-INF/classes/application-prod.yml)
-            echo "== content of application-prod.yml inside server JAR =="
-            sed -n '1,200p' _jarcheck/BOOT-INF/classes/application-prod.yml || true
-
-      # 재기동 (환경변수 → 앱 주입)
-      - name: Restart backend with nohup (env -> app)
+      - name: Restart backend with nohup (prod profile + env)
         uses: appleboy/ssh-action@v1.2.0
         env:
           SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL }}
@@ -222,23 +170,83 @@ jobs:
           envs: SPRING_DATASOURCE_URL,SPRING_DATASOURCE_USERNAME,SPRING_DATASOURCE_PASSWORD,MAIL_HOST,MAIL_PORT,MAIL_USERNAME,MAIL_PASSWORD,FILE_UPLOAD_PATH,JWT_SECRET,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,APP_CORS_ENABLED,APP_CORS_ALLOWED
           script: |
             #!/usr/bin/env bash
-            set -u
+            set -euo pipefail
             cd /home/hbs/hbs-be || exit 1
+
+            # 유틸(없으면 설치)
+            if ! command -v fuser >/dev/null 2>&1; then
+              sudo apt-get update -y >/dev/null 2>&1 || true
+              sudo apt-get install -y psmisc >/dev/null 2>&1 || true
+            fi
+
+            # stop (PID/포트 정리)
             if [ -f app.pid ]; then
               oldpid="$(cat app.pid || true)"
               if [ -n "${oldpid:-}" ] && ps -p "$oldpid" >/dev/null 2>&1; then
+                echo "[stop] kill PID $oldpid"
                 kill "$oldpid" >/dev/null 2>&1 || true
-                for i in {1..5}; do ps -p "$oldpid" >/dev/null 2>&1 || break; sleep 1; done
+                for i in {1..5}; do
+                  ps -p "$oldpid" >/dev/null 2>&1 || break
+                  sleep 1
+                done
                 ps -p "$oldpid" >/dev/null 2>&1 && kill -9 "$oldpid" || true
               fi
               rm -f app.pid
             fi
             fuser -k 8080/tcp >/dev/null 2>&1 || true
+
+            # log rotate
+            if [ -f app.log ]; then
+              ts="$(date +%Y%m%d-%H%M%S)"
+              mv app.log "app.$ts.log" || true
+            fi
             : > app.log
-            [ -f hsb-bo.jar ] || { echo "[error] hsb-bo.jar not found"; ls -al; exit 0; }
-            nohup /usr/bin/java -Xms256m -Xmx512m -jar hsb-bo.jar \
+
+            # jar 존재 확인 (고정명)
+            if [ ! -f hsb-bo.jar ]; then
+              echo "[error] hsb-bo.jar not found"; ls -al
+              exit 1
+            fi
+            chmod 644 hsb-bo.jar 2>/dev/null || true
+
+            # 자바 경로 탐지
+            JAVA_BIN="$(command -v java || true)"
+            if [ -z "$JAVA_BIN" ]; then
+              echo "[error] java not found in PATH"; exit 1
+            fi
+            echo "[java] $($JAVA_BIN -version 2>&1 | head -n1)"
+
+            # 실행 (prod 명시 + 8080 고정)
+            echo "[run] nohup java -jar hsb-bo.jar --spring.profiles.active=prod --server.port=8080"
+            nohup "$JAVA_BIN" -Xms256m -Xmx512m -jar hsb-bo.jar \
               --spring.profiles.active=prod \
-              --server.port=8080 >> app.log 2>&1 &
-            echo $! > app.pid
-            for i in {1..20}; do ss -ltn 2>/dev/null | grep -q ":8080 " && break; sleep 1; done
+              --server.port=8080 \
+              >> app.log 2>&1 &
+
+            newpid=$!
+            echo "$newpid" > app.pid
+            echo "[start] PID $newpid"
+
+            # 포트 리슨 대기
+            ok=0
+            for i in {1..20}; do
+              ss -ltn 2>/dev/null | grep -q ":8080 " && { ok=1; break; }
+              sleep 1
+            done
+            echo "[status] port_listening=$ok"
+            ps -p "$newpid" -o pid,cmd= || true
+
+            # actuator health (있으면 체크)
+            if command -v curl >/dev/null 2>&1; then
+              if curl -sf --max-time 3 http://localhost:8080/actuator/health >/dev/null 2>&1; then
+                echo "[health] actuator OK"
+              else
+                echo "[health] actuator check FAILED"
+                tail -n 200 app.log || true
+                exit 1
+              fi
+            fi
+
             tail -n 120 app.log || true
+
+
