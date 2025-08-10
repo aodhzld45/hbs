@@ -130,21 +130,37 @@ jobs:
           name: bo-jar
           path: bo-jar
 
-      - name: Check BO artifact on runner
-        run: |
-          ls -al bo-jar
-          test -f bo-jar/hsb-bo.jar || (echo "hsb-bo.jar not found" && exit 1)
-
       - name: Copy BO jar to server (/home/hbs/hbs-be/)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "bo-jar/hsb-bo.jar"   # 고정 파일명
-          target: "/home/hbs/hbs-be/"
+          source: "bo-jar/hsb-bo.jar"   # 러너 경로
+          target: "/home/hbs/hbs-be/"   # 서버 디렉터리
           overwrite: true
-          strip_components: 0
+          strip_components: 1           # ✅ /home/hbs/hbs-be/hsb-bo.jar 로 바로 복사
+
+      # 외부 config도 함께 배포(항상 최신 설정 강제 적용)
+      - name: Ensure config dir on server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            mkdir -p /home/hbs/hbs-be/config
+
+      - name: Copy application-prod.yml to server (external config)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "hsb-bo/src/main/resources/application-prod.yml"
+          target: "/home/hbs/hbs-be/config/"
+          overwrite: true
+          strip_components: 3            # config/application-prod.yml 로 배치
 
       - name: Restart backend with nohup (prod profile + env)
         uses: appleboy/ssh-action@v1.2.0
@@ -176,7 +192,7 @@ jobs:
             # 유틸(없으면 설치)
             if ! command -v fuser >/dev/null 2>&1; then
               sudo apt-get update -y >/dev/null 2>&1 || true
-              sudo apt-get install -y psmisc >/dev/null 2>&1 || true
+              sudo apt-get install -y psmisc unzip >/dev/null 2>&1 || true
             fi
 
             # stop (PID/포트 정리)
@@ -209,6 +225,12 @@ jobs:
             fi
             chmod 644 hsb-bo.jar 2>/dev/null || true
 
+            # 참고: JAR 내부와 외부 config를 출력해 최종 적용 파일 확인
+            echo "----- INSIDE JAR (application-prod.yml) -----"
+            unzip -p hsb-bo.jar BOOT-INF/classes/application-prod.yml | sed -n '1,80p' || true
+            echo "----- EXTERNAL (config/application-prod.yml) -----"
+            sed -n '1,80p' config/application-prod.yml || true
+
             # 자바 경로 탐지
             JAVA_BIN="$(command -v java || true)"
             if [ -z "$JAVA_BIN" ]; then
@@ -216,7 +238,7 @@ jobs:
             fi
             echo "[java] $($JAVA_BIN -version 2>&1 | head -n1)"
 
-            # 실행 (prod 명시 + 8080 고정)
+            # 실행 (prod 명시 + 8080 고정) - 외부 config가 classpath보다 우선 적용됨
             echo "[run] nohup java -jar hsb-bo.jar --spring.profiles.active=prod --server.port=8080"
             nohup "$JAVA_BIN" -Xms256m -Xmx512m -jar hsb-bo.jar \
               --spring.profiles.active=prod \
@@ -248,5 +270,3 @@ jobs:
             fi
 
             tail -n 120 app.log || true
-
-
