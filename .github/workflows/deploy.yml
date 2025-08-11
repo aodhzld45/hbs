@@ -35,13 +35,11 @@ jobs:
       - name: Inject .env.production from GitHub Secrets
         shell: bash
         run: |
-          # 시크릿이 /api로 끝나면 빌드 중복(/api/api) 나므로 가드
           v='${{ secrets.REACT_APP_API_BASE_URL }}'
           echo "REACT_APP_API_BASE_URL=$v"
           case "$v" in
             */api|*/api/) echo "::error::REACT_APP_API_BASE_URL must NOT end with /api (code appends /api)."; exit 1;;
           esac
-
           cat > .env.production <<'ENV'
           REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}
           ENV
@@ -53,7 +51,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          CI: ""   # CRA 경고를 에러로 취급하지 않음
+          CI: ""
 
       - name: Verify FE build exists
         run: test -d build && ls -lah build
@@ -93,20 +91,19 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bo-jar
-          path: hsb-bo/build/libs/hsb-bo.jar   # 빌드 산출물 파일명 고정
+          path: hsb-bo/build/libs/hsb-bo.jar
 
   deploy:
-    name: Deploy to Server (nohup)
+    name: Deploy to Server (systemd)
     runs-on: ubuntu-latest
     environment: HSBS_PROD
     needs: [ build-fe, build-bo ]
     steps:
-      # 레포 체크아웃 (외부 config 파일 복사용)
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      # FE
+      # === FE ===
       - name: Download FE artifact
         uses: actions/download-artifact@v4
         with:
@@ -135,25 +132,25 @@ jobs:
           strip_components: 1
           overwrite: true
 
-      # BO
+      # === BO ===
       - name: Download BO artifact
         uses: actions/download-artifact@v4
         with:
           name: bo-jar
           path: bo-jar
 
-      - name: Copy BO jar to server (/home/hbs/hbs-be/)
+      - name: Copy BO jar to server (/home/hbs/hbs-be/hsb-bo.jar)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "bo-jar/hsb-bo.jar"   # 러너 경로
-          target: "/home/hbs/hbs-be/"   # 서버 디렉터리
+          source: "bo-jar/hsb-bo.jar"
+          target: "/home/hbs/hbs-be/"
           overwrite: true
-          strip_components: 1           # => /home/hbs/hbs-be/hsb-bo.jar 로 바로 복사
+          strip_components: 1
 
-      # 외부 config도 함께 배포(항상 최신 설정 강제 적용)
+      # 외부 prod yml (유지 시)
       - name: Ensure config dir on server
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -175,9 +172,10 @@ jobs:
           source: "hsb-bo/src/main/resources/application-prod.yml"
           target: "/home/hbs/hbs-be/config/"
           overwrite: true
-          strip_components: 4            # => config/resource/application-prod.yml 로 배치
+          strip_components: 4
 
-      - name: Restart backend with nohup (prod profile + env)
+      # === 런타임 환경변수 주입 (env 파일 없이) ===
+      - name: Set systemd runtime environment from Secrets
         uses: appleboy/ssh-action@v1.2.0
         env:
           SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL }}
@@ -200,91 +198,50 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           envs: SPRING_DATASOURCE_URL,SPRING_DATASOURCE_USERNAME,SPRING_DATASOURCE_PASSWORD,MAIL_HOST,MAIL_PORT,MAIL_USERNAME,MAIL_PASSWORD,FILE_UPLOAD_PATH,JWT_SECRET,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,APP_CORS_ENABLED,APP_CORS_ALLOWED
           script: |
-            #!/usr/bin/env bash
             set -euo pipefail
-            cd /home/hbs/hbs-be || exit 1
+            # manager 환경에 세팅(재부팅/리로드 전까지 유지)
+            sudo systemctl set-environment \
+              SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL}" \
+              SPRING_DATASOURCE_USERNAME="${SPRING_DATASOURCE_USERNAME}" \
+              SPRING_DATASOURCE_PASSWORD="${SPRING_DATASOURCE_PASSWORD}" \
+              MAIL_HOST="${MAIL_HOST}" \
+              MAIL_PORT="${MAIL_PORT}" \
+              MAIL_USERNAME="${MAIL_USERNAME}" \
+              MAIL_PASSWORD="${MAIL_PASSWORD}" \
+              FILE_UPLOAD_PATH="${FILE_UPLOAD_PATH}" \
+              JWT_SECRET="${JWT_SECRET}" \
+              AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+              AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+              AWS_REGION="${AWS_REGION}" \
+              APP_CORS_ENABLED="${APP_CORS_ENABLED}" \
+              APP_CORS_ALLOWED="${APP_CORS_ALLOWED}"
+            echo "[systemd env] variables set for hsb-bo (manager environment)."
 
-            # 유틸 보장
-            need_pkgs=""
-            command -v fuser >/dev/null 2>&1 || need_pkgs="$need_pkgs psmisc"
-            command -v unzip >/dev/null 2>&1 || need_pkgs="$need_pkgs unzip"
-            command -v curl  >/dev/null 2>&1 || need_pkgs="$need_pkgs curl"
-            command -v lsof  >/dev/null 2>&1 || need_pkgs="$need_pkgs lsof"
-            if [ -n "$need_pkgs" ]; then
-              sudo apt-get update -y >/dev/null 2>&1 || true
-              sudo apt-get install -y $need_pkgs >/dev/null 2>&1 || true
-            fi
+      # === systemd로 재시작/검증 ===
+      - name: Restart Backend via systemd
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            chmod 644 /home/hbs/hbs-be/hsb-bo.jar || true
+            sudo systemctl daemon-reload
+            sudo systemctl restart hsb-bo
+            sudo systemctl status hsb-bo --no-pager -l || true
 
-            # stop
-            if [ -f app.pid ]; then
-              oldpid="$(cat app.pid || true)"
-              if [ -n "${oldpid:-}" ] && ps -p "$oldpid" >/dev/null 2>&1; then
-                echo "[stop] kill PID $oldpid"
-                kill "$oldpid" >/dev/null 2>&1 || true
-                for i in {1..5}; do ps -p "$oldpid" >/dev/null 2>&1 || break; sleep 1; done
-                ps -p "$oldpid" >/dev/null 2>&1 && kill -9 "$oldpid" || true
-              fi
-              rm -f app.pid
-            fi
-            fuser -k 8080/tcp >/dev/null 2>&1 || true
-
-            # logs
-            [ -f app.log ] && { ts="$(date +%Y%m%d-%H%M%S)"; mv app.log "app.$ts.log" || true; }
-            : > app.log
-
-            # jar
-            [ -f hsb-bo.jar ] || { echo "[error] hsb-bo.jar not found"; ls -al; exit 1; }
-            chmod 644 hsb-bo.jar || true
-
-            # 참고 출력
-            echo "----- INSIDE JAR (application-prod.yml) -----"
-            if command -v unzip >/dev/null 2>&1; then
-              unzip -p hsb-bo.jar BOOT-INF/classes/application-prod.yml | sed -n '1,80p' || true
-            else
-              echo "(unzip not installed; skip)"
-            fi
-            echo "----- EXTERNAL (config/application-prod.yml) -----"
-            [ -f config/application-prod.yml ] && sed -n '1,80p' config/application-prod.yml || echo "(no external config)"
-
-            # java
-            JAVA_BIN="$(command -v java || true)"; [ -n "$JAVA_BIN" ] || { echo "[error] java not found"; exit 1; }
-            echo "[java] $($JAVA_BIN -version 2>&1 | head -n1)"
-
-            # run
-            echo "[run] nohup java -jar hsb-bo.jar --spring.profiles.active=prod --server.port=8080"
-            nohup "$JAVA_BIN" -Xms256m -Xmx512m -jar hsb-bo.jar \
-              --spring.profiles.active=prod \
-              --server.port=8080 >> app.log 2>&1 &
-            newpid=$!; echo "$newpid" > app.pid; echo "[start] PID $newpid"
-
-            # 리슨 대기 (최대 120초, lsof/ss/netstat 순서로)
-            ok=0
-            for i in {1..120}; do
-              if command -v lsof >/dev/null 2>&1 && lsof -i :8080 | grep -q LISTEN; then ok=1; break; fi
-              if command -v ss   >/dev/null 2>&1 && ss -ltn  | grep -q ":8080 "; then ok=1; break; fi
-              if command -v netstat >/dev/null 2>&1 && netstat -ltn | grep -q ":8080 "; then ok=1; break; fi
+            # 포트 리슨 대기(최대 60초)
+            for i in {1..60}; do
+              ss -ltn 2>/dev/null | grep -q ':8080 ' && { echo '[status] listening ok'; break; }
               sleep 1
             done
-            echo "[status] port_listening=$ok"
-            ps -p "$newpid" -o pid,cmd= || true
 
-            # 헬스체크 (200 또는 401이면 OK, 실패해도 배포 실패로 간주하지 않음)
+            # 헬스체크(있으면)
             if command -v curl >/dev/null 2>&1; then
-              healthy=0
-              for i in {1..6}; do
-                code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health || echo 000)
-                if [ "$code" = "200" ] || [ "$code" = "401" ]; then
-                  echo "[health] actuator HTTP $code"
-                  healthy=1; break
-                fi
-                echo "[health] retry $i (code=$code) ..."
-                sleep 10
-              done
-              if [ "$healthy" -ne 1 ]; then
-                echo "[health] actuator not ready (non-fatal). tail logs:"
-                tail -n 300 app.log || true
-              fi
+              code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health || echo 000)
+              echo "[health] http_code=${code}"
             fi
 
-            tail -n 120 app.log || true
-
+            # 최근 로그
+            tail -n 200 /home/hbs/hbs-be/app.log || true
