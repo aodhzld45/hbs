@@ -199,8 +199,8 @@ jobs:
           envs: SPRING_DATASOURCE_URL,SPRING_DATASOURCE_USERNAME,SPRING_DATASOURCE_PASSWORD,MAIL_HOST,MAIL_PORT,MAIL_USERNAME,MAIL_PASSWORD,FILE_UPLOAD_PATH,JWT_SECRET,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,APP_CORS_ENABLED,APP_CORS_ALLOWED
           script: |
             set -euo pipefail
-            # manager 환경에 세팅(재부팅/리로드 전까지 유지)
-            sudo systemctl set-environment \
+            # manager 환경에 세팅(재부팅 전까지 유지)
+            sudo -n systemctl set-environment \
               SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL}" \
               SPRING_DATASOURCE_USERNAME="${SPRING_DATASOURCE_USERNAME}" \
               SPRING_DATASOURCE_PASSWORD="${SPRING_DATASOURCE_PASSWORD}" \
@@ -215,10 +215,10 @@ jobs:
               AWS_REGION="${AWS_REGION}" \
               APP_CORS_ENABLED="${APP_CORS_ENABLED}" \
               APP_CORS_ALLOWED="${APP_CORS_ALLOWED}"
-            echo "[systemd env] variables set for hsb-bo (manager environment)."
+            echo "[systemd env] set for hsb-bo"
 
-      # === systemd로 재시작/검증 ===
-      - name: Restart Backend via systemd
+      # === systemd로 daemon-reload + restart + 검증 ===
+      - name: Reload units & Restart Backend via systemd
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -226,10 +226,17 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
+            # 유닛 파일/override가 변경되었을 수 있으므로 항상 reload
+            sudo -n systemctl daemon-reload
+
+            # JAR 권한 정리(에러 무시)
             chmod 644 /home/hbs/hbs-be/hsb-bo.jar || true
-            sudo systemctl daemon-reload
-            sudo systemctl restart hsb-bo
-            sudo systemctl status hsb-bo --no-pager -l || true
+
+            # 재시작
+            sudo -n systemctl restart hsb-bo
+
+            # 상태 출력(실패해도 파이프라인 중단 X)
+            sudo -n systemctl status hsb-bo --no-pager -l || true
 
             # 포트 리슨 대기(최대 60초)
             for i in {1..60}; do
