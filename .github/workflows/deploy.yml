@@ -13,6 +13,9 @@ permissions:
   contents: read
 
 jobs:
+  # ====================
+  # 1) FRONTEND BUILD
+  # ====================
   build-fe:
     name: Build Frontend
     runs-on: ubuntu-latest
@@ -38,7 +41,7 @@ jobs:
           v='${{ secrets.REACT_APP_API_BASE_URL }}'
           echo "REACT_APP_API_BASE_URL=$v"
           case "$v" in
-            */api|*/api/) echo "::error::REACT_APP_API_BASE_URL must NOT end with /api (code appends /api)."; exit 1;;
+            */api|*/api/) echo "::error::REACT_APP_API_BASE_URL must NOT end with /api"; exit 1;;
           esac
           cat > .env.production <<'ENV'
           REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}
@@ -62,6 +65,9 @@ jobs:
           name: fe-build
           path: hsb-fe/build
 
+  # ====================
+  # 2) BACKEND BUILD
+  # ====================
   build-bo:
     name: Build Backend
     runs-on: ubuntu-latest
@@ -93,6 +99,9 @@ jobs:
           name: bo-jar
           path: hsb-bo/build/libs/hsb-bo.jar
 
+  # ====================
+  # 3) DEPLOY
+  # ====================
   deploy:
     name: Deploy to Server (systemd)
     runs-on: ubuntu-latest
@@ -103,7 +112,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      # === FE ===
+      # --- FE ---
       - name: Download FE artifact
         uses: actions/download-artifact@v4
         with:
@@ -121,7 +130,7 @@ jobs:
             mkdir -p /home/hbs/hbs-fe/build
             rm -rf /home/hbs/hbs-fe/build/*
 
-      - name: Copy FE to server (/home/hbs/hbs-fe/build)
+      - name: Copy FE to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -132,14 +141,14 @@ jobs:
           strip_components: 1
           overwrite: true
 
-      # === BO ===
+      # --- BO ---
       - name: Download BO artifact
         uses: actions/download-artifact@v4
         with:
           name: bo-jar
           path: bo-jar
 
-      - name: Copy BO jar to server (/home/hbs/hbs-be/hsb-bo.jar)
+      - name: Copy BO jar to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -150,32 +159,8 @@ jobs:
           overwrite: true
           strip_components: 1
 
-      # 외부 prod yml (유지 시)
-      - name: Ensure config dir on server
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            mkdir -p /home/hbs/hbs-be/config
-
-      - name: Verify prod yml exists on runner
-        run: ls -al hsb-bo/src/main/resources/application-prod.yml
-
-      - name: Copy application-prod.yml to server (external config)
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          source: "hsb-bo/src/main/resources/application-prod.yml"
-          target: "/home/hbs/hbs-be/config/"
-          overwrite: true
-          strip_components: 4
-
-      # === 런타임 환경변수 주입 (env 파일 없이) ===
-      - name: Set systemd runtime environment from Secrets
+      # --- ENV 파일 생성/갱신 ---
+      - name: Create/Update /etc/hsb/hsb-bo.env on server
         uses: appleboy/ssh-action@v1.2.0
         env:
           SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL }}
@@ -190,35 +175,35 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
-          APP_CORS_ENABLED: ${{ secrets.APP_CORS_ENABLED }}
-          APP_CORS_ALLOWED: ${{ secrets.APP_CORS_ALLOWED }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          envs: SPRING_DATASOURCE_URL,SPRING_DATASOURCE_USERNAME,SPRING_DATASOURCE_PASSWORD,MAIL_HOST,MAIL_PORT,MAIL_USERNAME,MAIL_PASSWORD,FILE_UPLOAD_PATH,JWT_SECRET,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,APP_CORS_ENABLED,APP_CORS_ALLOWED
+          envs: SPRING_DATASOURCE_URL,SPRING_DATASOURCE_USERNAME,SPRING_DATASOURCE_PASSWORD,MAIL_HOST,MAIL_PORT,MAIL_USERNAME,MAIL_PASSWORD,FILE_UPLOAD_PATH,JWT_SECRET,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
           script: |
-            set -euo pipefail
-            # manager 환경에 세팅(재부팅 전까지 유지)
-            sudo -n systemctl set-environment \
-              SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL}" \
-              SPRING_DATASOURCE_USERNAME="${SPRING_DATASOURCE_USERNAME}" \
-              SPRING_DATASOURCE_PASSWORD="${SPRING_DATASOURCE_PASSWORD}" \
-              MAIL_HOST="${MAIL_HOST}" \
-              MAIL_PORT="${MAIL_PORT}" \
-              MAIL_USERNAME="${MAIL_USERNAME}" \
-              MAIL_PASSWORD="${MAIL_PASSWORD}" \
-              FILE_UPLOAD_PATH="${FILE_UPLOAD_PATH}" \
-              JWT_SECRET="${JWT_SECRET}" \
-              AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
-              AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
-              AWS_REGION="${AWS_REGION}" \
-              APP_CORS_ENABLED="${APP_CORS_ENABLED}" \
-              APP_CORS_ALLOWED="${APP_CORS_ALLOWED}"
-            echo "[systemd env] set for hsb-bo"
+            sudo mkdir -p /etc/hsb
+            sudo bash -c "cat >/etc/hsb/hsb-bo.env <<EOF
+            SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+            SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+            SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
 
-      # === systemd로 daemon-reload + restart + 검증 ===
-      - name: Reload units & Restart Backend via systemd
+            MAIL_HOST=${MAIL_HOST}
+            MAIL_PORT=${MAIL_PORT}
+            MAIL_USERNAME=${MAIL_USERNAME}
+            MAIL_PASSWORD=${MAIL_PASSWORD}
+
+            FILE_UPLOAD_PATH=${FILE_UPLOAD_PATH}
+            JWT_SECRET=${JWT_SECRET}
+
+            AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+            AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+            AWS_REGION=${AWS_REGION}
+            EOF"
+                        sudo chmod 600 /etc/hsb/hsb-bo.env
+                        echo "[env] /etc/hsb/hsb-bo.env updated"
+
+      # --- RESTART & LOG ---
+      - name: Restart Backend via systemd and show logs
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -226,29 +211,15 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
-            # 유닛 파일/override가 변경되었을 수 있으므로 항상 reload
-            sudo -n systemctl daemon-reload
+            sudo systemctl daemon-reload
+            sudo systemctl restart hsb-bo || true
+            sudo systemctl status hsb-bo --no-pager -l || true
 
-            # JAR 권한 정리(에러 무시)
-            chmod 644 /home/hbs/hbs-be/hsb-bo.jar || true
+            echo "=== Recent Logs ==="
+            sudo journalctl -u hsb-bo.service -n 100 --no-pager || true
 
-            # 재시작
-            sudo -n systemctl restart hsb-bo
-
-            # 상태 출력(실패해도 파이프라인 중단 X)
-            sudo -n systemctl status hsb-bo --no-pager -l || true
-
-            # 포트 리슨 대기(최대 60초)
-            for i in {1..60}; do
-              ss -ltn 2>/dev/null | grep -q ':8080 ' && { echo '[status] listening ok'; break; }
-              sleep 1
-            done
-
-            # 헬스체크(있으면)
+            echo "=== Health Check ==="
             if command -v curl >/dev/null 2>&1; then
               code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health || echo 000)
-              echo "[health] http_code=${code}"
+              echo "Health HTTP code: $code"
             fi
-
-            # 최근 로그
-            tail -n 200 /home/hbs/hbs-be/app.log || true
