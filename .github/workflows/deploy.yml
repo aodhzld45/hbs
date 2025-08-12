@@ -2,8 +2,12 @@ name: CI/CD - HSBS_PROD
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch:
+    branches: [ "main" ]     # main push: 빌드만
+    tags:
+      - 'deploy-*'           # deploy-YYYY-MM-DD 형태 태그 push: 빌드+배포
+      #- 'deploy-2025-08-12 포트폴리오 메인 정기 배포'           # deploy-YYYY-MM-DD 형태 태그 push: 빌드+배포
+
+  workflow_dispatch:         # 수동 실행도 배포 허용
 
 concurrency:
   group: hsbs_prod-${{ github.ref }}
@@ -107,10 +111,22 @@ jobs:
     runs-on: ubuntu-latest
     environment: HSBS_PROD
     needs: [ build-fe, build-bo ]
+    if: startsWith(github.ref, 'refs/tags/deploy-') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+
+      - name: Check passwordless sudo
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            sudo -n true
+            echo "Passwordless sudo OK"
 
       # --- FE ---
       - name: Download FE artifact
@@ -140,6 +156,33 @@ jobs:
           target: "/home/hbs/hbs-fe/build"
           strip_components: 1
           overwrite: true
+
+      - name: Sync FE build to Apache docroot (exclude .htaccess)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -euo pipefail
+            sudo mkdir -p /var/www/html
+            # rsync: 소스 경로 끝에 / 를 붙여 '내용물'만 동기화
+            sudo rsync -av --delete --exclude='.htaccess' /home/hbs/hbs-fe/build/ /var/www/html/
+            # (선택) 퍼미션/소유권 정리 - 환경에 맞게 조정
+            sudo chown -R www-data:www-data /var/www/html || true
+            sudo find /var/www/html -type d -exec chmod 755 {} \; || true
+            sudo find /var/www/html -type f -exec chmod 644 {} \; || true
+
+      - name: Verify Apache docroot contents
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -euo pipefail
+            echo "[ls] /var/www/html"
+            sudo ls -lah /var/www/html | sed -n '1,80p'
 
       # --- BO ---
       - name: Download BO artifact
