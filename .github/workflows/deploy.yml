@@ -4,8 +4,8 @@ on:
   push:
     branches: [ "main" ]     # main push: 빌드만
     tags:
-      - 'deploy-*'           # deploy-YYYY-MM-DD 형태 태그 push: 빌드+배포
-      #- 'deploy-2025-08-12 포트폴리오 메인 정기 배포'           # deploy-YYYY-MM-DD 형태 태그 push: 빌드+배포
+      #- 'deploy-*'           # deploy-YYYY-MM-DD 형태 태그 push: 빌드+배포
+      - 'deploy-2025-08-12 포트폴리오 메인 정기 배포'           # deploy-YYYY-MM-DD 형태 태그 push: 빌드+배포
 
   workflow_dispatch:         # 수동 실행도 배포 허용
 

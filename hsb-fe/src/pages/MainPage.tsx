@@ -7,8 +7,10 @@ import Layout from '../components/Layout/Layout';
 import AOS from "aos";
 import "aos/dist/aos.css";
 
+// 포트폴리오용 섹션들 구성
 import SideNav from '../components/Common/SideNav';
 import IntroSection from '../components/Common/IntroSection';
+import DeploySection from '../components/Common/DeploySection';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation, Pagination } from 'swiper/modules';
@@ -146,7 +148,7 @@ const MainPage = () => {
       {/* About Me Section */}
       <section
         id="about"
-        className="min-h-screen bg-white text-gray-800 dark:bg-[#1a1a1a] dark:text-white py-20 px-4 md:px-8 border-b"
+        className="min-h-screen bg-white text-gray-800 dark:bg-[#1a1a1a] dark:text-white py-20 px-4 md:px-8 border-t"
         data-aos="fade-up"
       >
         {/* 상단 섹션 제목 */}
@@ -208,71 +210,69 @@ const MainPage = () => {
         </div>
       </section>
 
-
       {/* 프로젝트 카드 섹션 */}
-      <div id="projects" className="bg-white dark:bg-[#121212] w-full text-center py-16 px-4 md:px-8" data-aos="fade-up">
-        <div
-          className="bg-white dark:bg-[#121212] w-full text-center py-16 px-4 md:px-8"
-          data-aos="fade-up"
-        >
-
+      <section
+        id="projects"
+        className="scroll-mt-24 bg-white dark:bg-[#121212] w-full text-center py-16 px-4 md:px-8 border-t"
+        data-aos="fade-up"
+      >
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white inline-block border-b-4 border-blue-600 pb-2">
             📌 Projects
           </h2>
         </div>
 
-          <p
-            className="text-gray-600 dark:text-gray-300 text-base md:text-lg leading-relaxed max-w-2xl mx-auto"
-            data-aos="fade-up"
-            data-aos-delay="200"
-          >
-            풀스택 개발자로서 직접 설계하고 운영한 콘텐츠 통합 플랫폼입니다.
-            실무 경험 기반으로 콘텐츠 관리, 권한 제어, 로그 분석 기능을 포함합니다.
-          </p>
+        <p
+          className="text-gray-600 dark:text-gray-300 text-base md:text-lg leading-relaxed max-w-2xl mx-auto"
+          data-aos="fade-up"
+          data-aos-delay="200"
+        >
+          풀스택 개발자로서 직접 설계하고 운영한 콘텐츠 통합 플랫폼입니다.
+          실무 경험 기반으로 콘텐츠 관리, 권한 제어, 로그 분석 기능을 포함합니다.
+        </p>
 
-          <div
-            className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-14 max-w-5xl mx-auto"
-            data-aos="fade-up"
-            data-aos-delay="400"
-          >
-            <Card
-              icon={<ClipboardList size={24} />}
-              title="원주미래산업진흥원 구축"
-              desc="PHP 기반 CMS 구축 및 회원/예약/팝업 관리 기능 개발 (2024.11~01)"
-            />
-            <Card
-              icon={<ClipboardList size={24} />}
-              title="SKT OUR365 CONNECT+ 운영 및 유지보수"
-              desc="SKT 사내방송 플랫폼(GBS) 운영 요건 개발 및 로그 관련 개발 (2024.08~ 2025.03)"
-            />
-            <Card
-              icon={<Code size={24} />}
-              title="천조 키오스크 및 API 유지보수"
-              desc="스타필드/센텀시티 키오스크 및 엘리베이터 디스플레이 개선 (2024.05~07)"
-            />
-            <Card
-              icon={<ServerCog size={24} />}
-              title="스마일게이트 교육플랫폼 고도화 및 유지보수"
-              desc="Chart.js를 활용한 통계화면 개발, 시험/설문 기능 유지보수 (2024.01~03, 06~12)"
-            />
-            <Card
-              icon={<BarChart4 size={24} />}
-              title="한양대학교 입학처 리뉴얼"
-              desc="수시, 정시, 재외국민, 편입학 페이지 개발 및 유지보수 (2022.03~05)"
-            />
-            <Card
-              icon={<ServerCog size={24} />}
-              title="대통령경호처 인재채용사이트"
-              desc="[인턴십] CentOS 기반 인재채용 시스템의 서버 관리 및 유지보수 (2020.11~2021.01)"
-            />
-          </div>
+        <div
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-14 max-w-5xl mx-auto"
+          data-aos="fade-up"
+          data-aos-delay="400"
+        >
+          <Card
+            icon={<ClipboardList size={24} />}
+            title="원주미래산업진흥원 구축"
+            desc="PHP 기반 CMS 구축 및 회원/예약/팝업 관리 기능 개발 (2024.11~01)"
+          />
+          <Card
+            icon={<ClipboardList size={24} />}
+            title="SKT OUR365 CONNECT+ 운영 및 유지보수"
+            desc="SKT 사내방송 플랫폼(GBS) 운영 요건 개발 및 로그 관련 개발 (2024.08~ 2025.03)"
+          />
+          <Card
+            icon={<Code size={24} />}
+            title="천조 키오스크 및 API 유지보수"
+            desc="스타필드/센텀시티 키오스크 및 엘리베이터 디스플레이 개선 (2024.05~07)"
+          />
+          <Card
+            icon={<ServerCog size={24} />}
+            title="스마일게이트 교육플랫폼 고도화 및 유지보수"
+            desc="Chart.js를 활용한 통계화면 개발, 시험/설문 기능 유지보수 (2024.01~03, 06~12)"
+          />
+          <Card
+            icon={<BarChart4 size={24} />}
+            title="한양대학교 입학처 리뉴얼"
+            desc="수시, 정시, 재외국민, 편입학 페이지 개발 및 유지보수 (2022.03~05)"
+          />
+          <Card
+            icon={<ServerCog size={24} />}
+            title="대통령경호처 인재채용사이트"
+            desc="[인턴십] CentOS 기반 인재채용 시스템의 서버 관리 및 유지보수 (2020.11~2021.01)"
+          />
         </div>
-      </div>
+      </section>
 
-      <div
+      {/* 기술 스택 섹션 */}
+      <section
         id="skills"
-        className="bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white py-20 px-6 transition-colors duration-300"
+        className="scroll-mt-24 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white py-20 px-6 transition-colors duration-300 border-t"
         data-aos="fade-up"
         data-aos-delay="600"
       >
@@ -341,11 +341,30 @@ const MainPage = () => {
 
           </div>
         </div>
-      </div>
+      </section>
 
+      {/* 배포 과정 섹션 */}
+      <section
+        id="deploy"
+        className="scroll-mt-24 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white py-20 px-4 md:px-8 border-t"
+        data-aos="fade-up"
+      >
+        <div className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white inline-block border-b-4 border-blue-600 pb-2">
+            📌 Deploy
+          </h2>
+        </div>
 
+        <DeploySection />
+
+      </section>
+      
       {/* 등록된 페이지 섹션 동적 렌더링 */}
-      <div className="py-12 space-y-12 bg-white dark:bg-[#121212]">
+      <section
+        id="sections"
+        data-aos="fade-up"
+        className="scroll-mt-24 py-12 space-y-12 bg-white dark:bg-[#121212] border-t"
+      >
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white inline-block border-b-4 border-blue-600 pb-2">
             📌 Sections
@@ -369,8 +388,6 @@ const MainPage = () => {
           return (
             <div
               key={section.id}
-              id='sections'
-              data-aos="fade-up"
               data-aos-delay={index * 100} // 각 섹션마다 약간의 딜레이를 주어 자연스럽게
             >
               <DynamicSection
@@ -380,7 +397,8 @@ const MainPage = () => {
             </div>
           );
         })}
-      </div>
+      </section>
+
 
       {/* 메인 배너 부분 */}
       {bannerPopups.length > 0 && (

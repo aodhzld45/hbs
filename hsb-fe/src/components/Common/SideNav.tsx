@@ -5,6 +5,7 @@ const sections = [
   { id: 'about', label: 'About' },
   { id: 'projects', label: 'Projects' },
   { id: 'skills', label: 'Skills' },
+  { id: 'deploy', label: 'Deploy' }, // 배포과정 섹션
   { id: 'sections', label: 'Sections' },
   { id: 'contents', label: 'Contents' }, // 외부 링크로 이동
 ];
