@@ -41,15 +41,24 @@ jobs:
 
       - name: Inject .env.production from GitHub Secrets
         shell: bash
+        env:
+          REACT_APP_API_BASE_URL: ${{ secrets.REACT_APP_API_BASE_URL }}
         run: |
-          v='${{ secrets.REACT_APP_API_BASE_URL }}'
-          echo "REACT_APP_API_BASE_URL=$v"
-          case "$v" in
-            */api|*/api/) echo "::error::REACT_APP_API_BASE_URL must NOT end with /api"; exit 1;;
-          esac
-          cat > .env.production <<'ENV'
-          REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}
-          ENV
+          set -euo pipefail
+
+          # 1) 필수값 확인
+          if [ -z "${REACT_APP_API_BASE_URL:-}" ]; then
+            echo "Error: REACT_APP_API_BASE_URL is empty"; exit 1
+          fi
+
+          # 2) 개행·캐리지리턴 제거 + 끝 슬래시 제거
+          CLEAN_BASE="$(printf "%s" "$REACT_APP_API_BASE_URL" | tr -d '\r' | sed 's|/*$||')"
+
+          # 3) .env.production 생성 (값을 로그에 출력하지 않음)
+          {
+            echo "REACT_APP_API_BASE_URL=${CLEAN_BASE}"
+          } > .env.production
+
           echo "Created .env.production"
 
       - name: Install deps
