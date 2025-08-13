@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/admin/login",
                                 "/v3/api-docs/**","/swagger-ui/**","/swagger-ui.html",
+                                "/api/v3/api-docs/**","/api/swagger-ui/**","/api/swagger-ui.html",  // /api 밑 경로 허용
                                 "/files/**").permitAll()
                         .requestMatchers("/api/admin/**").authenticated()
                         .anyRequest().permitAll()
