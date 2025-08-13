@@ -1,15 +1,16 @@
 // src/services/api.ts
 import axios from 'axios';
 
-const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+// 환경변수 없으면 기본값을 '/api' 로 사용 (Apache 프록시)
+const RAW_BASE = (process.env.REACT_APP_API_BASE_URL || '/api').trim();
+// 끝 슬래시 제거: '/api/' -> '/api', 'http://x/api/' -> 'http://x/api'
+const BASE_URL = RAW_BASE.replace(/\/+$/, '');
 
-// 배포 서버
 const api = axios.create({
-  baseURL: `${REACT_APP_API_BASE_URL}/api`, // ← 백엔드 주소에 맞게 수정
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true, // 필요한 경우: 쿠키 포함 요청
+  baseURL: BASE_URL, // 여기서 추가로 '/api'를 붙이지 않기
+  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // 쿠키가 필요 없으면 false
+  timeout: 15000,
 });
 
 // JWT 자동 첨부 인터셉터
@@ -17,20 +18,13 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('jwtToken');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      if (config.headers) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
-
-// 로컬 서버
-// const api = axios.create({
-//   baseURL: 'http://localhost:8080/api', // ← 백엔드 주소에 맞게 수정
-//   headers: {
-//     'Content-Type': 'application/json',
-//   },
-//   withCredentials: true, // 필요한 경우: 쿠키 포함 요청
-// });
 
 export default api;
