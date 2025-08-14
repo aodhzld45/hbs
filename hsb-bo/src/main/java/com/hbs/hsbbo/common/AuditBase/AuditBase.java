@@ -1,0 +1,43 @@
+// com.hbs.hsbbo.common.domain.AuditBase
+package com.hbs.hsbbo.common.AuditBase;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+@MappedSuperclass
+@Getter @Setter
+// 공통 감사 필드 (선택: 재사용용)
+public abstract class AuditBase {
+
+    @Column(name = "use_tf", nullable = false, length = 1)
+    private String useTf = "Y";
+
+    @Column(name = "del_tf", nullable = false, length = 1)
+    private String delTf = "N";
+
+    @Column(name = "reg_adm", length = 50)
+    private String regAdm;
+
+    @Column(name = "reg_date", nullable = false)
+    private LocalDateTime regDate;
+
+    @Column(name = "up_adm", length = 50)
+    private String upAdm;
+
+    @Column(name = "up_date", nullable = false)
+    private LocalDateTime upDate;
+
+    @PrePersist
+    public void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        this.regDate = now;
+        this.upDate  = now;
+    }
+
+    @PreUpdate
+    public void onUpdate() {
+        this.upDate = LocalDateTime.now();
+    }
+}
