@@ -15,13 +15,20 @@ const SearchInput: React.FC<SearchInputProps> = ({
   placeholder = '검색어 입력',
   className = '',
 }) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // 기본 form submit 방지
+      onSearch();
+    }
+  };
+
   return (
     <div className={`flex gap-2 ${className}`}>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className="input-search"
       />

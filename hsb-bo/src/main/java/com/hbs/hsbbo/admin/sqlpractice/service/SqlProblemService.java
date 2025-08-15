@@ -9,7 +9,9 @@ import com.hbs.hsbbo.admin.sqlpractice.repository.SqlProblemRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -27,7 +29,7 @@ public class SqlProblemService {
      * @return 생성된 문제의 PK (id)
      */
     @Transactional
-    public Long create(ProblemRequest req, String adminId) {
+    public Long createSqlProblem(ProblemRequest req, String adminId) {
         SqlProblem entity = req.toNewEntity(adminId);
         return sqlProblemRepository.save(entity).getId();
     }
@@ -39,7 +41,7 @@ public class SqlProblemService {
      * @param adminId 수정 관리자 ID
      */
     @Transactional
-    public void update(Long id, ProblemRequest req, String adminId) {
+    public void updateSqlProblem(Long id, ProblemRequest req, String adminId) {
         SqlProblem entity = sqlProblemRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Problem not found"));
         req.applyTo(entity, adminId); // 변경감지
@@ -52,7 +54,7 @@ public class SqlProblemService {
      * @param adminId 삭제 관리자 ID
      */
     @Transactional
-    public void softDelete(Long id, String adminId) {
+    public void softDeleteSqlProblem(Long id, String adminId) {
         SqlProblem entity = sqlProblemRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Problem not found"));
         entity.softDelete();
@@ -66,7 +68,7 @@ public class SqlProblemService {
      * @param useTf 사용 여부 (Y/N)
      */
     @Transactional
-    public void setUseTf(Long id, String useTf) {
+    public void setUseTfSqlProblem(Long id, String useTf) {
         SqlProblem entity = sqlProblemRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Problem not found"));
         entity.setUseYn(useTf);
@@ -78,7 +80,7 @@ public class SqlProblemService {
      * @return 문제 상세 응답 DTO
      */
     @Transactional
-    public ProblemResponse get(Long id) {
+    public ProblemResponse getDetailSqlProblem(Long id) {
         SqlProblem entity = sqlProblemRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Problem not found"));
         return ProblemResponse.fromEntity(entity);
@@ -93,11 +95,18 @@ public class SqlProblemService {
      * @return 페이징 처리된 문제 목록 응답 DTO
      */
     @Transactional
-    public ProblemListResponse list(String keyword, Integer level, ConstraintRule rule, String useTf, Pageable pageable) {
-        Page<SqlProblem> page = sqlProblemRepository.search(
+    public ProblemListResponse getSqlProblemList(
+            String keyword, Integer level, ConstraintRule rule, int page, int size, String useTf
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+
+        Page<SqlProblem> result = sqlProblemRepository.search(
                 (keyword == null || keyword.isBlank()) ? null : keyword.trim(),
-                level, rule, (useTf == null || useTf.isBlank()) ? null : useTf, pageable
+                level,
+                rule,
+                (useTf == null || useTf.isBlank()) ? null : useTf,
+                pageable
         );
-        return ProblemListResponse.of(page);
+        return ProblemListResponse.of(result);
     }
 }

@@ -5,6 +5,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 // 관리자 페이지 imports
 import ContentManager from './pages/Admin/Content/ContentManager';
 import ContentManagerDetail from "./pages/Admin/Content/ContentManagerDetail";
+
+import SqlProblemManager from './features/admin/SqlProblem';
+
 import AdminLogin from "./pages/Admin/Login";
 import AdminDashboard from "./pages/Admin";
 import AdminList from "./pages/Admin/AdminAccountManagement";
@@ -40,6 +43,7 @@ import ContactForm from './features/user/Contact/index';
 
 // 각종 테스트용 imports
 import TestPage from './pages/User/TestPage';
+import SqlProblemTestPage from './features/admin/SqlProblem/SqlProblemTestPage';
 
 // 관리자 Common imports
 import PrivateRoute from './components/Admin/PrivateRoute';
@@ -62,6 +66,9 @@ function App() {
             <Route path="/:fileType/:contentType/detail/:fileId" element={<ContentDetail />} />
             <Route path="/contact" element={<ContactForm />} />
             <Route path="/test" element={<TestPage />} />
+            <Route path="/test/2depth" element={<SqlProblemTestPage />} />
+
+            {/* 관리자 공통 페이지 */}
 
 
             {/* 관리자 공용 라우트 (로그인 페이지) */}
@@ -74,6 +81,9 @@ function App() {
 
               <Route path="/admin/content-manager" element={<ContentManager />} />
               <Route path="/admin/content-manager/:fileId" element={<ContentManagerDetail />} />
+              <Route path="/admin/sql-manager" element={<SqlProblemManager />} />
+
+
               <Route path="/admin/admin-manager" element={<AdminList />} />
               <Route path="/admin/auth-management" element={<AdminAuthManagement />} />
               <Route path="/admin/admin-create" element={<AdminCreate />} />
