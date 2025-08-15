@@ -20,14 +20,20 @@ public abstract class AuditBase {
     @Column(name = "reg_adm", length = 50)
     private String regAdm;
 
-    @Column(name = "reg_date", nullable = false)
+    @Column(name = "reg_date")
     private LocalDateTime regDate;
 
     @Column(name = "up_adm", length = 50)
     private String upAdm;
 
-    @Column(name = "up_date", nullable = false)
+    @Column(name = "up_date")
     private LocalDateTime upDate;
+
+    @Column(name = "del_adm")
+    private String delAdm;
+
+    @Column(name = "del_date")
+    private LocalDateTime delDate;
 
     @PrePersist
     public void onCreate() {
