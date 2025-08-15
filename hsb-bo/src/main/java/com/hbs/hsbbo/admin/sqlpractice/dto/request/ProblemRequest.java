@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.sqlpractice.dto.request;
 
+import com.hbs.hsbbo.admin.sqlpractice.domain.entity.SqlProblem;
 import com.hbs.hsbbo.admin.sqlpractice.domain.type.ConstraintRule;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -40,4 +41,21 @@ public class ProblemRequest {
 
     @Pattern(regexp = "Y|N")
     private String useTf;
+
+    /** 신규 엔티티 생성 */
+    public SqlProblem toNewEntity(String regAdm) {
+        SqlProblem e = new SqlProblem();
+        e.changeCore(title, level, tags, descriptionMd, constraintRule, Boolean.TRUE.equals(orderSensitive));
+        e.setRegAdm(regAdm);
+        e.setUseTf(useTf != null ? useTf : "Y");
+        e.setDelTf("N");
+        return e;
+    }
+
+    /** 수정 반영 */
+    public void applyTo(SqlProblem target, String upAdm) {
+        target.changeCore(title, level, tags, descriptionMd, constraintRule, Boolean.TRUE.equals(orderSensitive));
+        if (useTf != null) target.setUseYn(useTf);
+        target.setUpAdm(upAdm);
+    }
 }
