@@ -1,9 +1,9 @@
 package com.hbs.hsbbo.admin.sqlpractice.controller;
 
+import com.hbs.hsbbo.admin.sqlpractice.domain.entity.SqlProblem;
 import com.hbs.hsbbo.admin.sqlpractice.domain.type.ConstraintRule;
 import com.hbs.hsbbo.admin.sqlpractice.dto.request.ProblemRequest;
 import com.hbs.hsbbo.admin.sqlpractice.dto.response.ProblemListResponse;
-import com.hbs.hsbbo.admin.sqlpractice.dto.response.ProblemResponse;
 import com.hbs.hsbbo.admin.sqlpractice.service.SqlProblemService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/sql-problems")
 @RequiredArgsConstructor
@@ -19,19 +21,18 @@ public class SqlProblemController {
 
     private final SqlProblemService sqlProblemService;
 
-    // =========================
-    // 생성 (JSON 본문 기준)
-    // =========================
-    // JSON 본문 등록
     @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody ProblemRequest req,
                                     @RequestParam String adminId,
                                     UriComponentsBuilder uriBuilder) {
         try {
+            req.normalize(); // 요청값 정규화 적용
             Long id = sqlProblemService.createSqlProblem(req, adminId);
             return ResponseEntity
-                    .created(uriBuilder.path("/api/sql-problems/{id}").buildAndExpand(id).toUri())
-                    .body(id);
+                    .created(uriBuilder.path("/{id}")
+                            .buildAndExpand(id)
+                            .toUri())
+                    .body(Map.of("id", id));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -54,8 +55,8 @@ public class SqlProblemController {
 
     /** 상세 */
     @GetMapping("/{id}")
-    public ProblemResponse get(@PathVariable Long id) {
-        return sqlProblemService.getDetailSqlProblem(id);
+    public SqlProblem get(@PathVariable Long id) {
+        return sqlProblemService.getDetail(id);
     }
 
     /** 수정(JSON) */
@@ -74,8 +75,8 @@ public class SqlProblemController {
 
     /** 사용 여부 토글/변경 */
     @PatchMapping("/{id}/use-tf")
-    public void setUseTf(@PathVariable Long id, @RequestParam String useTf) {
-        sqlProblemService.setUseTfSqlProblem(id, useTf);
+    public void setUseTf(@PathVariable Long id, @RequestParam String useTf, String adminId) {
+        sqlProblemService.toggleUseTf(id, useTf, adminId);
     }
 
     // =========================

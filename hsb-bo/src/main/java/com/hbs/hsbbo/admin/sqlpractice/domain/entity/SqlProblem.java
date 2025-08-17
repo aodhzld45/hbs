@@ -6,6 +6,8 @@ import com.hbs.hsbbo.common.AuditBase.AuditBase;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -18,11 +20,12 @@ import java.util.List;
 )
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(onlyExplicitlyIncluded = true)
-
 public class SqlProblem extends AuditBase {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @ToString.Include
@@ -56,6 +59,21 @@ public class SqlProblem extends AuditBase {
     @Column(name = "order_sensitive", nullable = false)
     private boolean orderSensitive = false;
 
+    /* ===================== 연관관계 ===================== */
+
+    /** 기본 스키마(DDL/SEED). DDL 상 UNIQUE 제약이 없으므로 OneToMany로 매핑하고, 애플리케이션에서 1개만 관리 */
+    @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<SqlProblemSchema> schemaList = new ArrayList<>();
+
+    /** 테스트케이스 1:N */
+    @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortNo ASC, id ASC")
+    @Builder.Default
+    private List<SqlProblemTestcase> testcases = new ArrayList<>();
+
+    /* ===================== 편의 메서드 ===================== */
+
     /** 제목/설명/옵션 등 주요 값 일괄 변경 */
     public void changeCore(
             String title,
@@ -73,14 +91,77 @@ public class SqlProblem extends AuditBase {
         this.orderSensitive = orderSensitive;
     }
 
-    /** 사용여부 토글 */
+    /** 사용여부 토글 (AuditBase.useTf 사용) */
     public void setUseYn(String useTf) {
-        // AuditBase.useTf 사용 (Y/N 계약 준수)
         this.setUseTf(("Y".equals(useTf)) ? "Y" : "N");
     }
 
     /** 소프트 삭제 플래그 */
     public void softDelete() {
         this.setDelTf("Y");
+    }
+
+    /* ===== Schema 편의: 논리적 1:1 관리 ===== */
+
+    /** 현재 스키마 가져오기 (없으면 null) */
+    public SqlProblemSchema getSchema() {
+        return schemaList.isEmpty() ? null : schemaList.get(0);
+    }
+
+    /** 읽기 전용 스키마 목록 제공(필요 시 디버깅/검증용) */
+    public List<SqlProblemSchema> getSchemaListUnmodifiable() {
+        return Collections.unmodifiableList(this.schemaList);
+    }
+
+    /** 스키마 교체 (기존 제거 → 새로 1개 세팅) */
+    public void setSchemaCascade(SqlProblemSchema newSchema) {
+        // 기존 모두 제거 (orphanRemoval=true 로 DB에서 삭제됨)
+        for (SqlProblemSchema s : new ArrayList<>(schemaList)) {
+            removeSchema(s);
+        }
+        if (newSchema != null) addSchema(newSchema);
+    }
+
+    /** 스키마 추가 (내부용) */
+    public void addSchema(SqlProblemSchema schema) {
+        if (schema == null) return;
+        this.schemaList.add(schema);
+        schema.setProblem(this);
+    }
+
+    /** 스키마 제거 (내부용) */
+    public void removeSchema(SqlProblemSchema schema) {
+        if (schema == null) return;
+        this.schemaList.remove(schema);
+        schema.setProblem(null);
+    }
+
+    /* ===== Testcase 편의 ===== */
+
+    public void addTestcase(SqlProblemTestcase tc) {
+        if (tc == null) return;
+        this.testcases.add(tc);
+        tc.setProblem(this);
+    }
+
+    public void addAllTestcases(List<SqlProblemTestcase> list) {
+        if (list == null || list.isEmpty()) return;
+        for (SqlProblemTestcase tc : list) addTestcase(tc);
+    }
+
+    public void removeTestcase(SqlProblemTestcase tc) {
+        if (tc == null) return;
+        this.testcases.remove(tc);
+        tc.setProblem(null);
+    }
+
+    /** 테스트케이스 전체 교체 (orphanRemoval=true로 기존 자식 자동 삭제) */
+    public void replaceTestcases(List<SqlProblemTestcase> newList) {
+        for (SqlProblemTestcase tc : new ArrayList<>(this.testcases)) {
+            removeTestcase(tc);
+        }
+        if (newList != null) {
+            for (SqlProblemTestcase tc : newList) addTestcase(tc);
+        }
     }
 }
