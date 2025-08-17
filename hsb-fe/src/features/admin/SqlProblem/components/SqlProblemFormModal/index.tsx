@@ -1,0 +1,273 @@
+// src/features/SqlProblem/components/SqlProblemFormModal/index.tsx
+import React, { useEffect } from 'react';
+import { useForm, FormProvider } from 'react-hook-form';
+import type { Resolver } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+import BasicInfoSection from './BasicInfoSection';
+import StatementSection from './StatementSection';
+import DataAndTestSection from './DataAndTestSection';
+import { ProblemPayload } from '../../types/ProblemPayload';
+
+/** ----------------------------------------------------------------
+ *  enum/literal helper
+ *  ---------------------------------------------------------------- */
+const oneOf = <T extends string>(...values: readonly T[]) =>
+  z
+    .string()
+    .refine((v): v is T => (values as readonly string[]).includes(v), {
+      message: `Must be one of: ${values.join(', ')}`,
+    }) as unknown as z.ZodType<T>;
+
+const expectedMode = oneOf(
+  'SQL_EQUAL',
+  'SQL_AST_PATTERN',
+  'RESULT_SET',
+  'AFFECTED_ROWS',
+  'STATE_SNAPSHOT',
+  'CUSTOM_ASSERT'
+);
+
+const testcaseBase = z.object({
+  name: z.string().min(1, '테스트케이스명 필수'),
+  visibility: oneOf('PUBLIC','HIDDEN'),
+
+  // 모드에 따라 필수/선택
+  expectedSql: z.string().optional(),
+
+  seedOverride: z.string().optional(),
+  noteMd: z.string().optional(),
+
+  // ⬇ 숫자 필드는 coerce로 400 방지 (빈문자 → 숫자 변환)
+  sortNo: z.coerce.number().optional(),
+
+  expectedMode: expectedMode,
+  expectedMetaJson: z.string().optional(),
+  assertSql: z.string().optional(),
+  expectedRows: z.coerce.number().optional(),   // AFFECTED_ROWS에서 사용
+  orderSensitiveOverride: z.boolean().optional(),
+});
+
+/** ----------------------------------------------------------------
+ *  Schema (DB 스키마 기준)
+ *  ---------------------------------------------------------------- */
+const schema = z.object({
+  // sql_problem
+  title: z.string().min(1, '제목은 필수입니다.'),
+  level: z.coerce.number().optional(),
+  tags: z.array(z.string()).optional(),
+  useTf: oneOf('Y', 'N'),
+  constraintRule: oneOf('SELECT_ONLY', 'DML_ALLOWED'),
+  descriptionMd: z.string().optional(),
+  orderSensitive: z.boolean().optional(),
+
+  // sql_schema
+  schema: z.object({
+    ddlScript: z.string().min(1, 'DDL은 필수입니다.'),
+    seedScript: z.string().min(1, 'Seed는 필수입니다.'),
+  }),
+
+  // sql_testcase[]
+  testcases: z.array(testcaseBase).min(1, '테스트케이스를 1개 이상 추가해 주세요.')
+}).superRefine((values, ctx) => {
+  values.testcases.forEach((tc, i) => {
+    const path = (k: string) => ({ path: ['testcases', i, k] as any });
+
+    switch (tc.expectedMode) {
+      case 'SQL_EQUAL':
+        if (!tc.expectedSql?.trim()) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'expectedSql 필수', ...path('expectedSql') });
+        }
+        break;
+      case 'SQL_AST_PATTERN':
+        if (!tc.expectedMetaJson?.trim()) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'expectedMetaJson 필수(필수/금지 패턴 JSON)', ...path('expectedMetaJson') });
+        }
+        break;
+      case 'RESULT_SET':
+        if (!tc.expectedSql?.trim()) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'expectedSql 필수', ...path('expectedSql') });
+        }
+        break;
+      case 'AFFECTED_ROWS':
+        if (tc.expectedRows === undefined || tc.expectedRows === null || Number.isNaN(tc.expectedRows)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'expectedRows 필수', ...path('expectedRows') });
+        }
+        break;
+      case 'STATE_SNAPSHOT':
+      case 'CUSTOM_ASSERT':
+        if (!tc.assertSql?.trim()) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'assertSql 필수(검증용 SELECT)', ...path('assertSql') });
+        }
+        break;
+    }
+  });
+});
+
+type FormValues = z.infer<typeof schema>;
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (payload: ProblemPayload) => Promise<void> | void;
+  initial?: Partial<ProblemPayload> | null;
+};
+
+/** 제출 직전 normalize (세미콜론 제거/trim, 숫자 보정 등) */
+const normalizeForSubmit = (v: FormValues): ProblemPayload => {
+  const trim = (s?: string) => (typeof s === 'string' ? s.trim() : s);
+  return {
+    title: trim(v.title) || '',
+    level: v.level,
+    tags: (v.tags ?? []).map(t => t.trim()).filter(Boolean),
+    descriptionMd: trim(v.descriptionMd),
+    constraintRule: v.constraintRule,
+    orderSensitive: !!v.orderSensitive,
+    useTf: v.useTf,
+    schema: {
+      ddlScript: v.schema.ddlScript.trim(),
+      seedScript: v.schema.seedScript.trim(),
+    },
+    testcases: (v.testcases ?? []).map((t, i) => ({
+      name: t.name.trim(),
+      visibility: t.visibility,
+      expectedSql: t.expectedSql ? t.expectedSql.replace(/;+$/g, '').trim() : undefined,
+      seedOverride: trim(t.seedOverride),
+      noteMd: trim(t.noteMd),
+      sortNo: Number.isFinite(Number(t.sortNo)) ? Number(t.sortNo) : i,
+
+      expectedMode: (t.expectedMode ?? 'RESULT_SET') as any,
+      expectedMetaJson: trim(t.expectedMetaJson) || undefined,
+      assertSql: t.assertSql ? t.assertSql.replace(/;+$/g, '').trim() : undefined,
+      expectedRows: t.expectedRows === undefined || t.expectedRows === null
+        ? undefined
+        : Number(t.expectedRows),
+      orderSensitiveOverride: t.orderSensitiveOverride ?? undefined,
+    })),
+  };
+};
+
+const SqlProblemFormModal: React.FC<Props> = ({ open, onClose, onSubmit, initial }) => {
+  const methods = useForm<FormValues>({
+    resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
+    defaultValues: {
+      title: '',
+      level: undefined,
+      tags: [],
+      useTf: 'Y',
+      constraintRule: 'SELECT_ONLY',
+      descriptionMd: '',
+      orderSensitive: false,
+      schema: { ddlScript: '', seedScript: '' },
+      testcases: [
+        {
+          name: '',
+          visibility: 'PUBLIC',
+          expectedSql: '',
+          noteMd: '',
+          sortNo: 0,
+          // ▼ 확장 필드 기본값
+          expectedMode: 'RESULT_SET',
+          expectedMetaJson: '',
+          assertSql: '',
+          expectedRows: undefined,
+          orderSensitiveOverride: false,
+        },
+      ],
+      ...(initial as Partial<FormValues> | undefined),
+    },
+    mode: 'onChange',
+  });
+
+  useEffect(() => {
+    if (open) {
+      const cur = methods.getValues();
+      const init = (initial as Partial<FormValues> | undefined) ?? {};
+      methods.reset({
+        ...cur,
+        ...init,
+        tags: init.tags ?? cur.tags ?? [],
+        schema: init.schema ?? cur.schema ?? { ddlScript: '', seedScript: '' },
+        testcases:
+          init.testcases ??
+          cur.testcases ?? [
+            {
+              name: '',
+              visibility: 'PUBLIC',
+              expectedSql: '',
+              seedOverride: '',
+              noteMd: '',
+              sortNo: 0,
+              expectedMode: 'RESULT_SET',
+              expectedMetaJson: '',
+              assertSql: '',
+              expectedRows: undefined,
+              orderSensitiveOverride: false,
+            },
+          ],
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  if (!open) return null;
+
+  const submit = methods.handleSubmit(
+    async (values) => {
+      try {
+        const payload = normalizeForSubmit(values);
+        console.log('Submitting values:', payload);
+        await onSubmit(payload);
+        onClose(); // 성공시에만 닫기
+      } catch (e) {
+        console.error(e); // 실패 시 모달 유지
+      }
+    },
+    (errors) => {
+      const first = Object.values(errors)[0] as any;
+      alert(first?.message ?? '입력값을 확인해주세요.');
+    }
+  );
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/40 overflow-y-auto">
+      <div className="min-h-full w-full flex items-start md:items-center justify-center p-3 md:p-6">
+        <div className="bg-white w-full md:max-w-5xl h-[100dvh] md:h-auto md:max-h-[85dvh] rounded-none md:rounded-2xl shadow-xl flex flex-col">
+          {/* 헤더 */}
+          <div className="px-4 md:px-6 py-3 border-b flex items-center justify-between shrink-0">
+            <h3 className="text-lg font-semibold">
+              {initial ? '문제 수정' : '문제 등록'}
+            </h3>
+            <button className="button-ghost" onClick={onClose}>
+              닫기
+            </button>
+          </div>
+
+          {/* 내용 */}
+          <FormProvider {...methods}>
+            <div className="px-4 md:px-6 py-4 overflow-y-auto grow">
+              <div className="grid grid-cols-1 gap-4">
+                <BasicInfoSection />
+                <StatementSection />
+                <DataAndTestSection />
+              </div>
+            </div>
+
+            {/* 푸터 */}
+            <div className="px-4 md:px-6 py-3 border-t flex justify-end gap-2 shrink-0 bg-white">
+              <button className="button-secondary" onClick={onClose}>
+                취소
+              </button>
+              <button className="button-primary" onClick={submit}>
+                저장
+              </button>
+            </div>
+          </FormProvider>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SqlProblemFormModal;

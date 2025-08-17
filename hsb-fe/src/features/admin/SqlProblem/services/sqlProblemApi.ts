@@ -1,7 +1,39 @@
 import api from "../../../../services/api";
-import { ProblemItem } from "../types/ProblemItem";
+import type { ProblemListResponse, ProblemItem, ConstraintRule } from "../types/ProblemItem";
+import { ProblemPayload } from '../types/ProblemPayload';
 
-// SQL 프로그램 목록
+// 제출 직전 최소 정리
+const normalizePayload = (p: ProblemPayload): ProblemPayload => {
+  const trim = (s?: string) => (typeof s === 'string' ? s.trim() : s);
+  return {
+    ...p,
+    title: p.title?.trim() ?? '',
+    level: p.level === undefined || p.level === null ? undefined : Number(p.level),
+    tags: (p.tags ?? []).map(t => t.trim()).filter(Boolean),
+    descriptionMd: p.descriptionMd?.trim(),
+    schema: {
+      ddlScript: p.schema.ddlScript.trim(),
+      seedScript: p.schema.seedScript.trim(),
+    },
+    testcases: (p.testcases ?? []).map((t, i) => ({
+      ...t,
+      expectedMode: t.expectedMode ?? 'RESULT_SET',
+      expectedSql: t.expectedSql?.replace(/;+$/g, '').trim(),
+      expectedMetaJson: t.expectedMetaJson?.trim() || undefined,
+      assertSql: t.assertSql?.replace(/;+$/g, '').trim() || undefined,
+      expectedRows:
+        t.expectedRows === undefined || t.expectedRows === null
+          ? undefined
+          : Number(t.expectedRows),
+      orderSensitiveOverride: t.orderSensitiveOverride ?? undefined,
+      seedOverride: t.seedOverride?.trim() || undefined,
+      noteMd: t.noteMd?.trim() || undefined,
+      sortNo: Number.isFinite(Number(t.sortNo)) ? Number(t.sortNo) : i,
+    })),
+  };
+};
+
+// SQL 문제 목록
 export const fetchProblemList = async (
   keyword: string = '',
   page: number,
@@ -22,4 +54,14 @@ export const fetchProblemList = async (
   });
 
   return res.data;
+};
+
+// ===== 등록(POST) =====
+export const fetchProblemCreate = async (
+  payload: ProblemPayload,
+  adminId: string
+): Promise<{ id: number }> => {
+  const body = normalizePayload(payload);
+  const res = await api.post('/sql-problems', body, { params: { adminId } });
+  return res.data; // { id }
 };

@@ -10,10 +10,16 @@ import { useLocation } from "react-router-dom";
 import AdminLayout from "../../../components/Layout/AdminLayout";
 import { useAuth } from '../../../context/AuthContext';
 
-import { fetchProblemList } from "./services/sqlProblemApi";
-import SqlProblemList from "./components/SqlProblemList";
-import { ProblemItem, ConstraintRule } from './types/ProblemItem';
+import { 
+  fetchProblemList,
+  fetchProblemCreate
+ } from "./services/sqlProblemApi";
 
+import SqlProblemList from "./components/SqlProblemList";
+import SqlProblemFormModal from "./components/SqlProblemFormModal";
+
+import { ProblemItem, ConstraintRule } from './types/ProblemItem';
+import { ProblemPayload } from "./types/ProblemPayload";
 
 const SqlProblemManager: React.FC = () => {
   // 공통 헤더/메뉴 관련
@@ -106,32 +112,26 @@ const SqlProblemManager: React.FC = () => {
 
   const handleDetail = (item: ProblemItem) => setDetailItem(item);
 
-  const handleSubmit = async (payload: {
-    title: string;
-    level?: number;
-    tags?: string[];
-    descriptionMd?: string;
-    constraintRule?: ConstraintRule;
-    orderSensitive?: boolean;
-    useTf?: "Y" | "N";
-  }) => {
-    if (!adminId) {
-      alert("관리자 인증 정보가 없습니다. 다시 로그인해주세요.");
-      return;
-    }
-    if (editItem) {
-      // await updateProblem(editItem.id, payload, adminId);
-    } else {
-      // await createProblem(payload, adminId);
-    }
+const handleSubmit = async (payload: ProblemPayload) => {
+  if (!adminId) {
+    alert("관리자 인증 정보가 없습니다. 다시 로그인해주세요.");
+    throw new Error('No adminId'); // 모달 닫히지 않도록 throw
+  }
+  try {
+    await fetchProblemCreate(payload, adminId); // 등록
+    alert("SQL문제가 성공적으로 등록되었습니다.");
     await loadList();
-  };
+  } catch (e: any) {
+    console.error(e);
+    alert(e?.response?.data?.message ?? "저장 중 오류가 발생했습니다.");
+    throw e; // 모달 닫히지 않도록 throw
+  }
+};
 
 // 부모에서 상태 변경 + 조회를 동시에 처리
   const search = async (params?: { resetPage?: boolean }) => {
     if (params?.resetPage) {
         setPage(0);
-        await loadList();
     } else {
         await loadList();
     }
@@ -160,11 +160,8 @@ const SqlProblemManager: React.FC = () => {
       setLevel,
       setRule,
       setUseTf: setUseTfFilter,
-      setPage: (v: number) => {
-      setPage(v);
-      search(); // 페이지 바뀔 때 바로 조회
-    },      
-    search,        // SearchInput/필터 submit에서 사용
+      setPage: (v: number) => setPage(v), // 변경만, 조회는 useEffect가 수행
+      search,        // SearchInput/필터 submit에서 사용
     }),
     [search, setKeyword, setLevel, setRule, setUseTfFilter]
   );
@@ -182,6 +179,14 @@ const SqlProblemManager: React.FC = () => {
             {currentMenuTitle}
           </h2>
 
+          {/*  등록 버튼 추가 */}
+          <button
+            className="px-4 py-2 rounded bg-blue-600 text-white hover:opacity-90"
+            onClick={handleCreateOpen}
+          >
+            문제 등록
+          </button>
+
             {/* 목록 */}
             <SqlProblemList
             state={listState}
@@ -192,7 +197,21 @@ const SqlProblemManager: React.FC = () => {
             onDetail={handleDetail}
             />
 
-
+            {/*  등록/수정 모달 연결 */}
+            <SqlProblemFormModal
+              open={formOpen}
+              onClose={() => {
+                setFormOpen(false);
+                setEditItem(null); // 닫힐 때 편집 상태 초기화
+              }}
+              onSubmit={async (payload) => {
+                // 서버 Enum 때문에 constraintRule 은 SELECT_ONLY | DML_ALLOWED 로만 전달되게 폼에서 제한
+                await handleSubmit(payload);
+                setFormOpen(false);
+                setEditItem(null);
+              }}
+              //initial={editItem ?? undefined} // 수정 시에만 초기값 주입
+            />
         </div>
     </AdminLayout>
     );
