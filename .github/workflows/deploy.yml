@@ -35,9 +35,20 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "18"
           cache: "npm"
           cache-dependency-path: hsb-fe/package-lock.json
+
+      # ── 디버그에 도움되는 기본 정보 출력 ─────────────────────────────
+      - name: Print env / node info
+        run: |
+          set -euxo pipefail
+          node -v
+          npm -v
+          echo "RUNNER_OS=$RUNNER_OS"
+          echo "PWD=$(pwd)"
+          echo "Listing workspace:"
+          ls -lah
 
       - name: Inject .env.production from GitHub Secrets
         shell: bash
@@ -45,38 +56,53 @@ jobs:
           REACT_APP_API_BASE_URL: ${{ secrets.REACT_APP_API_BASE_URL }}
         run: |
           set -euo pipefail
-
-          # 1) 필수값 확인
           if [ -z "${REACT_APP_API_BASE_URL:-}" ]; then
             echo "Error: REACT_APP_API_BASE_URL is empty"; exit 1
           fi
-
-          # 2) 개행·캐리지리턴 제거 + 끝 슬래시 제거
           CLEAN_BASE="$(printf "%s" "$REACT_APP_API_BASE_URL" | tr -d '\r' | sed 's|/*$||')"
-
-          # 3) .env.production 생성 (값을 로그에 출력하지 않음)
-          {
-            echo "REACT_APP_API_BASE_URL=${CLEAN_BASE}"
-          } > .env.production
-
+          echo "REACT_APP_API_BASE_URL=${CLEAN_BASE}" > .env.production
           echo "Created .env.production"
+          # 키만 마스킹해서 확인
+          grep -E '^[A-Z_]+=' .env.production | sed 's/=.*/=<masked>/'
 
-      - name: Install deps
-        run: npm ci
+      # ── 의존성 설치(로그 저장) ───────────────────────────────────────
+      - name: Install deps (verbose)
+        run: |
+          set -euxo pipefail
+          npm ci --no-audit --no-fund --verbose 2>&1 | tee ../npm-ci.log
 
-      - name: Build
-        run: npm run build
+      # ── 빌드(경고-에러화 방지, 메모리 여유, 로그 저장) ───────────────
+      - name: Build (capture logs)
+        run: |
+          set -euxo pipefail
+          npm run build --loglevel verbose 2>&1 | tee ../npm-build.log
         env:
-          CI: ""
+          CI: "false"                 # CRA 경고 에러 승격 방지
+          NODE_OPTIONS: "--max_old_space_size=4096"
+          # 필요 시 소스맵 경고 무시
+          # GENERATE_SOURCEMAP: "false"
 
       - name: Verify FE build exists
         run: test -d build && ls -lah build
+
+      # ── 실패 원인 파악을 위한 로그/디렉터리 업로드 ─────────────────────
+      - name: Upload FE debug logs (always)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fe-debug-logs
+          path: |
+            npm-ci.log
+            npm-build.log
+            ~/.npm/_logs
+          if-no-files-found: ignore
 
       - name: Upload FE artifact
         uses: actions/upload-artifact@v4
         with:
           name: fe-build
           path: hsb-fe/build
+
 
   # ====================
   # 2) BACKEND BUILD
