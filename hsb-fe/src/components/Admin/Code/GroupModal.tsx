@@ -1,5 +1,5 @@
 // src/components/Common/GroupModal.tsx
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CodeGroup } from "../../../types/Common/CodeGroup";
 
 interface GroupModalProps {
