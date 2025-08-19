@@ -8,27 +8,26 @@ import lombok.Setter;
 import java.util.List;
 
 public class SqlPreviewStubDto {
-    @Getter @Setter
-    public class PreviewSchemaReq {
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    public static class PreviewSchemaReq {
         private String ddlScript;
         private String seedScript;
     }
 
-    @Getter @Setter
-    public class PreviewRunReq {
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    public static class PreviewRunReq {
         private String ddlScript;
         private String seedScript;
         private String answerSql;
     }
 
-    @Getter @Setter
-    public class PreviewValidateReq {
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    public static class PreviewValidateReq {
         private String ddlScript;
         private String seedScript;
         private List<Testcase> testcases;
 
-        @Getter
-        @Setter
+        @Getter @Setter @NoArgsConstructor @AllArgsConstructor
         public static class Testcase {
             private String answerSql;
             private String expectedSql;
