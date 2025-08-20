@@ -1,5 +1,5 @@
 // src/features/SqlProblem/components/SqlProblemFormModal/index.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from "react";
 import { useForm, FormProvider } from 'react-hook-form';
 import type { Resolver } from 'react-hook-form';
 import { z } from 'zod';
@@ -8,6 +8,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import BasicInfoSection from './BasicInfoSection';
 import StatementSection from './StatementSection';
 import DataAndTestSection from './DataAndTestSection';
+import PreviewControls from './PreviewControls';
+import { usePreview } from "../../hooks/usePreview";
+
 import { ProblemPayload } from '../../types/ProblemPayload';
 
 /** ----------------------------------------------------------------
@@ -149,6 +152,7 @@ const normalizeForSubmit = (v: FormValues): ProblemPayload => {
 };
 
 const SqlProblemFormModal: React.FC<Props> = ({ open, onClose, onSubmit, initial }) => {
+  
   const methods = useForm<FormValues>({
     resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
     defaultValues: {
@@ -179,6 +183,20 @@ const SqlProblemFormModal: React.FC<Props> = ({ open, onClose, onSubmit, initial
     },
     mode: 'onChange',
   });
+
+  // 미리보기 훅: 푸터 버튼과 연결
+  const {
+    previewLoading,
+    schemaStatus,
+    runStatus,
+    validateStatus,
+    handlePreviewSchema,
+    handlePreviewRun,
+    handlePreviewValidate,
+    canSchema,
+    canRun,
+    canValidate,
+  } = usePreview(methods);
 
   useEffect(() => {
     if (open) {
@@ -218,7 +236,7 @@ const SqlProblemFormModal: React.FC<Props> = ({ open, onClose, onSubmit, initial
       try {
         const payload = normalizeForSubmit(values);
         console.log('Submitting values:', payload);
-        await onSubmit(payload);
+        //await onSubmit(payload);
         onClose(); // 성공시에만 닫기
       } catch (e) {
         console.error(e); // 실패 시 모달 유지
@@ -230,6 +248,7 @@ const SqlProblemFormModal: React.FC<Props> = ({ open, onClose, onSubmit, initial
     }
   );
 
+  
   return (
     <div className="fixed inset-0 z-[60] bg-black/40 overflow-y-auto">
       <div className="min-h-full w-full flex items-start md:items-center justify-center p-3 md:p-6">
@@ -259,6 +278,21 @@ const SqlProblemFormModal: React.FC<Props> = ({ open, onClose, onSubmit, initial
               <button className="button-secondary" onClick={onClose}>
                 취소
               </button>
+
+              {/* 미리보기 컨트롤 모음 */}
+              <PreviewControls
+                previewLoading={previewLoading}
+                schemaStatus={schemaStatus}
+                runStatus={runStatus}
+                validateStatus={validateStatus}
+                onSchema={handlePreviewSchema}
+                onRun={handlePreviewRun}
+                onValidate={handlePreviewValidate}
+                disableSchema={!canSchema}
+                disableRun={previewLoading !== null || !canRun}
+                disableValidate={previewLoading !== null || !canValidate}
+              />
+
               <button className="button-primary" onClick={submit}>
                 저장
               </button>
