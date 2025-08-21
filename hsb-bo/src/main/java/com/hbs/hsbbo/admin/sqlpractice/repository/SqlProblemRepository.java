@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 // JpaSpecificationExecutor를 붙여두면 목록 필터(키워드/레벨/태그/use_tf 등) 구현이 깔끔
 public interface SqlProblemRepository
                 extends JpaRepository<SqlProblem, Long>, JpaSpecificationExecutor<SqlProblem> {
@@ -29,5 +31,23 @@ public interface SqlProblemRepository
             @Param("useTf") String useTf,
             Pageable pageable
     );
+
+    // SQL 문제 상세 - 스키마, 테스트케이스 포함
+//    @Query("""
+//      SELECT DISTINCT p
+//       FROM SqlProblem p
+//       LEFT JOIN FETCH p.schemaList s
+//       LEFT JOIN FETCH p.testcases tc
+//       WHERE p.id = :id
+//      """)
+//    Optional<SqlProblem> findDetailById(@Param("id") Long id);
+
+    @Query("""
+      select p
+      from SqlProblem p
+      where p.id = :id
+     """)
+    Optional<SqlProblem> findDetail(@Param("id") Long id);
+
 
 }

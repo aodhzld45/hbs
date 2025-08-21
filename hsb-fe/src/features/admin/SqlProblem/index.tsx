@@ -12,7 +12,9 @@ import { useAuth } from '../../../context/AuthContext';
 
 import { 
   fetchProblemList,
-  fetchProblemCreate
+  fetchProblemDetail,
+  fetchProblemCreate,
+  fetchProblemUpdate
  } from "./services/sqlProblemApi";
 
 import SqlProblemList from "./components/SqlProblemList";
@@ -46,8 +48,13 @@ const SqlProblemManager: React.FC = () => {
 
   // 모달/상세
   const [formOpen, setFormOpen] = useState(false);
-  const [editItem, setEditItem] = useState<ProblemItem | null>(null);
   const [detailItem, setDetailItem] = useState<ProblemItem | null>(null);
+
+  // 수정 모드용
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editInitial, setEditInitial] = useState<Partial<ProblemPayload> | null>(null);
+  const [editItem, setEditItem] = useState<ProblemItem | null>(null);
+  
 
   // ===== 메뉴 로딩 =====
   const loadMenus = async () => {
@@ -90,13 +97,23 @@ const SqlProblemManager: React.FC = () => {
 
   // ===== CRUD 핸들러 =====
   const handleCreateOpen = () => {
-    setEditItem(null);
+    setEditingId(null);
+    setEditInitial(null);
     setFormOpen(true);
   };
 
-  const handleEdit = (item: ProblemItem) => {
-    setEditItem(item);
-    setFormOpen(true);
+  const handleEdit = async (item: ProblemItem) => {
+    setEditingId(item.id);          // 목록의 id 기억
+    try {
+      const detail = await fetchProblemDetail(item.id); // 전체 필드 조회
+      setEditInitial(detail);                            // 초기값 주입
+      setFormOpen(true);
+    } catch (e) {
+      console.error(e);
+      alert("상세를 불러오지 못했습니다.");
+      setFormOpen(false);
+      setEditingId(null);
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -118,8 +135,13 @@ const handleSubmit = async (payload: ProblemPayload) => {
     throw new Error('No adminId'); // 모달 닫히지 않도록 throw
   }
   try {
-    await fetchProblemCreate(payload, adminId); // 등록
-    alert("SQL문제가 성공적으로 등록되었습니다.");
+    if (editingId) {
+      await fetchProblemUpdate(editingId, payload, adminId);
+      alert("SQL문제가 수정되었습니다.");
+    } else {
+      await fetchProblemCreate(payload, adminId);
+      alert("SQL문제가 등록되었습니다.");
+    }
     await loadList();
   } catch (e: any) {
     console.error(e);
@@ -202,15 +224,17 @@ const handleSubmit = async (payload: ProblemPayload) => {
               open={formOpen}
               onClose={() => {
                 setFormOpen(false);
-                setEditItem(null); // 닫힐 때 편집 상태 초기화
+                setEditingId(null);
+                setEditInitial(null);
               }}
               onSubmit={async (payload) => {
                 // 서버 Enum 때문에 constraintRule 은 SELECT_ONLY | DML_ALLOWED 로만 전달되게 폼에서 제한
                 await handleSubmit(payload);
                 setFormOpen(false);
-                setEditItem(null);
+                setEditingId(null);
+                setEditInitial(null);
               }}
-              //initial={editItem ?? undefined} // 수정 시에만 초기값 주입
+              initial={editInitial ?? undefined}       // ← 수정 시 상세 초기값 주입
             />
         </div>
     </AdminLayout>

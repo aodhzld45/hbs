@@ -12,6 +12,11 @@ const MODES = [
   { value: "CUSTOM_ASSERT", label: "커스텀 Assertion" },
 ] as const;
 
+// ---- 유틸 ----
+function isRowset(x: unknown): x is { rows: any[]; rowCount: number } {
+  return !!x && typeof x === "object" && "rows" in (x as any) && "rowCount" in (x as any);
+}
+
 const DataAndTestSection: React.FC = () => {
   const { control } = useFormContext();
 

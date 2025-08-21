@@ -5,6 +5,8 @@ import com.hbs.hsbbo.admin.sqlpractice.domain.type.ConstraintRule;
 import com.hbs.hsbbo.common.AuditBase.AuditBase;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,13 +64,24 @@ public class SqlProblem extends AuditBase {
     /* ===================== 연관관계 ===================== */
 
     /** 기본 스키마(DDL/SEED). DDL 상 UNIQUE 제약이 없으므로 OneToMany로 매핑하고, 애플리케이션에서 1개만 관리 */
-    @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @Builder.Default
+//    private List<SqlProblemSchema> schemaList = new ArrayList<>();
+//
+//    /** 테스트케이스 1:N */
+//    @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @OrderBy("sortNo ASC, id ASC")
+//    @Builder.Default
+//    private List<SqlProblemTestcase> testcases = new ArrayList<>();
+
+    @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Fetch(FetchMode.SUBSELECT)
     @Builder.Default
     private List<SqlProblemSchema> schemaList = new ArrayList<>();
 
-    /** 테스트케이스 1:N */
-    @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("sortNo ASC, id ASC")
+    @Fetch(FetchMode.SUBSELECT)
     @Builder.Default
     private List<SqlProblemTestcase> testcases = new ArrayList<>();
 

@@ -65,3 +65,19 @@ export const fetchProblemCreate = async (
   const res = await api.post('/sql-problems', body, { params: { adminId } });
   return res.data; // { id }
 };
+
+// ====== 수정(PUT) =====
+export const fetchProblemUpdate = async (
+  id: number,
+  payload: ProblemPayload,
+  adminId: string
+): Promise<void> => {
+  const body = normalizePayload(payload);
+  await api.put(`/sql-problems/${id}`, body, { params: { adminId } });
+};
+
+// SQL 문제 상세보기
+export async function fetchProblemDetail(id: number): Promise<ProblemPayload> {
+  const { data } = await api.get(`/sql-problems/${id}`);
+  return data;
+}

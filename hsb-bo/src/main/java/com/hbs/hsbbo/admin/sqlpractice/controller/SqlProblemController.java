@@ -1,8 +1,8 @@
 package com.hbs.hsbbo.admin.sqlpractice.controller;
 
-import com.hbs.hsbbo.admin.sqlpractice.domain.entity.SqlProblem;
 import com.hbs.hsbbo.admin.sqlpractice.domain.type.ConstraintRule;
 import com.hbs.hsbbo.admin.sqlpractice.dto.request.ProblemRequest;
+import com.hbs.hsbbo.admin.sqlpractice.dto.response.ProblemDetailResponse;
 import com.hbs.hsbbo.admin.sqlpractice.dto.response.ProblemListResponse;
 import com.hbs.hsbbo.admin.sqlpractice.service.SqlProblemService;
 import jakarta.validation.Valid;
@@ -53,10 +53,12 @@ public class SqlProblemController {
         return sqlProblemService.getSqlProblemList(keyword, level, rule, page, size, useTf);
     }
 
-    /** 상세 */
+    /**
+     * 상세
+     */
     @GetMapping("/{id}")
-    public SqlProblem get(@PathVariable Long id) {
-        return sqlProblemService.getDetail(id);
+    public ProblemDetailResponse get(@PathVariable Long id) {
+        return sqlProblemService.getDetailDto(id);
     }
 
     /** 수정(JSON) */

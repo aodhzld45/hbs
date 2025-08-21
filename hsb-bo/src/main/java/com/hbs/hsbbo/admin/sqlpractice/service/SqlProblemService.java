@@ -6,7 +6,10 @@ import com.hbs.hsbbo.admin.sqlpractice.domain.entity.SqlProblemTestcase;
 import com.hbs.hsbbo.admin.sqlpractice.domain.type.ConstraintRule;
 import com.hbs.hsbbo.admin.sqlpractice.domain.type.TestcaseVisibility;
 import com.hbs.hsbbo.admin.sqlpractice.dto.request.ProblemRequest;
+import com.hbs.hsbbo.admin.sqlpractice.dto.response.ProblemDetailResponse;
 import com.hbs.hsbbo.admin.sqlpractice.dto.response.ProblemListResponse;
+import com.hbs.hsbbo.admin.sqlpractice.dto.response.SqlSchemaDto;
+import com.hbs.hsbbo.admin.sqlpractice.dto.response.SqlTcDto;
 import com.hbs.hsbbo.admin.sqlpractice.repository.SqlProblemRepository;
 import com.hbs.hsbbo.admin.sqlpractice.repository.SqlProblemSchemaRepository;
 import com.hbs.hsbbo.admin.sqlpractice.repository.SqlProblemTestcaseRepository;
@@ -22,7 +25,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -185,6 +190,63 @@ public class SqlProblemService {
         problem.getTestcases().size(); // touch
         return problem;
     }
+
+    /**
+     * 문제 상세 조회 DTO 매핑
+     * @param id 문제 ID
+     * @return 문제 상세 응답 DTO
+     */
+    /** 상세 조회 (필요 시 연관 강제 로딩) */
+    @Transactional
+    public ProblemDetailResponse getDetailDto(Long id) {
+        SqlProblem p = problemRepo.findDetail(id)
+                .orElseThrow(() -> new EntityNotFoundException("문제를 찾을 수 없습니다. id=" + id));
+
+        // 스키마: 단일 관계라면 p.getSchema(), 만약 리스트도 존재한다면 우선순위에 맞춰 선택
+        SqlProblemSchema schema = p.getSchema();
+        SqlSchemaDto schemaDto = (schema == null)
+                ? new SqlSchemaDto("", "")
+                : new SqlSchemaDto(
+                nullToEmpty(schema.getDdlScript()),
+                nullToEmpty(schema.getSeedScript())
+        );
+
+        // 테스트케이스 매핑 (정렬 보장 필요하면 엔티티에 @OrderBy, 아니면 여기서 sort)
+        List<SqlTcDto> tcDtos = p.getTestcases().stream()
+                .sorted(Comparator.comparing(tc -> Optional.ofNullable(tc.getSortNo()).orElse(0)))
+                .map(tc -> new SqlTcDto(
+                        tc.getId(),
+                        nte(tc.getName()),
+                        safeEnum(tc.getVisibility()),      // "PUBLIC"/"HIDDEN"
+                        safeEnum(tc.getExpectedMode()),    // "RESULT_SET"...
+                        nte(tc.getExpectedSql()),
+                        tc.getExpectedRows(),
+                        nte(tc.getAssertSql()),
+                        nte(tc.getExpectedMetaJson()),
+                        tc.getOrderSensitiveOverride(),
+                        nte(tc.getSeedOverride()),
+                        nte(tc.getNoteMd()),
+                        tc.getSortNo()
+                ))
+                .toList();
+
+        return new ProblemDetailResponse(
+                p.getId(),
+                nte(p.getTitle()),
+                p.getLevel(),
+                Optional.ofNullable(p.getTags()).orElse(List.of()),
+                nte(p.getDescriptionMd()),
+                p.getConstraintRule(),                // ENUM
+                Boolean.TRUE.equals(p.isOrderSensitive()),
+                nte(p.getUseTf()),                    // "Y"/"N"
+                schemaDto,
+                tcDtos
+        );
+    }
+
+    private static String nte(String s) { return s == null ? "" : s; }
+    private static String nullToEmpty(String s) { return s == null ? "" : s; }
+    private static String safeEnum(Enum<?> e) { return e == null ? "" : e.name(); }
 
     /**
      * 문제 목록 조회 (검색 + 페이징)

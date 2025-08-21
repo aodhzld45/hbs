@@ -191,6 +191,7 @@ const onSubmitFilters = async (e: FormEvent) => {
                   <button className="button-secondary mr-2" onClick={() => onEdit(it)}>
                     수정
                   </button>
+                  
                   <button className="button-danger" onClick={() => onDelete(it.id)}>
                     삭제
                   </button>
