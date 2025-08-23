@@ -12,7 +12,7 @@ const Footer = ({ isDark, toggleDark }: FooterProps) => {
     <footer className="bg-gray-100 text-gray-600 mt-10 dark:bg-gray-800 dark:text-gray-300">
       <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
         {/* 왼쪽: 저작권 표시 */}
-        <p>&copy; 2025 HBS Corp. All rights reserved.</p>
+        <p>&copy; 2025 HSBS Corp. All rights reserved.</p>
 
         {/* 오른쪽: 메뉴 */}
         <div className="flex items-center space-x-4">
@@ -45,7 +45,7 @@ const Footer = ({ isDark, toggleDark }: FooterProps) => {
 
           {/* YouTube */}
           <a
-            href="https://www.youtube.com/channel/UCpR8UwUbF20GCWJy4hxCOdQ"
+            href="https://www.youtube.com/"
             target="_blank"
             rel="noopener noreferrer"
             title="YouTube"

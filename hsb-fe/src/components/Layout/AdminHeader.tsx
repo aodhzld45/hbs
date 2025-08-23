@@ -31,7 +31,7 @@ const AdminHeader: React.FC<Props> = ({ toggleSidebar }) => {
 
         {/* 로고 */}
         <div className="text-xl font-bold">
-          <Link to="/admin/index">HBS</Link>
+          <Link to="/admin/index">HSBS</Link>
         </div>
       </div>
 
