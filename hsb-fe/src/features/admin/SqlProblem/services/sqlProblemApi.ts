@@ -81,3 +81,11 @@ export async function fetchProblemDetail(id: number): Promise<ProblemPayload> {
   const { data } = await api.get(`/sql-problems/${id}`);
   return data;
 }
+
+export async function fetchProblemToggleUseTf(id: number, next: "Y" | "N", adminId: string) {
+  // @PatchMapping("/{id}/use-tf")
+  // @RequestParam String useTf, String adminId
+  await api.patch(`/sql-problems/${id}/use-tf`, null, {
+    params: { useTf: next, adminId },
+  });
+}

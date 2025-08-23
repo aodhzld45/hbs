@@ -181,10 +181,14 @@ const onSubmitFilters = async (e: FormEvent) => {
                 <td className="p-2 border text-center">{it.constraintRule ?? '-'}</td>
                 <td className="p-2 border text-center">
                   <button
-                    className="button-ghost px-2 py-1"
                     onClick={() => onToggleUse(it.id, it.useTf === 'Y' ? 'N' : 'Y')}
+                    className={`px-2 py-1 rounded text-xs ${
+                      it.useTf === 'Y'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-200 text-gray-600'
+                    } hover:bg-green-200`}
                   >
-                    {it.useTf ?? 'Y'}
+                    {it.useTf === 'Y' ? '사용' : '미사용'}
                   </button>
                 </td>
                 <td className="p-2 border text-center">

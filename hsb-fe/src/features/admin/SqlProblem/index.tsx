@@ -14,7 +14,8 @@ import {
   fetchProblemList,
   fetchProblemDetail,
   fetchProblemCreate,
-  fetchProblemUpdate
+  fetchProblemUpdate,
+  fetchProblemToggleUseTf
  } from "./services/sqlProblemApi";
 
 import SqlProblemList from "./components/SqlProblemList";
@@ -123,8 +124,19 @@ const SqlProblemManager: React.FC = () => {
   };
 
   const handleToggleUse = async (id: number, next: "Y" | "N") => {
-    //await setUseTf(id, next);
-    await loadList();
+    if (!admin?.id) {
+      alert("관리자 인증 정보가 없습니다. 다시 로그인해주세요.");
+      return;
+    }
+    try {
+      await fetchProblemToggleUseTf(id, next, admin?.id ?? "system"); 
+      alert("사용여부가 변경되었습니다.");
+      await loadList();
+    } catch (e) {
+      console.error(e);
+      alert("사용여부 변경 중 오류가 발생했습니다. 관리자에게 문의하세요.");
+    }
+
   };
 
   const handleDetail = (item: ProblemItem) => setDetailItem(item);
