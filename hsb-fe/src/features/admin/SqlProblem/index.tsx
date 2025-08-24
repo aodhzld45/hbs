@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+
 // 공통 메뉴 목록 불러오기
 import {
   fetchAdminMenus
@@ -96,6 +98,8 @@ const SqlProblemManager: React.FC = () => {
     }
   };
 
+  const nav = useNavigate();
+
   // ===== CRUD 핸들러 =====
   const handleCreateOpen = () => {
     setEditingId(null);
@@ -111,7 +115,7 @@ const SqlProblemManager: React.FC = () => {
       setFormOpen(true);
     } catch (e) {
       console.error(e);
-      alert("상세를 불러오지 못했습니다.");
+      alert("SQL문제 상세를 불러오지 못했습니다.");
       setFormOpen(false);
       setEditingId(null);
     }
@@ -139,7 +143,19 @@ const SqlProblemManager: React.FC = () => {
 
   };
 
-  const handleDetail = (item: ProblemItem) => setDetailItem(item);
+const handleDetail = async (item: ProblemItem) => {
+  try {
+    const detail = await fetchProblemDetail(item.id);   // ← 수정 모달과 동일하게 선조회
+    // 상세 페이지로 이동하면서 preload 데이터를 state로 전달
+    nav(`/admin/sql-manager/${item.id}`, {
+      state: { preload: detail, from: "list" },
+    });
+  } catch (e) {
+    console.error(e);
+    alert("SQL문제 상세를 불러오지 못했습니다.");
+  }
+
+};
 
 const handleSubmit = async (payload: ProblemPayload) => {
   if (!adminId) {

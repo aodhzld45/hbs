@@ -7,6 +7,7 @@ import ContentManager from './pages/Admin/Content/ContentManager';
 import ContentManagerDetail from "./pages/Admin/Content/ContentManagerDetail";
 
 import SqlProblemManager from './features/admin/SqlProblem';
+import SqlProblemDetail from './features/admin/SqlProblem/components/SqlProblemDetail';
 
 import AdminLogin from "./pages/Admin/Login";
 import AdminDashboard from "./pages/Admin";
@@ -82,7 +83,7 @@ function App() {
               <Route path="/admin/content-manager" element={<ContentManager />} />
               <Route path="/admin/content-manager/:fileId" element={<ContentManagerDetail />} />
               <Route path="/admin/sql-manager" element={<SqlProblemManager />} />
-
+              <Route path="/admin/sql-manager/:id" element={<SqlProblemDetail />} />
 
               <Route path="/admin/admin-manager" element={<AdminList />} />
               <Route path="/admin/auth-management" element={<AdminAuthManagement />} />
