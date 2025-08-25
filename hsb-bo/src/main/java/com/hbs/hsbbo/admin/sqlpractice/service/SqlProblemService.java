@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -236,15 +237,33 @@ public class SqlProblemService {
                 p.getLevel(),
                 Optional.ofNullable(p.getTags()).orElse(List.of()),
                 nte(p.getDescriptionMd()),
-                p.getConstraintRule(),                // ENUM
+                p.getConstraintRule(),                         // ENUM 그대로
                 Boolean.TRUE.equals(p.isOrderSensitive()),
-                nte(p.getUseTf()),                    // "Y"/"N"
+                nte(p.getUseTf()),                             // "Y"/"N"
+                nte(p.getDelTf()),                             // 감사 필드
+                nte(p.getRegAdm()),
+                fmt(p.getRegDate()),                           // LocalDateTime -> String
+                nte(p.getUpAdm()),
+                fmt(p.getUpDate()),
+                nte(p.getDelAdm()),
+                fmt(p.getDelDate()),
                 schemaDto,
                 tcDtos
         );
     }
 
-    private static String nte(String s) { return s == null ? "" : s; }
+    /* -------------------- 유틸 -------------------- */
+    private static String nte(String s) { // null to empty
+        return s == null ? "" : s;
+    }
+    private static String fmt(LocalDateTime dt) {
+        if (dt == null) return "";
+        // 프런트에서 slice(0,10)로 날짜만 쓰는 패턴이면 ISO로 내려도 OK
+        // "2025-08-25T16:20:35" 같은 형태
+        return dt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        // 혹시 "yyyy-MM-dd HH:mm:ss" 원하시면 아래 사용:
+        // return dt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
     private static String nullToEmpty(String s) { return s == null ? "" : s; }
     private static String safeEnum(Enum<?> e) { return e == null ? "" : e.name(); }
 

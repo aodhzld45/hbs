@@ -153,6 +153,7 @@ const onSubmitFilters = async (e: FormEvent) => {
               <th className="p-2 border">제목</th>
               <th className="p-2 border">레벨</th>
               <th className="p-2 border">규칙</th>
+              <th className="p-2 border">등록일</th>
               <th className="p-2 border">사용 여부</th>
               <th className="p-2 border">관리</th>
             </tr>
@@ -179,6 +180,9 @@ const onSubmitFilters = async (e: FormEvent) => {
                 </td>
                 <td className="p-2 border text-center">{it.level ?? '-'}</td>
                 <td className="p-2 border text-center">{it.constraintRule ?? '-'}</td>
+                <td className="p-2 border text-center">
+                  {it.regDate ? it.regDate.slice(0, 10) : '-'}
+                </td>
                 <td className="p-2 border text-center">
                   <button
                     onClick={() => onToggleUse(it.id, it.useTf === 'Y' ? 'N' : 'Y')}

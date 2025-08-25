@@ -14,6 +14,13 @@ public record ProblemDetailResponse(
         ConstraintRule constraintRule,
         boolean orderSensitive,
         String useTf,
+        String delTf,
+        String regAdm,
+        String regDate,
+        String upAdm,
+        String upDate,
+        String delAdm,
+        String delDate,
         SqlSchemaDto schema,
         List<SqlTcDto> testcases
 ) {}
