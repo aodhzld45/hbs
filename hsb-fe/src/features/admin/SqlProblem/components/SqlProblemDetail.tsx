@@ -9,10 +9,9 @@ import {
   fetchProblemToggleUseTf,
   fetchProblemUpdate,
 } from "../services/sqlProblemApi";
+import ProblemPreview from "../components/SqlProblemFormModal/ProblemPreview";
 
 import SqlProblemFormModal from "../components/SqlProblemFormModal";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 /** 서버 상세 응답 타입(필요 필드만) – ProblemPayload와 호환되게 */
 export interface DetailData {
@@ -142,18 +141,20 @@ const AdminSqlProblemDetail: React.FC = () => {
                 </span>
               ))}
             </div>
-            <div className="mt-1 text-xs text-gray-500">
-              등록일 {data.regDate?.slice(0, 10) ?? "-"}
-            </div>
           </div>
           {Toolbar}
         </header>
 
         {/* 본문 – descriptionMd 표출 */}
         <section className="prose max-w-none bg-white p-4 md:p-6 rounded-xl border">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {data.descriptionMd || "문제 설명이 없습니다."}
-          </ReactMarkdown>
+
+          <ProblemPreview
+            title={data.title || "(제목 없음)"}
+            regDate={data.regDate}
+            level={data.level}
+            tags={data.tags}
+            descriptionMd={data.descriptionMd || ""}
+          />
         </section>
 
         {/* 필요 시: 스키마/예시/제출기록 탭 확장 가능 */}

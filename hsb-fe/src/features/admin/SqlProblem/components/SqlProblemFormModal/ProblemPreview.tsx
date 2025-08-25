@@ -8,6 +8,7 @@ interface ProblemPreviewProps {
   level?: number;
   tags?: string[];
   descriptionMd: string;
+  regDate?: string; 
 }
 
 const ProblemPreview: React.FC<ProblemPreviewProps> = ({
@@ -15,12 +16,19 @@ const ProblemPreview: React.FC<ProblemPreviewProps> = ({
   level,
   tags,
   descriptionMd,
+  regDate,
 }) => {
   return (
     <div className="p-6 bg-white border rounded-lg shadow-sm space-y-4">
-      {/* 문제 제목 */}
-      <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-
+      {/* 제목 + 등록일 */}
+      <div className="flex items-start justify-between">
+        <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+        {regDate && (
+          <div className="text-lg font-bold text-gray-700">
+            등록일 {regDate.slice(0, 10)}
+          </div>
+        )}
+      </div>
       {/* 난이도 + 태그 */}
       <div className="flex items-center gap-3 text-sm text-gray-600">
         {level !== undefined && (
