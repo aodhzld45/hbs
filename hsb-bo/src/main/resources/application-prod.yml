@@ -25,3 +25,13 @@ cloud:
       secret-key: ${AWS_SECRET_ACCESS_KEY}
     region:
       static: ${AWS_REGION}
+
+kis:
+  domain: https://openapivts.koreainvestment.com:29443 # 환경에 맞게 조정 (모의)
+  app-key: ${KIS_APP_KEY}
+  app-secret: ${KIS_APP_SECRET}
+  oauth-path: /oauth2/tokenP # 환경에 따라 다를 수 있음
+
+
+logging.level.root: INFO
+logging.level.org.springframework.web.reactive.function.client: INFO
