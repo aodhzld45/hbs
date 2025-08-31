@@ -51,7 +51,7 @@ public class KisClient {
 
     /** 현재가 조회 */
     public Map<String,Object> inquirePrice(String code){
-        final String path = "/uapi/domestic-stock/v1/quotations/inquire-price";  // ✅ 상대경로만
+        final String path = "/uapi/domestic-stock/v1/quotations/inquire-price";  //  상대경로만
         log.debug("[KIS] GET {}", path);
         return callWithRefresh(() ->
                 webClient.get()

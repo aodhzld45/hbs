@@ -45,6 +45,7 @@ import ContactForm from './features/user/Contact/index';
 // 각종 테스트용 imports
 import TestPage from './pages/User/TestPage';
 import SqlProblemTestPage from './features/admin/SqlProblem/SqlProblemTestPage';
+import KisPage from './features/user/Kis';
 
 // 관리자 Common imports
 import PrivateRoute from './components/Admin/PrivateRoute';
@@ -68,6 +69,7 @@ function App() {
             <Route path="/contact" element={<ContactForm />} />
             <Route path="/test" element={<TestPage />} />
             <Route path="/test/2depth" element={<SqlProblemTestPage />} />
+            <Route path="/test/kis" element={<KisPage />} />
 
             {/* 관리자 공통 페이지 */}
 
