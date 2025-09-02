@@ -45,7 +45,7 @@ public class StocksCsvUpsertService {
                 String rawCode = pick(row, idx,
                         "단축코드", "종목코드", "종목번호", "표준코드");   // 단축코드 열
                 String nameKr  = pick(row, idx,
-                        "한글 종목명", "종목명", "한글명");             // 이름 열
+                        "한글 종목약명", "종목약명", "한글약명");         // 이름 열
                 String market  = pick(row, idx,
                         "시장구분", "시장", "market");                 // 마켓 열
 
