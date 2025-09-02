@@ -22,6 +22,8 @@ public class KrxSymbolBatch {
     private final KrxSymbolClient client;
     private final XlsToCsv converter;
 
+    private final StocksCsvUpsertService upsertService;
+
     @Value("${krx.symbols.out-path}")    String outPath;
     @Value("${krx.symbols.otp-params}")  String otpParams; // ← YAML의 쿼리 스트링
 
@@ -30,14 +32,19 @@ public class KrxSymbolBatch {
         log.info("[KrxSymbolBatch] start");
         try {
             Map<String,String> params = parseQuery(otpParams);
-            byte[] payload = retryDownload(params);
+            byte[] xlsPayload = retryDownload(params);
 
             File out = new File(outPath);
             if (out.getParentFile() != null) out.getParentFile().mkdirs();
+            log.info("[KrxSymbolBatch] xls length = {}", xlsPayload.length);
+            converter.convert(xlsPayload, out);               // XLS -> CSV 파일 저장
+            log.info("[KrxSymbolBatch] wrote {}", out.getAbsolutePath());
 
-            log.info("[KrxSymbolBatch] payload length = {}", payload.length);
-            converter.convert(payload, out);
-
+            // CSV 파일을 읽어 stocks 테이블 업서트
+            byte[] csv = java.nio.file.Files.readAllBytes(out.toPath());
+            //var res = upsertService.upsert(csv, java.nio.charset.Charset.forName("MS949")); // 필요 시 UTF-8로 변경 테스트
+            var res = upsertService.upsert(csv, java.nio.charset.StandardCharsets.UTF_8);
+            log.info("[stocks upsert] inserted={}, updated={}, skipped={}", res.inserted(), res.updated(), res.skipped());
             log.info("[KrxSymbolBatch] wrote {}", out.getAbsolutePath());
         } catch (Exception e) {
             log.error("[KrxSymbolBatch] failed: {}", e.toString(), e);
