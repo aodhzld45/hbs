@@ -33,3 +33,9 @@ export interface KisSearch {
   name: string;
   market?: string;  // KOSPI/KOSDAQ/ETF 등 (옵션)
 }
+
+export type StockLite = {
+  symbol: string;   // 6자리
+  name: string;     // 한글명
+  market: string;   // KOSPI/KOSDAQ
+};

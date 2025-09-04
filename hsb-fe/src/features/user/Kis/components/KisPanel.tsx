@@ -1,75 +1,106 @@
+// src/features/Kis/components/KisPanel.tsx
 import React, { useState } from 'react';
-import { useKisPrice, useKisHistory } from '../hooks/useKis';
-
-import type { KisSearch } from '../types';
-
-import PriceCard from './PriceCard';
-import HistoryTable from './HistoryTable';
 import StockSearchBox from './StockSearchBox';
+import { fetchKisPrice, fetchKisHistory } from '../services/kisApi';
+import type { StockLite } from '../types';
+
+type Period = 'D'|'W'|'M';
 
 export default function KisPanel() {
-    const [tempCode, setTempCode] = useState('005930');  // 입력창 표시용
-  // const [name, setName] = useState('삼성전자'); // 필요하면 종목명도 상태로 관리
-  const [code, setCode] = useState('005930'); // 조회에 쓰는 확정값
-  const [period, setPeriod] = useState<'D'|'W'|'M'>('D');
+  const [sel, setSel] = useState<StockLite | null>(null);
+  const [period, setPeriod] = useState<Period>('D');
+  const [price, setPrice] = useState<any>(null);
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
-  const { data: price, loading: lp, error: ep } = useKisPrice(code);
-  const { data: hist,  loading: lh, error: eh } = useKisHistory(code, period);
+  async function load(s: StockLite, p: Period) {
+    setLoading(true); setErr(null);
+    try {
+      const [pr, hi] = await Promise.all([
+        fetchKisPrice(s.symbol),
+        fetchKisHistory(s.symbol, p),
+      ]);
+      setPrice(pr);
+      setRows(hi.items ?? []);
+    } catch (e: any) {
+      setErr(e?.message ?? 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const commitCode = (next: string) => {
-    if (/^\d{6}$/.test(next)) setCode(next); // 6자리일 때만 조회
-  };
+  function onPick(s: StockLite) {
+    setSel(s);
+    load(s, period);
+  }
 
-  const onManualChange = (v: string) => {
-    const onlyDigits = v.replace(/\D/g, '').slice(0, 6);
-    setTempCode(onlyDigits);                  // 입력창만 업데이트
-    // 자동 커밋을 원하면, 아래 한 줄 주석 해제(6자리 찍히면 1회 커밋)
-    // if (onlyDigits.length === 6) commitCode(onlyDigits);
-  };
+  function onChangePeriod(e: React.ChangeEvent<HTMLSelectElement>) {
+    const p = e.target.value as Period;
+    setPeriod(p);
+    if (sel) load(sel, p);
+  }
 
-  const onManualKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') commitCode(tempCode);
-  };
-
-  const handlePick = (it: KisSearch) => {
-    setTempCode(it.code);
-    commitCode(it.code);                      // 자동완성 선택 시에만 커밋
-    // setName(it.name);                       // 필요하면 종목명도 같이 설정
-  };
-
-
-return (
-    <div className="p-4 space-y-3">
-      <div className="flex flex-wrap gap-2 items-center">
-        {/* 자동완성 검색 박스 */}
-        {/* <StockSearchBox onPick={handlePick} /> */}
-
-        {/* 수동 입력은 temp만 바꾸고, Enter에만 커밋 */}
-        <input
-          value={tempCode}
-          onChange={e => onManualChange(e.target.value)}
-          onKeyDown={onManualKey}
-          className="border px-2 py-1 rounded"
-          placeholder="종목코드(6자리)"
-        />
-
-        <select
-          value={period}
-          onChange={e=>setPeriod(e.target.value as any)}
-          className="border px-2 py-1 rounded"
-        >
-          <option value="D">D</option>
-          <option value="W">W</option>
-          <option value="M">M</option>
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="flex-1">
+          <StockSearchBox onPick={onPick} placeholder="삼성, 카카오 또는 005930…" />
+        </div>
+        <select value={period} onChange={onChangePeriod} className="rounded-md border px-2 py-2">
+          <option value="D">D</option><option value="W">W</option><option value="M">M</option>
         </select>
-
-        {(lp||lh) && <span className="text-xs text-gray-500">조회 중…</span>}
-        {(ep||eh) && <span className="text-xs text-red-600">조회 실패</span>}
       </div>
 
-      <PriceCard p={price ?? null} />
-      <HistoryTable h={hist ?? null} />
+      {sel && (
+        <div className="text-sm text-gray-700">
+          <span className="font-semibold">{sel.name}</span>
+          <span className="ml-2 text-gray-500">({sel.symbol} · {sel.market})</span>
+        </div>
+      )}
+      {err && <div className="rounded bg-red-50 p-3 text-sm text-red-700">에러: {err}</div>}
+
+      {price && (
+        <div className="rounded border p-4">
+          <div className="text-3xl font-bold">{Number(price.tradePrice).toLocaleString()}</div>
+          <div className={`text-sm ${price.changeRate>0?'text-red-600':price.changeRate<0?'text-blue-600':'text-gray-600'}`}>
+            {price.changeRate>0?'+':''}{Number(price.changeRate).toFixed(2)}%
+          </div>
+          <div className="mt-1 text-xs text-gray-500">거래량: {Number(price.accVol).toLocaleString()}</div>
+        </div>
+      )}
+
+      <div className="rounded border">
+        <div className="border-b px-4 py-2 font-semibold">일자별 시세 ({period})</div>
+        <div className="max-h-96 overflow-auto">
+          <table className="min-w-full text-sm">
+            <thead className="sticky top-0 bg-gray-50">
+              <tr>
+                <th className="px-3 py-2 text-left">날짜</th>
+                <th className="px-3 py-2 text-right">종가</th>
+                <th className="px-3 py-2 text-right">고가</th>
+                <th className="px-3 py-2 text-right">저가</th>
+                <th className="px-3 py-2 text-right">거래량</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && <tr><td colSpan={5} className="px-3 py-6 text-center text-gray-500">불러오는 중…</td></tr>}
+              {!loading && rows.map(r => (
+                <tr key={r.date} className="odd:bg-white even:bg-gray-50">
+                  <td className="px-3 py-2">{r.date}</td>
+                  <td className="px-3 py-2 text-right">{Number(r.close).toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right">{Number(r.high).toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right">{Number(r.low).toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right">{Number(r.volume).toLocaleString()}</td>
+                </tr>
+              ))}
+              {!loading && rows.length === 0 && (
+                <tr><td colSpan={5} className="px-3 py-6 text-center text-gray-500">데이터 없음</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
-
