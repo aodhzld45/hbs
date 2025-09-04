@@ -36,14 +36,14 @@ public abstract class AuditBase {
     private LocalDateTime delDate;
 
     @PrePersist
-    public void onCreate() {
+    protected void prePersist() {
         LocalDateTime now = LocalDateTime.now();
-        this.regDate = now;
-        this.upDate  = now;
+        if (this.regDate == null) {
+            this.regDate = now;
+        }
+        if (this.upDate == null) {
+            this.upDate = now;
+        }
     }
 
-    @PreUpdate
-    public void onUpdate() {
-        this.upDate = LocalDateTime.now();
-    }
 }
