@@ -75,6 +75,8 @@ dependencies {
 
 	// CSV 헤더/따옴표 처리를 위해 OpenCSV
 	implementation 'com.opencsv:opencsv:5.9'
+	// CSV 배치 파서 (Apache Commons CSV 기반, 스케줄)
+	implementation 'org.apache.commons:commons-csv:1.10.0'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
