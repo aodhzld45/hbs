@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -23,6 +24,8 @@ public class KrxSymbolBatch {
     private final XlsToCsv converter;
 
     private final StocksCsvUpsertService upsertService;
+    private final StockMasterCsvUpsertService stockMasterUpsertService;
+    private final StockMasterJdbcUpsertService stockMasterJdbcUpsertService;
 
     @Value("${krx.symbols.out-path}")    String outPath;
     @Value("${krx.symbols.otp-params}")  String otpParams; // ← YAML의 쿼리 스트링
@@ -41,11 +44,35 @@ public class KrxSymbolBatch {
             log.info("[KrxSymbolBatch] wrote {}", out.getAbsolutePath());
 
             // CSV 파일을 읽어 stocks 테이블 업서트
-            byte[] csv = java.nio.file.Files.readAllBytes(out.toPath());
+            byte[] csv = Files.readAllBytes(out.toPath());
             //var res = upsertService.upsert(csv, java.nio.charset.Charset.forName("MS949")); // 필요 시 UTF-8로 변경 테스트
-            var res = upsertService.upsert(csv, java.nio.charset.StandardCharsets.UTF_8);
-            log.info("[stocks upsert] inserted={}, updated={}, skipped={}", res.inserted(), res.updated(), res.skipped());
-            log.info("[KrxSymbolBatch] wrote {}", out.getAbsolutePath());
+            // --- 1) stocks 테이블 업서트 ---
+/*            var res1 = upsertService.upsert(csv, StandardCharsets.UTF_8);
+            log.info("[stocks upsert] inserted={}, updated={}, skipped={}",
+                    res1.inserted(), res1.updated(), res1.skipped());*/
+
+            // --- 2) stock_master 테이블 업서트 Spring Data JPA Entity 기반 Upsert 방식 ---
+            // ================================================================
+            // [JPA 방식] Entity + Repository 기반 Upsert
+            // - saveAll() 사용
+            // - 객체지향적 / 영속성 컨텍스트 관리 가능
+            // - 대량 처리 시 Hibernate SQL 로그 많음
+            // ================================================================
+/*            var res2 = stockMasterUpsertService.upsert(csv, StandardCharsets.UTF_8);
+            log.info("[stock_master Entity + Repository upsert] inserted={}, updated={}, skipped={}",
+                    res2.inserted(), res2.updated(), res2.skipped());*/
+
+            // --- 3) stock_master 테이블 업서트 JDBC Batch Insert/Update Skeleton 방식  ---
+            // ================================================================
+            // [JDBC Batch 방식] JdbcTemplate + ON DUPLICATE KEY UPDATE
+            // - MySQL 전용 UPSERT 문법
+            // - 성능 최적화, 로그 최소화
+            // - 엔티티 기능 없음 (순수 SQL)
+            // ================================================================
+            var res3 = stockMasterJdbcUpsertService.upsert(csv, StandardCharsets.UTF_8);
+            log.info("[stock_master JdbcTemplate + ON DUPLICATE KEY UPDATE upsert] inserted={}, updated={}, skipped={}",
+                    res3.inserted(), res3.updated(), res3.skipped());
+
         } catch (Exception e) {
             log.error("[KrxSymbolBatch] failed: {}", e.toString(), e);
         }

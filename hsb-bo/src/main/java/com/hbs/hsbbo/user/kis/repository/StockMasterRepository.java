@@ -8,10 +8,17 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface StockMasterRepository extends JpaRepository<StockMaster, Long> {
+    List<StockMaster> findAllByIsinIn(Collection<String> isins);
+
+    List<StockMaster> findAllBySymbolIn(Collection<String> symbols);
+
+    // 추가: 단일 조회
     Optional<StockMaster> findByIsin(String isin);
     Optional<StockMaster> findBySymbol(String symbol);
 
@@ -36,4 +43,7 @@ public interface StockMasterRepository extends JpaRepository<StockMaster, Long> 
                      @Param("stockType") String stockType,
                      @Param("parValue") Integer parValue,
                      @Param("listedShares") Long listedShares);
+
+
+
 }
