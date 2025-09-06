@@ -1,6 +1,8 @@
 package com.hbs.hsbbo.user.kis.repository;
 
 import com.hbs.hsbbo.user.kis.domain.entity.StockMaster;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -18,9 +20,30 @@ public interface StockMasterRepository extends JpaRepository<StockMaster, Long> 
 
     List<StockMaster> findAllBySymbolIn(Collection<String> symbols);
 
-    // 추가: 단일 조회
-    Optional<StockMaster> findByIsin(String isin);
-    Optional<StockMaster> findBySymbol(String symbol);
+    // 자동완성용: 심볼 prefix 또는 이름 부분일치 (활성만), 정렬 가중치
+    @Query("""
+        SELECT s FROM StockMaster s
+        WHERE s.useTf='Y' AND s.delTf='N' AND
+             ( s.symbol LIKE CONCAT(:q, '%')
+               OR LOWER(s.shortName) LIKE LOWER(CONCAT('%', :q, '%')) )
+        ORDER BY
+             CASE
+               WHEN s.symbol = :q THEN 0
+               WHEN s.symbol LIKE CONCAT(:q, '%') THEN 1
+               WHEN LOWER(s.shortName) LIKE LOWER(CONCAT(:q, '%')) THEN 2
+               ELSE 3
+             END,
+             s.market, s.symbol
+        """)
+    Page<StockMaster> autoComplete(@Param("q") String q, Pageable pageable);
+
+    // 사용자가 '삼성전자' 혹은 '005930'을 엔터로 확정했을 때 1건 해석
+    @Query("""
+        SELECT s FROM StockMaster s
+        WHERE s.useTf='Y' AND s.delTf='N' AND
+             ( s.symbol = :q OR LOWER(s.shortName) = LOWER(:q) )
+        """)
+    Optional<StockMaster> resolveExact(@Param("q") String q);
 
     @Modifying
     @Query("""

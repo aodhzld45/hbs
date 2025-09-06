@@ -224,7 +224,7 @@ export async function searchStocks(
   if (hit) return hit;
 
   return once(key, async () => {
-    const data = await getJSON<StockLite[]>('/stocks/search', { q, size }, signal);
+    const data = await getJSON<StockLite[]>('/stock-master/search', { q, size }, signal);
     setCache(key, data, ttlMs);
     return data;
   });
@@ -241,7 +241,7 @@ export async function resolveStock(
   if (hit) return hit;
 
   return once(key, async () => {
-    const data = await getJSON<StockLite>('/stocks/resolve', { q }, signal);
+    const data = await getJSON<StockLite>('/stock-master/resolve', { q }, signal);
     setCache(key, data, ttlMs);
     return data;
   });
