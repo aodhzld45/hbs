@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import StockSearchBox from './StockSearchBox';
 import { fetchKisPrice, fetchKisHistory } from '../services/kisApi';
+import { toYmd } from '../../../../utils/date';
 import type { StockLite } from '../types';
 
 type Period = 'D'|'W'|'M';
@@ -87,7 +88,7 @@ export default function KisPanel() {
               {loading && <tr><td colSpan={5} className="px-3 py-6 text-center text-gray-500">불러오는 중…</td></tr>}
               {!loading && rows.map(r => (
                 <tr key={r.date} className="odd:bg-white even:bg-gray-50">
-                  <td className="px-3 py-2">{r.date}</td>
+                  <td className="px-3 py-2">{toYmd(r.date)}</td>
                   <td className="px-3 py-2 text-right">{Number(r.close).toLocaleString()}</td>
                   <td className="px-3 py-2 text-right">{Number(r.high).toLocaleString()}</td>
                   <td className="px-3 py-2 text-right">{Number(r.low).toLocaleString()}</td>

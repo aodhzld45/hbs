@@ -59,14 +59,14 @@ export default function StockSearchBox({
     if (hi >= 0 && items[hi]) {
       const s = items[hi];
       onPick(s);
-      setQ(`${s.name} (${s.symbol})`);
+      setQ(`${s.shortName} (${s.symbol})`);
       setOpen(false);
       return;
     }
     try {
       const s = await resolveStock(q);
       onPick(s);
-      setQ(`${s.name} (${s.symbol})`);
+      setQ(`${s.shortName} (${s.symbol})`);
       setOpen(false);
     } catch {
       setOpen(true); // 못 찾으면 그대로 열어두기
@@ -102,10 +102,10 @@ export default function StockSearchBox({
               className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${hi===idx ? 'bg-gray-100' : ''}`}
               onMouseEnter={() => setHi(idx)}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => { onPick(it); setQ(`${it.name} (${it.symbol})`); setOpen(false); }}
+              onClick={() => { onPick(it); setQ(`${it.shortName} (${it.symbol})`); setOpen(false); }}
             >
               <div className="font-medium">
-                {it.name} <span className="text-gray-500">({it.symbol})</span>
+                {it.shortName} <span className="text-gray-500">({it.symbol})</span>
               </div>
               <div className="text-xs text-gray-500">{it.market}</div>
             </button>
