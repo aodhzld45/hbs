@@ -1,6 +1,7 @@
 package com.hbs.hsbbo.user.kis.service;
 
 import com.hbs.hsbbo.user.kis.domain.entity.StockMaster;
+import com.hbs.hsbbo.user.kis.dto.StockMasterResponse;
 import com.hbs.hsbbo.user.kis.repository.StockMasterRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,9 +20,12 @@ public class StockMasterService {
     private final StockMasterRepository stockMasterRepository;
 
     @Transactional
-    public List<StockMaster> suggest(String q, int size) {
+    public List<StockMasterResponse> suggest(String q, int size) {
         var page = stockMasterRepository.autoComplete(q.trim(), PageRequest.of(0, size));
-        return page.getContent();
+        return page.getContent()
+                .stream()
+                .map(StockMasterResponse::fromEntity)
+                .toList();
     }
 
     @Transactional

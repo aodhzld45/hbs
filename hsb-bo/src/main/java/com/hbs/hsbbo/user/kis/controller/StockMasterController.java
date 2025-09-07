@@ -1,6 +1,6 @@
 package com.hbs.hsbbo.user.kis.controller;
 
-import com.hbs.hsbbo.user.kis.domain.entity.StockMaster;
+import com.hbs.hsbbo.user.kis.dto.StockMasterResponse;
 import com.hbs.hsbbo.user.kis.service.StockMasterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,22 +19,21 @@ public class StockMasterController {
 
     private final StockMasterService stockMasterService;
 
-    record SimpleStockMaster(String symbol, String name, String market) {
-        static SimpleStockMaster of(StockMaster s){ return new SimpleStockMaster(s.getSymbol(), s.getName(), s.getMarket()); }
-    }
-
     // 자동완성
     @GetMapping("/search")
-    public List<SimpleStockMaster> search(@RequestParam("q") String q,
-                                    @RequestParam(defaultValue="10") int size) {
-        return stockMasterService.suggest(q, size).stream().map(SimpleStockMaster::of).toList();
+    public List<StockMasterResponse> search(@RequestParam("q") String q,
+                                            @RequestParam(defaultValue="10") int size) {
+        List<StockMasterResponse> response = stockMasterService.suggest(q, size);
+        return response;
     }
 
-    // 단건 해석(입력 확정 시): 반환 심볼로 KIS 호출
+    // 단건 해석
     @GetMapping("/resolve")
     public ResponseEntity<?> resolve(@RequestParam("q") String q) {
         return stockMasterService.resolve(q)
-                .<ResponseEntity<?>>map(s -> ResponseEntity.ok(StockMasterController.SimpleStockMaster.of(s)))
-                .orElseGet(() -> ResponseEntity.status(404).body(Map.of("message","종목을 찾지 못함","q",q)));
+                .<ResponseEntity<?>>map(s -> ResponseEntity.ok(StockMasterResponse.fromEntity(s)))
+                .orElseGet(() -> ResponseEntity.status(404)
+                        .body(Map.of("message", "종목을 찾지 못함", "q", q)));
     }
+
 }
