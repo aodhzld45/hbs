@@ -27,11 +27,16 @@ cloud:
       static: ${AWS_REGION}
 
 kis:
-  domain: https://openapivts.koreainvestment.com:29443 # 환경에 맞게 조정 (모의)
+  domain: ${KIS_DOMAIN:https://openapivts.koreainvestment.com:29443}  # 모의 기본. 실계: https://openapi.koreainvestment.com:9443
   app-key: ${KIS_APP_KEY}
   app-secret: ${KIS_APP_SECRET}
   oauth-path: /oauth2/tokenP # 환경에 따라 다를 수 있음
 
+krx:
+  symbols:
+    out-path: ${KRX_SYMBOLS_OUT_PATH:/home/hbs/data/krx/symbols.csv}
+    #cron: "0 5 6 * * *"             # 매일 06:05 KST
+    cron: "0 0/1 * * * *"          # 테스트 1분마다
 
 logging.level.root: INFO
 logging.level.org.springframework.web.reactive.function.client: INFO

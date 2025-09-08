@@ -1,11 +1,7 @@
 package com.hbs.hsbbo.user.kis.domain.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.Id;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,21 +14,22 @@ import java.time.LocalDate;
 @Entity
 @Table(
         name = "stock_market_price",
-        indexes = {
-                @Index(name = "ix_kds_trade_date", columnList = "trade_date"),
-                @Index(name = "ix_kds_market_trade", columnList = "market, trade_date"),
-                @Index(name = "ix_kds_symbol_trade", columnList = "symbol, trade_date")
-        }
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_stock_market_price_symbol_date",
+                columnNames = {"symbol", "trade_date"}
+        )
 )
 public class StockMarketPrice {
 
-    /** 거래일(KST) */
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /** 거래일(KST) */
     @Column(name = "trade_date", nullable = false)
     private LocalDate tradeDate;
 
     /** 종목코드(단축코드, 예: 005930) */
-    @Id
     @Column(name = "symbol", length = 20, nullable = false)
     private String symbol;
 
