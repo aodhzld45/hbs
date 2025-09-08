@@ -253,6 +253,10 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          KIS_DOMAIN: ${{ secrets.KIS_DOMAIN }}
+          KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+          KRX_SYMBOLS_OUT_PATH: ${{ secrets.KRX_SYMBOLS_OUT_PATH }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
@@ -276,6 +280,12 @@ jobs:
             AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
             AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
             AWS_REGION=${AWS_REGION}
+
+            KIS_DOMAIN=${KIS_DOMAIN}
+            KIS_APP_KEY=${KIS_APP_KEY}
+            KIS_APP_SECRET=${KIS_APP_SECRET}
+
+            KRX_SYMBOLS_OUT_PATH=${KRX_SYMBOLS_OUT_PATH}
             EOF"
                         sudo chmod 600 /etc/hsb/hsb-bo.env
                         echo "[env] /etc/hsb/hsb-bo.env updated"
