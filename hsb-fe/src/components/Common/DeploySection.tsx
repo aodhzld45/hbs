@@ -45,13 +45,6 @@ export default function DeploySection() {
           <b>GitHub Actions</b>로 CI/CD를 구성했습니다.
         </p>
       </div>
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Pill>작업 예정</Pill>
-          <Pill className="hidden md:inline-flex">
-            <GitBranch className="w-3.5 h-3.5 mr-1 inline-block" />
-            Dev → Staging → Prod 승격
-          </Pill>
-        </div>
       {/* 스택/인프라 요약 */}
       <div className="max-w-5xl mx-auto">
         <div className="rounded-2xl border bg-white dark:bg-[#121212] dark:border-gray-800 p-6 md:p-8">
@@ -151,14 +144,6 @@ export default function DeploySection() {
                 <Terminal className="inline-block mr-1" size={14} />
                 <code>journalctl -u hsb-bo -f</code> 로 실시간 로그 확인
               </li>
-            </ul>
-          </Step>
-
-          <Step no={6} title="Next (작업 예정)">
-            <ul className="list-disc ml-5 space-y-1">
-              <li>릴리스 태그/노트 자동 생성 및 변경내역 링크</li>
-              <li>롤백 태그(<code>rollback-*</code>) 혹은 즉시 이전 아티팩트 재배포</li>
-              <li>FE 캐시 최적화(Cache-Control/ETag) 및 BO 메트릭 대시보드</li>
             </ul>
           </Step>
 
