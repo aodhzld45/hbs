@@ -11,6 +11,7 @@ import "aos/dist/aos.css";
 import SideNav from '../components/Common/SideNav';
 import IntroSection from '../components/Common/IntroSection';
 import DeploySection from '../components/Common/DeploySection';
+import SecuritiesDataSection from '../components/Common/SecuritiesDataSection';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation, Pagination } from 'swiper/modules';
@@ -341,6 +342,21 @@ const MainPage = () => {
 
           </div>
         </div>
+      </section>
+
+      {/* 증권 데이터 파이프라인 섹션 */}
+      <section
+        id="securitiesData"
+        className="scroll-mt-24 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white py-20 px-4 md:px-8 border-t"
+        data-aos="fade-up"
+      >
+
+        <div className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white inline-block border-b-4 border-blue-600 pb-2">
+            📌 Securities Data
+          </h2>
+        </div>
+        <SecuritiesDataSection />
       </section>
 
       {/* 배포 과정 섹션 */}
