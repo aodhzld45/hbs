@@ -55,15 +55,15 @@ export default function KisPanel() {
 
       {sel && (
         <div className="text-sm text-gray-700">
-          <span className="font-semibold">{sel.name}</span>
-          <span className="ml-2 text-gray-500">({sel.symbol} · {sel.market})</span>
+          <span className="font-semibold dark:text-gray-400">{sel.name}</span>
+          <span className="ml-2 text-gray-500 dark:text-gray-400">({sel.symbol} · {sel.market})</span>
         </div>
       )}
       {err && <div className="rounded bg-red-50 p-3 text-sm text-red-700">에러: {err}</div>}
 
       {price && (
         <div className="rounded border p-4">
-          <div className="text-3xl font-bold">{Number(price.tradePrice).toLocaleString()}</div>
+          <div className="text-3xl font-bold dark:text-gray-400">{Number(price.tradePrice).toLocaleString()}</div>
           <div className={`text-sm ${price.changeRate>0?'text-red-600':price.changeRate<0?'text-blue-600':'text-gray-600'}`}>
             {price.changeRate>0?'+':''}{Number(price.changeRate).toFixed(2)}%
           </div>
@@ -72,7 +72,7 @@ export default function KisPanel() {
       )}
 
       <div className="rounded border">
-        <div className="border-b px-4 py-2 font-semibold">일자별 시세 ({period})</div>
+        <div className="border-b px-4 py-2 font-semibold dark:text-gray-400">일자별 시세 ({period})</div>
         <div className="max-h-96 overflow-auto">
           <table className="min-w-full text-sm">
             <thead className="sticky top-0 bg-gray-50">

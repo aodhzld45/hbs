@@ -237,58 +237,39 @@ jobs:
           overwrite: true
           strip_components: 1
 
-      # --- ENV 파일 생성/갱신 ---
-      - name: Create/Update /etc/hsb/hsb-bo.env on server
+      # --- ENV 파일은 서버에서 로드 (생성/업데이트 안 함) ---
+      - name: Reload & restart hsb-bo with server-side env file
         uses: appleboy/ssh-action@v1.2.0
-        env:
-          SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL }}
-          SPRING_DATASOURCE_USERNAME: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
-          SPRING_DATASOURCE_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
-          MAIL_HOST: ${{ secrets.MAIL_HOST }}
-          MAIL_PORT: ${{ secrets.MAIL_PORT }}
-          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
-          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-          FILE_UPLOAD_PATH: ${{ secrets.FILE_UPLOAD_PATH }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          KIS_DOMAIN: ${{ secrets.KIS_DOMAIN }}
-          KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
-          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
-          KRX_SYMBOLS_OUT_PATH: ${{ secrets.KRX_SYMBOLS_OUT_PATH }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          envs: SPRING_DATASOURCE_URL,SPRING_DATASOURCE_USERNAME,SPRING_DATASOURCE_PASSWORD,MAIL_HOST,MAIL_PORT,MAIL_USERNAME,MAIL_PASSWORD,FILE_UPLOAD_PATH,JWT_SECRET,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
           script: |
-            sudo mkdir -p /etc/hsb
-            sudo bash -c "cat >/etc/hsb/hsb-bo.env <<EOF
-            SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
-            SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
-            SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+            set -euo pipefail
 
-            MAIL_HOST=${MAIL_HOST}
-            MAIL_PORT=${MAIL_PORT}
-            MAIL_USERNAME=${MAIL_USERNAME}
-            MAIL_PASSWORD=${MAIL_PASSWORD}
+            # 1) env 파일 존재/권한 검사
+            if [ ! -f /etc/hsb/hsb-bo.env ]; then
+              echo "ERROR: /etc/hsb/hsb-bo.env not found on server." >&2
+              exit 1
+            fi
+            sudo chown root:root /etc/hsb/hsb-bo.env
+            sudo chmod 600 /etc/hsb/hsb-bo.env
 
-            FILE_UPLOAD_PATH=${FILE_UPLOAD_PATH}
-            JWT_SECRET=${JWT_SECRET}
-
-            AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-            AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-            AWS_REGION=${AWS_REGION}
-
-            KIS_DOMAIN=${KIS_DOMAIN}
-            KIS_APP_KEY=${KIS_APP_KEY}
-            KIS_APP_SECRET=${KIS_APP_SECRET}
-
-            KRX_SYMBOLS_OUT_PATH=${KRX_SYMBOLS_OUT_PATH}
-            EOF"
-                        sudo chmod 600 /etc/hsb/hsb-bo.env
-                        echo "[env] /etc/hsb/hsb-bo.env updated"
+            # 2) 필수 키 간단 유효성 검사(누락 시 실패)
+            required_keys=(
+              SPRING_DATASOURCE_URL SPRING_DATASOURCE_USERNAME SPRING_DATASOURCE_PASSWORD
+              MAIL_HOST MAIL_PORT MAIL_USERNAME MAIL_PASSWORD
+              FILE_UPLOAD_PATH JWT_SECRET
+              AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION
+              KIS_DOMAIN KIS_APP_KEY KIS_APP_SECRET
+              KRX_SYMBOLS_OUT_PATH
+            )
+            for k in "${required_keys[@]}"; do
+              if ! grep -qE "^${k}=" /etc/hsb/hsb-bo.env; then
+                echo "ERROR: missing key in /etc/hsb/hsb-bo.env -> ${k}" >&2
+                exit 1
+              fi
+            done
 
       # --- RESTART & LOG ---
       - name: Restart Backend via systemd and show logs
