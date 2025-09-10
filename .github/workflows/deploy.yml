@@ -247,15 +247,15 @@ jobs:
           script: |
             set -euo pipefail
 
-            # 1) env 파일 존재/권한 검사
-            if [ ! -f /etc/hsb/hsb-bo.env ]; then
+            # 1) env 파일 존재/권한 검사 (sudo로 체크)
+            if ! sudo test -f /etc/hsb/hsb-bo.env; then
               echo "ERROR: /etc/hsb/hsb-bo.env not found on server." >&2
               exit 1
             fi
             sudo chown root:root /etc/hsb/hsb-bo.env
             sudo chmod 600 /etc/hsb/hsb-bo.env
 
-            # 2) 필수 키 간단 유효성 검사(누락 시 실패)
+            # 2) 필수 키 유효성 검사(누락 시 실패) - sudo로 읽기
             required_keys=(
               SPRING_DATASOURCE_URL SPRING_DATASOURCE_USERNAME SPRING_DATASOURCE_PASSWORD
               MAIL_HOST MAIL_PORT MAIL_USERNAME MAIL_PASSWORD
@@ -265,7 +265,8 @@ jobs:
               KRX_SYMBOLS_OUT_PATH
             )
             for k in "${required_keys[@]}"; do
-              if ! grep -qE "^${k}=" /etc/hsb/hsb-bo.env; then
+              # 공백/따옴표 있어도 매칭되게 살짝 여유있게
+              if ! sudo grep -qE "^[[:space:]]*${k}[[:space:]]*=" /etc/hsb/hsb-bo.env; then
                 echo "ERROR: missing key in /etc/hsb/hsb-bo.env -> ${k}" >&2
                 exit 1
               fi
