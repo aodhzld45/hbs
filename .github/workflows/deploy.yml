@@ -245,6 +245,9 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            set -e
+            sudo -n true
+            echo "Passwordless sudo OK"
             set -euo pipefail
 
             # 1) env 파일 존재/권한 검사 (sudo로 체크)
