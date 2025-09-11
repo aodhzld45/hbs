@@ -117,7 +117,7 @@ export default function SecuritiesDataSection() {
 
           <Step no={4} title="운영/신뢰성 (Ops & Reliability)">
             <ul className="list-disc ml-5 space-y-1">
-              <li><Activity className="inline-block mr-1" size={14}/> 스케줄러(Quartz/Spring)로 평일 18:00 배치, 실패 시 재시도 & 알림</li>
+              <li><Activity className="inline-block mr-1" size={14}/> 스케줄러(Quartz/Spring)로 매일 06:05 배치, 실패 시 재시도 & 알림</li>
               <li><Shield className="inline-block mr-1" size={14}/> Secrets 분리, 최소 권한의 DB 계정, 관리자 엔드포인트 제한</li>
               <li><GitBranch className="inline-block mr-1" size={14}/> GitHub Actions 아티팩트/프로모션, 환경별 프로파일/ENV 주입</li>
             </ul>
