@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.user.kis.domain;
 
+import com.hbs.hsbbo.user.kis.dto.KisDailyItemChartPriceResponse;
 import com.hbs.hsbbo.user.kis.dto.StockSearchDto;
 import com.hbs.hsbbo.user.kis.service.KisAuthService;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -85,6 +89,57 @@ public class KisClient {
                         .bodyToMono(Map.class)
                         .block()
         );
+    }
+
+    /** 국내주식기간별시세(일/주/월/년)[v1_국내주식-016] */
+    // 2-1) 원본 응답 받기
+    public KisDailyItemChartPriceResponse inquireDailyItemChartPriceRaw(
+            String code, String fromYmd, String toYmd, String periodDiv /* D/W/M/Y */, String adj /* 0:수정,1:원주가 */
+    ){
+        final String path = "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice";
+        log.debug("[KIS] GET {}", path);
+
+        return callWithRefresh(() ->
+                webClient.get()
+                        .uri(b -> b.path(path)
+                                .queryParam("FID_COND_MRKT_DIV_CODE", "J")
+                                .queryParam("FID_INPUT_ISCD", code)
+                                .queryParam("FID_INPUT_DATE_1", fromYmd)
+                                .queryParam("FID_INPUT_DATE_2", toYmd)
+                                .queryParam("FID_PERIOD_DIV_CODE", periodDiv)
+                                .queryParam("FID_ORG_ADJ_PRC", adj)
+                                .build())
+                        .headers(h -> headers("FHKST03010100").forEach(h::add)) // 실전 TR
+                        .accept(MediaType.APPLICATION_JSON)
+                        .retrieve()
+                        .bodyToMono(KisDailyItemChartPriceResponse.class)
+                        .block()
+        );
+    }
+
+    // 2-2) LocalDate 입력 + Candle 리스트로 바로 변환해서 받기
+    public List<KisDailyItemChartPriceResponse.ResponseBodyOutput2> inquireDailyItemChartPrice(
+            String code, LocalDate from, LocalDate to, String periodDiv, String adj
+    ){
+        var resp = inquireDailyItemChartPriceRaw(
+                code,
+                from.format(DateTimeFormatter.BASIC_ISO_DATE), // yyyyMMdd
+                to.format(DateTimeFormatter.BASIC_ISO_DATE),
+                periodDiv, adj
+        );
+        if (resp == null || resp.getBody() == null || resp.getBody().getOutput2() == null) {
+            return List.of();
+        }
+        return resp.getBody().getOutput2();
+    }
+
+    // 차트 공용 DTO로 바로 매핑
+    public record CandleDto(LocalDate date, BigDecimal open, BigDecimal high, BigDecimal low, BigDecimal close, Long volume) {}
+
+    public List<CandleDto> inquireDailyItemChartPriceCandles(String code, LocalDate from, LocalDate to, String periodDiv, String adj){
+        return inquireDailyItemChartPrice(code, from, to, periodDiv, adj).stream()
+                .map(o -> new CandleDto(o.tradeDate(), o.open(), o.high(), o.low(), o.close(), o.volume()))
+                .toList();
     }
 
     public List<StockSearchDto> searchStocks(String keyword) {

@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.user.kis.domain.entity;
 
+import com.hbs.hsbbo.common.AuditBase.AuditBase;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,12 +15,18 @@ import java.time.LocalDate;
 @Entity
 @Table(
         name = "stock_market_price",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_stock_market_price_symbol_date",
-                columnNames = {"symbol", "trade_date"}
-        )
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_stock_market_price_symbol_date",
+                        columnNames = {"symbol", "trade_date"}
+                )
+        },
+        indexes = {
+                @Index(name = "idx_smp_market", columnList = "market"),
+                @Index(name = "idx_smp_trade_date", columnList = "trade_date")
+        }
 )
-public class StockMarketPrice {
+public class StockMarketPrice extends AuditBase {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,11 +46,11 @@ public class StockMarketPrice {
 
     /** 시장구분: KOSPI / KOSDAQ / KONEX */
     @Column(name = "market", length = 10)
-    private String market;
+    private String market; // 테이블상 NULL 허용
 
     /** 소속부(벤처기업부/중견기업부/기타) */
     @Column(name = "segment", length = 30)
-    private String segment;
+    private String segment; // 테이블상 NULL 허용
 
     /** 종가 */
     @Column(name = "close", precision = 18, scale = 2)
@@ -82,5 +89,4 @@ public class StockMarketPrice {
     /** 상장주식수(주) */
     @Column(name = "listed_shares")
     private Long listedShares;
-
 }
