@@ -15,9 +15,13 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -133,14 +137,74 @@ public class KisClient {
         return resp.getBody().getOutput2();
     }
 
-    // 차트 공용 DTO로 바로 매핑
-    public record CandleDto(LocalDate date, BigDecimal open, BigDecimal high, BigDecimal low, BigDecimal close, Long volume) {}
-
-    public List<CandleDto> inquireDailyItemChartPriceCandles(String code, LocalDate from, LocalDate to, String periodDiv, String adj){
-        return inquireDailyItemChartPrice(code, from, to, periodDiv, adj).stream()
-                .map(o -> new CandleDto(o.tradeDate(), o.open(), o.high(), o.low(), o.close(), o.volume()))
+    public List<CandleDto> inquireDailyItemChartPriceCandles(
+            String code, LocalDate from, LocalDate to, String periodDiv, String adj
+    ){
+        var resp = inquireDailyItemChartPriceRaw(
+                code,
+                from.format(DateTimeFormatter.BASIC_ISO_DATE),
+                to.format(DateTimeFormatter.BASIC_ISO_DATE),
+                periodDiv, adj
+        );
+        return (resp == null) ? List.of()
+                : resp.toCandles().stream()
+                .map(c -> new CandleDto(c.getTradeDate(), c.getOpen(), c.getHigh(), c.getLow(), c.getClose(), c.getVolume()))
                 .toList();
     }
+
+    /**  길어진 범위를 안전하게 분할 호출 (일/주/월/년 공통) */
+    public List<CandleDto> inquireDailyItemChartPriceCandlesChunked(
+            String code, LocalDate from, LocalDate to, String periodDiv, String adj
+    ) {
+        final int MAX_SPAN = switch (periodDiv) {
+            case "D" -> 100;
+            case "W" -> 260;
+            case "M" -> 600;
+            case "Y" -> 2000;
+            default -> 100;
+        };
+
+        List<CandleDto> all = new ArrayList<>();
+        LocalDate cursor = from;
+
+        while (!cursor.isAfter(to)) {
+            LocalDate end = switch (periodDiv) {
+                case "D" -> cursor.plusDays(MAX_SPAN - 1);
+                case "W" -> cursor.plusWeeks(MAX_SPAN - 1);
+                case "M" -> cursor.plusMonths(MAX_SPAN - 1);
+                case "Y" -> cursor.plusYears(MAX_SPAN - 1);
+                default  -> cursor.plusDays(MAX_SPAN - 1);
+            };
+            if (end.isAfter(to)) end = to;
+
+            all.addAll(inquireDailyItemChartPriceCandles(code, cursor, end, periodDiv, adj));
+
+            // 다음 구간으로 전진
+            cursor = switch (periodDiv) {
+                case "D" -> end.plusDays(1);
+                case "W" -> end.plusWeeks(1);
+                case "M" -> end.plusMonths(1);
+                case "Y" -> end.plusYears(1);
+                default  -> end.plusDays(1);
+            };
+        }
+
+        //  중복제거 + 정렬
+        return all.stream()
+                .filter(c -> c.date() != null) // null 안전
+                .collect(Collectors.toMap(
+                        CandleDto::date, c -> c,
+                        (a, b) -> b, // 중복 시 최신값
+                        HashMap::new
+                ))
+                .values().stream()
+                .sorted(Comparator.comparing(CandleDto::date))
+                .toList();
+    }
+
+    // 차트 공용 DTO (record로 간단)
+    public record CandleDto(LocalDate date, BigDecimal open, BigDecimal high,
+                            BigDecimal low, BigDecimal close, Long volume) { }
 
     public List<StockSearchDto> searchStocks(String keyword) {
         final String path = "/uapi/domestic-stock/v1/quotations/inquire-issuemaster";

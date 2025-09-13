@@ -39,10 +39,9 @@ public class KisController {
         return ResponseEntity.ok(kis.inquireDaily(code, period));
     }
 
-    /**
-     * 차트 데이터(일/주/월/년) – Candle 리스트로 바로 반환
-     * period: D(일), W(주), M(월), Y(년)
-     * adj   : 0(수정주가), 1(원주가)
+    /** 차트 데이터(일/주/월/년) – Candle 리스트로 바로 반환
+     *  period: D(일) / W(주) / M(월) / Y(년)
+     *  adj   : 0(수정주가) / 1(원주가)
      */
     @GetMapping("/chart/daily")
     @Cacheable(cacheNames = "chart_daily",
@@ -54,11 +53,16 @@ public class KisController {
             @RequestParam(defaultValue = "D") String period,
             @RequestParam(defaultValue = "0") String adj
     ) {
-        // 유효성 간단 체크
+        if (code == null || code.length() < 5) {
+            return ResponseEntity.badRequest().build();
+        }
         if (to.isBefore(from)) {
             return ResponseEntity.badRequest().build();
         }
-        var candles = kis.inquireDailyItemChartPriceCandles(code, from, to, period, adj);
+
+        //  범위 분할 호출 (일/주/월/년 모두 안전)
+        var candles = kis.inquireDailyItemChartPriceCandlesChunked(code, from, to, period, adj);
+
         return ResponseEntity.ok(candles);
     }
 
