@@ -2,7 +2,7 @@
 // axios 기반 / TTL 메모리 캐시 / AbortController 지원 / inflight 병합 / HTML 응답 가드
 
 import api from '../../../../services/api';
-import type { KisSearch, StockLite } from '../types';
+import type { KisSearch, StockLite, CandleDto } from '../types';
 
 /* ------------------------------------------------------------------ *
  * Config
@@ -190,23 +190,51 @@ export async function fetchKisHistory(
   });
 }
 
-/* (선택) KIS 자체 검색을 쓰는 경우 */
-export async function fetchKisSearch(
-  keyword: string,
+/**
+ * /api/kis/chart/daily
+ * 기간별 캔들 데이터 (일/주/월/년)
+ */
+export async function fetchKisDailyCandles(
+  code: string,
+  from: string, // yyyy-MM-dd
+  to: string,   // yyyy-MM-dd
+  period: 'D' | 'W' | 'M' | 'Y' = 'D',
+  adj: '0' | '1' = '0',
+  ttlMs = TTL.kisHist,
   signal?: AbortSignal
-) {
-  const q = keyword.trim();
-  if (q.length < 2) return [] as KisSearch[];
-  const key = `kis:search:${q.toLowerCase()}`;
-  const hit = getCache<KisSearch[]>(key);
+): Promise<CandleDto[]> {
+  const key = `kis:chart:${code}:${from}:${to}:${period}:${adj}`;
+  const hit = getCache<CandleDto[]>(key);
   if (hit) return hit;
 
   return once(key, async () => {
-    const data = await getJSON<KisSearch[]>('/kis/search', { keyword: q }, signal);
-    setCache(key, data, TTL.kisSearch);
-    return data;
+    const json = await getJSON<CandleDto[]>(
+      '/kis/chart/daily',
+      { code, from, to, period, adj },
+      signal
+    );
+    setCache(key, json, ttlMs);
+    return json;
   });
 }
+
+/* (선택) KIS 자체 검색을 쓰는 경우 */
+// export async function fetchKisSearch(
+//   keyword: string,
+//   signal?: AbortSignal
+// ) {
+//   const q = keyword.trim();
+//   if (q.length < 2) return [] as KisSearch[];
+//   const key = `kis:search:${q.toLowerCase()}`;
+//   const hit = getCache<KisSearch[]>(key);
+//   if (hit) return hit;
+
+//   return once(key, async () => {
+//     const data = await getJSON<KisSearch[]>('/kis/search', { keyword: q }, signal);
+//     setCache(key, data, TTL.kisSearch);
+//     return data;
+//   });
+// }
 
 /* ------------------------------------------------------------------ *
  * Public API (DB 기반 종목 자동완성/해석)

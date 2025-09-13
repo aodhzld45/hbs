@@ -1,6 +1,7 @@
 // src/features/Kis/components/KisPanel.tsx
 import React, { useState } from 'react';
 import StockSearchBox from './StockSearchBox';
+import ChartPage from './ChartPage';
 import { fetchKisPrice, fetchKisHistory } from '../services/kisApi';
 import { toYmd } from '../../../../utils/date';
 import type { StockLite } from '../types';
@@ -53,6 +54,10 @@ export default function KisPanel() {
         </select>
       </div>
 
+      <div>
+        <ChartPage />
+      </div>
+      
       {sel && (
         <div className="text-sm text-gray-700">
           <span className="font-semibold dark:text-gray-400">{sel.name}</span>

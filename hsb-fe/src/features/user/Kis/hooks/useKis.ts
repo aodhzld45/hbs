@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchKisPrice, fetchKisHistory, fetchKisSearch } from '../services/kisApi';
+import { fetchKisPrice, fetchKisHistory } from '../services/kisApi';
 import type { KisHistory, KisPrice, KisSearch } from '../types';
 
 function useAbortable() {
@@ -78,33 +78,33 @@ export function useKisSearch() {
   };
 
   // AbortController (검색 전용)
-  const controller = useRef<AbortController | null>(null);
-  const abort = () => { controller.current?.abort(); controller.current = null; };
+  // const controller = useRef<AbortController | null>(null);
+  // const abort = () => { controller.current?.abort(); controller.current = null; };
 
-  const runSearch = (q: string) => {
-    if (q.trim().length < 2) { setList([]); setError(null); return; }
-    abort();
-    controller.current = new AbortController();
-    setLoading(true); setError(null);
+  // const runSearch = (q: string) => {
+  //   if (q.trim().length < 2) { setList([]); setError(null); return; }
+  //   abort();
+  //   controller.current = new AbortController();
+  //   setLoading(true); setError(null);
 
-    fetchKisSearch(q, controller.current.signal)
-      .then((rows) => setList(rows))
-      .catch((e: any) => {
-        if (e?.name === "CanceledError" || e?.message?.includes("canceled")) return;
-        setError(e?.message || "검색 실패");
-      })
-      .finally(() => setLoading(false));
-  };
+  //   fetchKisSearch(q, controller.current.signal)
+  //     .then((rows) => setList(rows))
+  //     .catch((e: any) => {
+  //       if (e?.name === "CanceledError" || e?.message?.includes("canceled")) return;
+  //       setError(e?.message || "검색 실패");
+  //     })
+  //     .finally(() => setLoading(false));
+  // };
 
   // 디바운스 검색
-  useEffect(() => {
-    if (!open) return;
-    if (timer.current) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => {
-      if (!composing.current) runSearch(term);
-    }, DEBOUNCE);
-    return () => { if (timer.current) window.clearTimeout(timer.current); };
-  }, [term, open, runSearch]);
+  // useEffect(() => {
+  //   if (!open) return;
+  //   if (timer.current) window.clearTimeout(timer.current);
+  //   timer.current = window.setTimeout(() => {
+  //     if (!composing.current) runSearch(term);
+  //   }, DEBOUNCE);
+  //   return () => { if (timer.current) window.clearTimeout(timer.current); };
+  // }, [term, open, runSearch]);
 
   // 키보드 이동
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

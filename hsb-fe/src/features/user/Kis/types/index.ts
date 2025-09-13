@@ -27,6 +27,16 @@ export type KisHistory = {
   raw?: any;
 };
 
+// 캔들 타입 (백엔드 CandleDto와 동일)
+export interface CandleDto {
+  date: string;  // yyyy-MM-dd
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
 // 종목 검색 결과
 export interface KisSearch {
   code: string;
