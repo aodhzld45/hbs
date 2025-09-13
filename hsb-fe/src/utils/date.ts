@@ -40,3 +40,20 @@ function parseToDate(v: unknown): Date | null {
 
   return null;
 }
+
+export function toYmdCompact(input: unknown): string {
+  const ymd = toYmd(input);            // 'yyyy-mm-dd' or ''
+  return ymd ? ymd.replaceAll('-', '') : '';
+}
+
+/** input[type=date] 값(또는 임의 값)을 안전한 'yyyy-mm-dd'로 보정 */
+export function coerceDateInput(v: unknown): string {
+  // 이미 y-m-d면 패스
+  const ymd = toYmd(v);
+  if (ymd) return ymd;
+  // 숫자/Date/문자 포맷이 들어와도 toYmd가 빈문자면 여기서 today로 fallback
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}

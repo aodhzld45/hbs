@@ -2,7 +2,17 @@
 // axios 기반 / TTL 메모리 캐시 / AbortController 지원 / inflight 병합 / HTML 응답 가드
 
 import api from '../../../../services/api';
-import type { KisSearch, StockLite, CandleDto } from '../types';
+import type {
+  KisPrice,
+  KisHistory,
+  KisDailyItem,
+  CandleDto,
+  StockLite,
+  KisSearch,
+} from '../types';
+
+import { toYmd, toYmdCompact, coerceDateInput } from '../../../../utils/date';
+
 
 /* ------------------------------------------------------------------ *
  * Config
@@ -110,7 +120,7 @@ async function getJSON<T>(
 /* ------------------------------------------------------------------ *
  * Parsers (KIS 응답 포맷 차이 흡수)
  * ------------------------------------------------------------------ */
-function parsePrice(code: string, json: any) {
+function parsePrice(code: string, json: any): KisPrice {
   if (json?.rt_cd && String(json.rt_cd) !== '0') {
     const msg = json?.msg1 || json?.msg || 'KIS error';
     throw new Error(`KIS price error: ${msg}`);
@@ -122,7 +132,7 @@ function parsePrice(code: string, json: any) {
   const accVol      = Number(out?.acml_vol  ?? out?.accVol      ?? NaN);
   const name        = out?.hts_kor_isnm ?? out?.name;
 
-  return {
+  const result: KisPrice = {
     code,
     name,
     tradePrice: Number.isFinite(tradePrice) ? tradePrice : undefined,
@@ -131,24 +141,49 @@ function parsePrice(code: string, json: any) {
     accVol: Number.isFinite(accVol) ? accVol : undefined,
     raw: json,
   };
+
+  return result;
 }
 
-function parseHistory(code: string, period: 'D'|'W'|'M', json: any) {
+/** 혼합 포맷(JSON Array | {items}| KIS output2)을 KisHistory로 정규화 */
+function parseHistory(code: string, period: 'D'|'W'|'M', json: any): KisHistory {
   if (json?.rt_cd && String(json.rt_cd) !== '0') {
     const msg = json?.msg1 || json?.msg || 'KIS error';
     throw new Error(`KIS history error: ${msg}`);
   }
-  const arr = json?.output2 ?? json?.output ?? json?.items ?? [];
-  const items = Array.isArray(arr)
-    ? arr.map((x: any) => ({
-        date:   String(x?.stck_bsop_date ?? x?.date ?? ''),
-        close:  Number(x?.stck_clpr ?? x?.close ?? x?.tp ?? NaN),
-        open:   Number(x?.stck_oprc ?? x?.open  ?? NaN),
-        high:   Number(x?.stck_hgpr ?? x?.high  ?? NaN),
-        low:    Number(x?.stck_lwpr ?? x?.low   ?? NaN),
-        volume: Number(x?.acml_vol  ?? x?.volume?? NaN),
-      })).filter((r: any) => r.date && Number.isFinite(r.close))
+
+  // 가능한 소스 배열
+  const arr =
+    json?.output2 ??
+    json?.output ??
+    json?.items ??
+    (Array.isArray(json) ? json : []);
+
+  const items: KisDailyItem[] = Array.isArray(arr)
+    ? arr.map((x: any) => {
+        // 날짜 후보: '2025-09-05' | '20250905'
+        const dRaw = String(x?.stck_bsop_date ?? x?.date ?? '');
+        const d =
+          toYmdCompact(dRaw) || // 이미 8자리
+          toYmd(dRaw).replaceAll('-', ''); // 10자리 → 8자리
+        const close  = Number(x?.stck_clpr ?? x?.close ?? x?.tp ?? NaN);
+        const open   = Number(x?.stck_oprc ?? x?.open  ?? NaN);
+        const high   = Number(x?.stck_hgpr ?? x?.high  ?? NaN);
+        const low    = Number(x?.stck_lwpr ?? x?.low   ?? NaN);
+        const volume = Number(x?.acml_vol  ?? x?.volume?? NaN);
+
+        return {
+          date: d, // YYYYMMDD
+          close,
+          open:   Number.isFinite(open)   ? open   : undefined,
+          high:   Number.isFinite(high)   ? high   : undefined,
+          low:    Number.isFinite(low)    ? low    : undefined,
+          volume: Number.isFinite(volume) ? volume : undefined,
+        } as KisDailyItem;
+      })
+      .filter(r => r.date && Number.isFinite(r.close))
     : [];
+
   return { code, period, items, raw: json };
 }
 
@@ -172,14 +207,19 @@ export async function fetchKisPrice(
   });
 }
 
+/**
+ * 과거 시세(일/주/월) – 응답을 KisHistory로 통일
+ * (백엔드가 /kis/history?code=...&period=D 를 제공한다고 가정)
+ * from/to가 필요하면 아래 fetchKisDailyCandles 사용 권장(차트용 고정 스키마).
+ */
 export async function fetchKisHistory(
   code: string,
   period: 'D'|'W'|'M' = 'D',
   ttlMs = TTL.kisHist,
   signal?: AbortSignal
-) {
+): Promise<KisHistory> {
   const key = `kis:hist:${code}:${period}`;
-  const hit = getCache<any>(key);
+  const hit = getCache<KisHistory>(key);
   if (hit) return hit;
 
   return once(key, async () => {
@@ -191,8 +231,8 @@ export async function fetchKisHistory(
 }
 
 /**
- * /api/kis/chart/daily
- * 기간별 캔들 데이터 (일/주/월/년)
+ * 기간별 캔들 데이터 (일/주/월/년) – 차트 전용, BE: /kis/chart/daily
+ * 반환은 백엔드 CandleDto 스키마 그대로 유지
  */
 export async function fetchKisDailyCandles(
   code: string,
@@ -208,13 +248,13 @@ export async function fetchKisDailyCandles(
   if (hit) return hit;
 
   return once(key, async () => {
-    const json = await getJSON<CandleDto[]>(
+    const data = await getJSON<CandleDto[]>(
       '/kis/chart/daily',
       { code, from, to, period, adj },
       signal
     );
-    setCache(key, json, ttlMs);
-    return json;
+    setCache(key, data, ttlMs);
+    return data;
   });
 }
 

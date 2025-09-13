@@ -1,18 +1,36 @@
 // src/features/Kis/components/KisPanel.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import StockSearchBox from './StockSearchBox';
 import ChartPage from './ChartPage';
 import { fetchKisPrice, fetchKisHistory } from '../services/kisApi';
-import { toYmd } from '../../../../utils/date';
+import { toYmd, toYmdCompact, coerceDateInput } from '../../../../utils/date';
+
 import type { StockLite } from '../types';
 
 type Period = 'D'|'W'|'M';
 
+const daysAgo = (n: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return toYmd(d); // yyyy-mm-dd
+};
+
 export default function KisPanel() {
   const [sel, setSel] = useState<StockLite | null>(null);
   const [period, setPeriod] = useState<Period>('D');
+
+  const [from, setFrom] = useState<string>(() => daysAgo(14));
+  const [to, setTo]     = useState<string>(() => toYmd(new Date()));
+
   const [price, setPrice] = useState<any>(null);
   const [rows, setRows] = useState<any[]>([]);
+
+  const viewRows = useMemo(() => {
+    const f = toYmdCompact(from);
+    const t = toYmdCompact(to);
+   return rows.filter(r => r.date >= f && r.date <= t); // r.date는 YYYYMMDD
+ }, [rows, from, to]);
+
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -43,6 +61,14 @@ export default function KisPanel() {
     if (sel) load(sel, p);
   }
 
+  // from/to 변경 시 ChartPage가 props로 받아 훅을 통해 새로 호출됨
+  function onChangeFrom(e: React.ChangeEvent<HTMLInputElement>) {
+    setFrom(coerceDateInput(e.target.value));
+  }
+  function onChangeTo(e: React.ChangeEvent<HTMLInputElement>) {
+    setTo(coerceDateInput(e.target.value));
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
@@ -52,10 +78,21 @@ export default function KisPanel() {
         <select value={period} onChange={onChangePeriod} className="rounded-md border px-2 py-2">
           <option value="D">D</option><option value="W">W</option><option value="M">M</option>
         </select>
+
+        {/*  기간 입력 */}
+        <input type="date" value={from} onChange={onChangeFrom} className="rounded-md border px-2 py-2" />
+        <span className="text-gray-500">~</span>
+        <input type="date" value={to} onChange={onChangeTo} className="rounded-md border px-2 py-2" />
       </div>
 
       <div>
-        <ChartPage />
+       <ChartPage
+          code={sel?.symbol}
+          from={from}
+          to={to}
+          period={period}
+          adj="0"
+        />
       </div>
       
       {sel && (
@@ -91,7 +128,7 @@ export default function KisPanel() {
             </thead>
             <tbody>
               {loading && <tr><td colSpan={5} className="px-3 py-6 text-center text-gray-500">불러오는 중…</td></tr>}
-              {!loading && rows.map(r => (
+              {!loading && viewRows.map(r => (
                 <tr key={r.date} className="odd:bg-white even:bg-gray-50">
                   <td className="px-3 py-2">{toYmd(r.date)}</td>
                   <td className="px-3 py-2 text-right">{Number(r.close).toLocaleString()}</td>
@@ -100,7 +137,7 @@ export default function KisPanel() {
                   <td className="px-3 py-2 text-right">{Number(r.volume).toLocaleString()}</td>
                 </tr>
               ))}
-              {!loading && rows.length === 0 && (
+              {!loading && viewRows.length === 0 && (
                 <tr><td colSpan={5} className="px-3 py-6 text-center text-gray-500">데이터 없음</td></tr>
               )}
             </tbody>
