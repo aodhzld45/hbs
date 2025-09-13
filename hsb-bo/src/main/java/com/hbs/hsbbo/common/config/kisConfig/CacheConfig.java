@@ -31,8 +31,10 @@ public class CacheConfig {
                 Caffeine.newBuilder().expireAfterWrite(Duration.ofSeconds(3)).maximumSize(200).build());
         var history = new CaffeineCache("history",
                 Caffeine.newBuilder().expireAfterWrite(Duration.ofSeconds(5)).maximumSize(200).build());
+        var chartDaily = new CaffeineCache("chart_daily",
+                Caffeine.newBuilder().expireAfterWrite(Duration.ofSeconds(30)).maximumSize(500).build());
         var m = new SimpleCacheManager();
-        m.setCaches(List.of(price, history));
+        m.setCaches(List.of(price, history, chartDaily));
         return m;
     }
 }
