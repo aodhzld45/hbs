@@ -37,7 +37,7 @@ export function useKisDailyCandles(
       .catch(setError)
       .finally(() => setLoading(false));
   //  nextSignal 제거(또는 useCallback으로 고정했으니 둬도 무방)
-  }, [code, from, to, period, adj]);
+  }, [code, from, to, period, adj, nextSignal]);
 
   return { data, loading, error };
 }

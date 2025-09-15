@@ -77,35 +77,6 @@ export function useKisSearch() {
     sessionStorage.setItem(RECENT_KEY, JSON.stringify(next));
   };
 
-  // AbortController (검색 전용)
-  // const controller = useRef<AbortController | null>(null);
-  // const abort = () => { controller.current?.abort(); controller.current = null; };
-
-  // const runSearch = (q: string) => {
-  //   if (q.trim().length < 2) { setList([]); setError(null); return; }
-  //   abort();
-  //   controller.current = new AbortController();
-  //   setLoading(true); setError(null);
-
-  //   fetchKisSearch(q, controller.current.signal)
-  //     .then((rows) => setList(rows))
-  //     .catch((e: any) => {
-  //       if (e?.name === "CanceledError" || e?.message?.includes("canceled")) return;
-  //       setError(e?.message || "검색 실패");
-  //     })
-  //     .finally(() => setLoading(false));
-  // };
-
-  // 디바운스 검색
-  // useEffect(() => {
-  //   if (!open) return;
-  //   if (timer.current) window.clearTimeout(timer.current);
-  //   timer.current = window.setTimeout(() => {
-  //     if (!composing.current) runSearch(term);
-  //   }, DEBOUNCE);
-  //   return () => { if (timer.current) window.clearTimeout(timer.current); };
-  // }, [term, open, runSearch]);
-
   // 키보드 이동
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!open) return;
