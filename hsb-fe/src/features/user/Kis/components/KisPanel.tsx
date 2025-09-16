@@ -192,20 +192,20 @@ export default function KisPanel() {
 
         {/* 모바일: 카드 리스트 */}
         <div className="md:hidden divide-y">
-          {loading && <div className="p-4 text-center text-gray-500">불러오는 중…</div>}
+          {loading && <div className="p-4 text-center text-gray-500 dark:text-gray-100">불러오는 중…</div>}
           {!loading && candles?.length
             ? candles!.map((r) => (
                 <div key={r.date} className="px-4 py-3">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">{r.date}</div>
-                    <div className="text-base font-semibold">
-                      {Number(r.close).toLocaleString()}
+                    <div className="text-sm font-medium dark:text-gray-100">{r.date}</div>
+                    <div className="text-base font-semibold dark:text-gray-100">
+                      종가 {Number(r.close).toLocaleString()}
                     </div>
                   </div>
                   <div className="mt-1 grid grid-cols-3 gap-2 text-xs text-gray-600">
-                    <div>고가 {Number(r.high).toLocaleString()}</div>
-                    <div>저가 {Number(r.low).toLocaleString()}</div>
-                    <div className="text-right">거래량 {Number(r.volume).toLocaleString()}</div>
+                    <div className="dark:text-gray-100">고가 {Number(r.high).toLocaleString()}</div>
+                    <div className="dark:text-gray-100">저가 {Number(r.low).toLocaleString()}</div>
+                    <div className="text-right dark:text-gray-100">거래량 {Number(r.volume).toLocaleString()}</div>
                   </div>
                 </div>
               ))
