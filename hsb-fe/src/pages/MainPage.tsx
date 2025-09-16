@@ -142,6 +142,8 @@ const MainPage = () => {
   
   return (
     <Layout>
+      <div className="w-full overflow-x-hidden">
+
       <IntroSection /> 
 
       {showSideNav && <SideNav />}
@@ -521,7 +523,7 @@ const MainPage = () => {
           </div>
         </div>
       )}
-
+      </div>
     </Layout>
   );
 };
