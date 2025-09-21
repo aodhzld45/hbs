@@ -3,7 +3,6 @@ package com.hbs.hsbbo.user.kis.domain;
 import com.hbs.hsbbo.user.kis.dto.KisDailyItemChartPriceResponse;
 import com.hbs.hsbbo.user.kis.dto.StockSearchDto;
 import com.hbs.hsbbo.user.kis.service.KisAuthService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,21 +14,21 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class KisClient {
-    @Qualifier("kisWebClient")   //  반드시 baseUrl(domain) 걸린 Bean 주입
     private final WebClient webClient;
     private final KisAuthService auth;
+
+    public KisClient(@Qualifier("kisWebClient") WebClient webClient,
+                    KisAuthService auth) {
+        this.webClient = webClient;
+        this.auth = auth;
+    }
 
     //@Value("${kis.domain}")     private String domain;
     @Value("${kis.app-key}")    private String appKey;

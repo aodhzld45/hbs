@@ -6,7 +6,6 @@ import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
@@ -19,7 +18,6 @@ import java.time.Duration;
 public class KisHttpConfig {
 
     @Bean(name = "kisWebClient")
-    @Primary
         // 기본 주입은 무조건 이 Bean
     WebClient kisWebClient(WebClient.Builder builder,
                            @Value("${kis.domain}") String domain) {

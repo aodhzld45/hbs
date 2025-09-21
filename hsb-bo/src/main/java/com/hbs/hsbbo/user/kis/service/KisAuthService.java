@@ -1,6 +1,5 @@
 package com.hbs.hsbbo.user.kis.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,15 +13,17 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class KisAuthService {
 
-    @Qualifier("kisWebClient")
     private final WebClient webClient;
 
     @Value("${kis.oauth-path}") private String oauthPath; // "/oauth2/tokenP"
     @Value("${kis.app-key}")    private String appKey;
     @Value("${kis.app-secret}") private String appSecret;
+
+    public KisAuthService(@Qualifier("kisWebClient") WebClient webClient) {
+        this.webClient = webClient;
+    }
 
     // 갱신 시점 버퍼(초)
     private static final long refreshMarginSec = 60;
