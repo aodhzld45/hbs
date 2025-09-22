@@ -56,7 +56,7 @@ const Header = () => {
           <div className="max-w-9xl mx-auto px-5 py-5 flex items-center justify-between">
             {/* 로고 */}
             <div className="text-2xl font-bold">
-              <Link to="/">HBS</Link>
+              <Link to="/">HSBS</Link>
             </div>
 
             {/* PC 메뉴 */}
