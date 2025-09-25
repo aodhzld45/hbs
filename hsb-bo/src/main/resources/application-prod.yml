@@ -38,5 +38,10 @@ krx:
     cron: "0 5 6 * * *"             # 매일 06:05 KST
     #cron: "0 0/1 * * * *"          # 테스트 1분마다
 
+openai:
+  base-url: ${OPEN_AI_DOMAIN}
+  api-key: ${OPEN_AI_KEY}
+  model: ${OPEN_AI_MODEL}
+
 logging.level.root: INFO
 logging.level.org.springframework.web.reactive.function.client: INFO
