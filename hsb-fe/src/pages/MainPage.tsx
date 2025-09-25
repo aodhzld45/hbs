@@ -148,8 +148,10 @@ const MainPage = () => {
       <div className="w-full overflow-x-hidden">
 
       <IntroSection /> 
-
+      
       {showSideNav && <SideNav />}
+
+      <Assistant />
 
       {/* About Me Section */}
       <section
@@ -157,21 +159,6 @@ const MainPage = () => {
         className="min-h-screen bg-white text-gray-800 dark:bg-[#1a1a1a] dark:text-white py-20 px-4 md:px-8 border-t"
         data-aos="fade-up"
       >
-        {/* 어시스턴트: 섹션 최상단 + 크게 */}
-        <div className="flex justify-center mb-10">
-          <div
-            className="
-              w-[420px] h-[600px]
-              md:w-[480px] md:h-[640px]
-              lg:w-[520px] lg:h-[680px]
-              rounded-2xl overflow-hidden
-              border border-neutral-200 dark:border-neutral-700
-              bg-white dark:bg-neutral-900 shadow-xl
-            "
-          >
-            <Assistant />
-          </div>
-        </div>
         {/* 상단 섹션 제목 */}
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white inline-block border-b-4 border-blue-600 pb-2">

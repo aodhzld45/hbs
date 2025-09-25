@@ -124,19 +124,30 @@ export default function AssistantWidget({ inferContext }: Props) {
   return createPortal(
     <>
       {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-[2147483647] rounded-full p-2 bg-blue-600 text-white shadow-lg"
-          aria-label="Open Assistant"
-        >
-          <img src="/image/hsbs_dog_avatar_4.png" alt="Open Assistant" className="w-8 h-8 rounded-full" />
-        </button>
+      <button
+        onClick={() => setOpen(true)}
+        className="
+          fixed bottom-14 right-6   /* bottom-6 → bottom-20 로 올리기 */
+          z-[2147483647]
+          rounded-full p-2
+          bg-blue-600 text-white shadow-lg
+        "
+        aria-label="Open Assistant"
+      >
+        <div className="relative flex flex-col items-center">
+          <img
+            src="/image/hsbs_dog_avatar_5.png"
+            alt="Open Assistant"
+            className="w-32 h-32 rounded-full object-cover"
+          />
+        </div>
+      </button>
       )}
 
       {open && (
         <div className="fixed bottom-6 right-6 w-[340px] h-[480px] z-[2147483647] flex flex-col bg-white dark:bg-[#121212] border rounded-lg shadow-xl">
           <div className="flex justify-between items-center p-2 border-b">
-            <span className="font-semibold text-sm dark:text-gray-100">HSBS Assistant</span>
+            <span className="font-semibold text-sm dark:text-gray-100">AI HS봇</span>
             <button
               className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 dark:text-gray-100"
               onClick={() => setOpen(false)}
