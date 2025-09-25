@@ -6,21 +6,26 @@ type Props = { inferContext: () => string };
 
 export default function AssistantWidget({ inferContext }: Props) {
   const baseParams = useMemo(() => ({
-    system: 'You are a helpful assistant for the HSBS portfolio site. Reply in Korean.',
+  system: `You are an AI assistant embedded in the HSBS portfolio site.
+  HSBS is a full-stack portfolio project built with React (frontend), Spring Boot (backend), and MySQL (database), deployed on OCI Ubuntu with Apache and GitHub Actions CI/CD.
+  Introduce and explain 서현석 as a full-stack developer who planned and developed this project.
+  Always answer in Korean, concisely (within 2~3 sentences) unless the user explicitly asks for more detail.`,
     context: inferContext(),
     model: 'gpt-4o-mini',
     temperature: 0.3,
-    maxTokens: 500,
+    maxTokens: 300,
   }), [inferContext]);
 
   const [open, setOpen] = useState(false);
-  const { messages, resp, error, loading, run } = useAiChat(baseParams);
+  const { messages, resp, error, loading, run, isAdmin, remaining } = useAiChat(baseParams);
   const [prompt, setPrompt] = useState('');
   const [displayedText, setDisplayedText] = useState('');
   const [introShown, setIntroShown] = useState(false);
 
   const [showIntroMsg, setShowIntroMsg] = useState(false);
 
+
+  console.log('isAdmin, remaining', isAdmin, remaining);
   useEffect(() => {
     if (open && !introShown) {
       setShowIntroMsg(true);
@@ -148,6 +153,17 @@ export default function AssistantWidget({ inferContext }: Props) {
         <div className="fixed bottom-6 right-6 w-[340px] h-[480px] z-[2147483647] flex flex-col bg-white dark:bg-[#121212] border rounded-lg shadow-xl">
           <div className="flex justify-between items-center p-2 border-b">
             <span className="font-semibold text-sm dark:text-gray-100">AI HS봇</span>
+
+            {/* ▶ 배지 */}
+            {isAdmin ? (
+              <span className="text-xs px-2 py-1 rounded-full bg-green-600 text-white">
+                관리자 · 무제한
+              </span>
+            ) : (
+              <span className="text-xs px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 dark:text-gray-100">
+                오늘 남은 질문: {remaining} 
+              </span>
+            )}
             <button
               className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 dark:text-gray-100"
               onClick={() => setOpen(false)}
@@ -173,7 +189,7 @@ export default function AssistantWidget({ inferContext }: Props) {
             {loading && (
               <div className="flex justify-start gap-2">
                 <img src="/image/hsbs_dog_avatar_4.png" alt="HSBS Dog" className="w-8 h-8 rounded-full self-end" />
-                <div className="bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg">...</div>
+                <div className="bg-gray-200 dark:bg-gray-100 px-3 py-2 rounded-lg">...</div>
               </div>
             )}
 
@@ -181,7 +197,7 @@ export default function AssistantWidget({ inferContext }: Props) {
             {resp && !loading && (
               <div className="flex justify-start gap-2">
                 <img src="/image/hsbs_dog_avatar_4.png" alt="HSBS Dog" className="w-8 h-8 rounded-full self-end" />
-                <div className="bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg whitespace-pre-wrap">
+                <div className="bg-gray-200 dark:bg-gray-100 px-3 py-2 rounded-lg whitespace-pre-wrap">
                   {displayedText}
                 </div>
               </div>
@@ -205,6 +221,7 @@ export default function AssistantWidget({ inferContext }: Props) {
               placeholder="무엇이든 물어보세요..."
               className="flex-1 border rounded px-2 py-1 text-sm resize-none"
               rows={2}
+              maxLength={200}   // 프롬프트 최대 200자 제한
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
@@ -212,10 +229,11 @@ export default function AssistantWidget({ inferContext }: Props) {
                 }
               }}
             />
+            {/* 3) 폼 전송 버튼 비활성화 조건 개선 */}
             <button
               type="submit"
-              disabled={loading}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+              disabled={loading || (!isAdmin && remaining === 0) || !prompt.trim()}
+              className="px-3 py-1 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
             >
               보내기
             </button>

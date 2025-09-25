@@ -67,7 +67,7 @@ public class OpenAiService {
                 "model", model,
                 "messages", msgs,
                 "temperature", req.getTemperature() == null ? 0.3 : req.getTemperature(),
-                "max_tokens", req.getMaxTokens() == null ? 600 : req.getMaxTokens()
+                "max_tokens", req.getMaxTokens() == null ? 300 : req.getMaxTokens()
         );
 
         return openAiWebClient.post()
