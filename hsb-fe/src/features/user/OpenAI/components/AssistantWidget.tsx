@@ -6,7 +6,7 @@ type Props = { inferContext: () => string };
 
 export default function AssistantWidget({ inferContext }: Props) {
   const baseParams = useMemo(() => ({
-  system: `You are an AI assistant embedded in the HSBS portfolio site.
+    system: `You are an AI assistant embedded in the HSBS portfolio site.
   HSBS is a full-stack portfolio project built with React (frontend), Spring Boot (backend), and MySQL (database), deployed on OCI Ubuntu with Apache and GitHub Actions CI/CD.
   Introduce and explain 서현석 as a full-stack developer who planned and developed this project.
   Always answer in Korean, concisely (within 2~3 sentences) unless the user explicitly asks for more detail.`,
@@ -21,11 +21,17 @@ export default function AssistantWidget({ inferContext }: Props) {
   const [prompt, setPrompt] = useState('');
   const [displayedText, setDisplayedText] = useState('');
   const [introShown, setIntroShown] = useState(false);
-
   const [showIntroMsg, setShowIntroMsg] = useState(false);
 
+  // 모바일 전체화면 시 바디 스크롤 잠금
+  useEffect(() => {
+    if (open) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [open]);
 
-  console.log('isAdmin, remaining', isAdmin, remaining);
   useEffect(() => {
     if (open && !introShown) {
       setShowIntroMsg(true);
@@ -104,7 +110,7 @@ export default function AssistantWidget({ inferContext }: Props) {
   }, [messages]);
 
   const renderMessages = useM(() => {
-    const hideLastAssistant = !!(resp && !loading); // 타자 출력 중
+    const hideLastAssistant = !!(resp && !loading);
     return messages.map((m, i) => {
       if (hideLastAssistant && i === lastAssistantIndex) return null;
       return (
@@ -128,117 +134,144 @@ export default function AssistantWidget({ inferContext }: Props) {
 
   return createPortal(
     <>
+      {/* 플로팅 오픈 버튼: 모바일에서 살짝 작게 */}
       {!open && (
-      <button
-        onClick={() => setOpen(true)}
-        className="
-          fixed bottom-14 right-6   /* bottom-6 → bottom-20 로 올리기 */
-          z-[2147483647]
-          rounded-full p-2
-          bg-blue-600 text-white shadow-lg
-        "
-        aria-label="Open Assistant"
-      >
-        <div className="relative flex flex-col items-center">
-          <img
-            src="/image/hsbs_dog_avatar_5.png"
-            alt="Open Assistant"
-            className="w-32 h-32 rounded-full object-cover"
-          />
-        </div>
-      </button>
+        <button
+          onClick={() => setOpen(true)}
+          className="
+            fixed md:bottom-6 md:right-6 bottom-[calc(env(safe-area-inset-bottom,0)+16px)] right-4
+            z-[2147483647] rounded-full p-2 bg-blue-600 text-white shadow-lg
+          "
+          aria-label="Open Assistant"
+        >
+          <div className="relative flex flex-col items-center">
+            <img
+              src="/image/hsbs_dog_avatar_5.png"
+              alt="Open Assistant"
+              className="md:w-32 md:h-32 w-20 h-20 rounded-full object-cover"
+            />
+          </div>
+        </button>
       )}
 
       {open && (
-        <div className="fixed bottom-6 right-6 w-[340px] h-[480px] z-[2147483647] flex flex-col bg-white dark:bg-[#121212] border rounded-lg shadow-xl">
-          <div className="flex justify-between items-center p-2 border-b">
-            <span className="font-semibold text-sm dark:text-gray-100">AI HS봇</span>
+        <>
+          {/* 모바일 전용 백드롭 (탭으로 닫기) */}
+          <div
+            className="fixed inset-0 bg-black/30 md:hidden z-[2147483646]"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
 
-            {/* ▶ 배지 */}
-            {isAdmin ? (
-              <span className="text-xs px-2 py-1 rounded-full bg-green-600 text-white">
-                관리자 · 무제한
-              </span>
-            ) : (
-              <span className="text-xs px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 dark:text-gray-100">
-                오늘 남은 질문: {remaining} 
-              </span>
-            )}
-            <button
-              className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 dark:text-gray-100"
-              onClick={() => setOpen(false)}
-              aria-label="Close"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-3 space-y-4 text-sm">
-            {showIntroMsg && (
-              <div className="flex justify-start gap-2">
-                <img src="/image/hsbs_dog_avatar_4.png" alt="HSBS Dog" className="w-8 h-8 rounded-full self-end" />
-                <div className="bg-gray-200 dark:bg-gray-100 px-3 py-2 rounded-lg whitespace-pre-wrap">
-                  {introMsg.text}
-                </div>
-              </div>
-            )}
-
-            {renderMessages}
-
-            {/* 로딩 중: 점 3개 */}
-            {loading && (
-              <div className="flex justify-start gap-2">
-                <img src="/image/hsbs_dog_avatar_4.png" alt="HSBS Dog" className="w-8 h-8 rounded-full self-end" />
-                <div className="bg-gray-200 dark:bg-gray-100 px-3 py-2 rounded-lg">...</div>
-              </div>
-            )}
-
-            {/* 타자 효과 버블 */}
-            {resp && !loading && (
-              <div className="flex justify-start gap-2">
-                <img src="/image/hsbs_dog_avatar_4.png" alt="HSBS Dog" className="w-8 h-8 rounded-full self-end" />
-                <div className="bg-gray-200 dark:bg-gray-100 px-3 py-2 rounded-lg whitespace-pre-wrap">
-                  {displayedText}
-                </div>
-              </div>
-            )}
-
-            {error && <div className="text-red-600">{String(error)}</div>}
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!prompt.trim()) return;
-              run(prompt);    // 호출은 onSubmit에서만
-              setPrompt('');
-            }}
-            className="p-2 border-t flex gap-2"
+          {/* 컨테이너: 모바일(전체화면) vs 데스크탑(작은 패널) */}
+          <div
+            className="
+              fixed z-[2147483647] flex flex-col
+              md:bottom-6 md:right-6 md:w-[340px] md:h-[480px] md:rounded-lg
+              md:bg-white md:dark:bg-[#121212] md:border md:shadow-xl
+              inset-0 md:inset-auto
+              w-screen h-[100dvh]  /* 모바일: 주소창 높이 반영 */
+              bg-white dark:bg-[#121212] rounded-none
+            "
+            role="dialog"
+            aria-modal="true"
           >
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="무엇이든 물어보세요..."
-              className="flex-1 border rounded px-2 py-1 text-sm resize-none"
-              rows={2}
-              maxLength={200}   // 프롬프트 최대 200자 제한
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  (e.currentTarget.form as HTMLFormElement)?.requestSubmit(); // 중복 호출 방지
-                }
+            {/* 헤더: 모바일에서 터치 타겟 크게 + 드래그바 느낌 */}
+            <div className="p-3 border-b flex items-center justify-between md:rounded-t-lg">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm md:text-sm text-gray-900 dark:text-gray-100">AI HS봇</span>
+                {isAdmin ? (
+                  <span className="text-[10px] md:text-xs px-2 py-1 rounded-full bg-green-600 text-white">
+                    관리자 · 무제한
+                  </span>
+                ) : (
+                  <span className="text-[10px] md:text-xs px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 dark:text-gray-100">
+                    오늘 남은 질문: {remaining}
+                  </span>
+                )}
+              </div>
+              <button
+                className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 dark:text-gray-100"
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 본문: 모바일에서 더 넓은 패딩/스크롤 */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-4 text-[15px] md:text-sm">
+              {showIntroMsg && (
+                <div className="flex justify-start gap-2">
+                  <img src="/image/hsbs_dog_avatar_4.png" alt="HSBS Dog" className="w-8 h-8 rounded-full self-end" />
+                  <div className="bg-gray-200 dark:bg-gray-100 px-3 py-2 rounded-lg whitespace-pre-wrap">
+                    {introMsg.text}
+                  </div>
+                </div>
+              )}
+
+              {renderMessages}
+
+              {loading && (
+                <div className="flex justify-start gap-2">
+                  <img src="/image/hsbs_dog_avatar_4.png" alt="HSBS Dog" className="w-8 h-8 rounded-full self-end" />
+                  <div className="bg-gray-200 dark:bg-gray-100 px-3 py-2 rounded-lg">...</div>
+                </div>
+              )}
+
+              {resp && !loading && (
+                <div className="flex justify-start gap-2">
+                  <img src="/image/hsbs_dog_avatar_4.png" alt="HSBS Dog" className="w-8 h-8 rounded-full self-end" />
+                  <div className="bg-gray-200 dark:bg-gray-100 px-3 py-2 rounded-lg whitespace-pre-wrap">
+                    {displayedText}
+                  </div>
+                </div>
+              )}
+
+              {error && <div className="text-red-600">{String(error)}</div>}
+            </div>
+
+            {/* 푸터 입력창: 모바일 세이프에어리어 고려 */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!prompt.trim()) return;
+                run(prompt);
+                setPrompt('');
               }}
-            />
-            {/* 3) 폼 전송 버튼 비활성화 조건 개선 */}
-            <button
-              type="submit"
-              disabled={loading || (!isAdmin && remaining === 0) || !prompt.trim()}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
+              className="
+                border-t flex gap-2 p-2
+                pb-[calc(env(safe-area-inset-bottom,0)+8px)]  /* iOS 하단 안전영역 */
+                bg-white dark:bg-[#121212]
+              "
             >
-              보내기
-            </button>
-          </form>
-        </div>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="무엇이든 물어보세요..."
+                className="
+                  flex-1 border rounded px-3 py-2 text-sm resize-none
+                  max-h-32 md:max-h-24
+                "
+                rows={2}
+                maxLength={200}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    (e.currentTarget.form as HTMLFormElement)?.requestSubmit();
+                  }
+                }}
+              />
+              <button
+                type="submit"
+                disabled={loading || (!isAdmin && remaining === 0) || !prompt.trim()}
+                className="px-3 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
+              >
+                보내기
+              </button>
+            </form>
+          </div>
+        </>
       )}
     </>,
     document.body
