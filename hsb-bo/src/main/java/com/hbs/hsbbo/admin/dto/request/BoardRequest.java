@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -19,6 +20,11 @@ public class BoardRequest {
     private String writerName;
     private String useTf;
     private String existingFileIds; // "1,2,3"
+
+    private String noticeTf;      // "Y" or "N"
+    private Integer noticeSeq;    // 우선순위 (기본 0)
+    private LocalDateTime noticeStart; // 공지 시작일
+    private LocalDateTime noticeEnd; // 공지 만료일
 
 
     public List<Long> getExistingFileIdList() {

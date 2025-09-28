@@ -46,6 +46,18 @@ public class Board {
     @Column(name = "view_count")
     private Integer viewCount = 0;
 
+    @Column(name = "notice_tf", length = 1, nullable = false)
+    private String noticeTf = "N";   // 공지 여부 (Y/N)
+
+    @Column(name = "notice_seq", nullable = false)
+    private int noticeSeq = 0;       // 공지 우선순위 (기본 0)
+
+    @Column(name = "notice_start")
+    private LocalDateTime noticeStart;  // 공지 시작일 (NULL 가능)
+
+    @Column(name = "notice_end")
+    private LocalDateTime noticeEnd;  // 공지 만료일 (NULL 가능)
+
     @Column(name = "use_tf", length = 1)
     private String useTf = "Y";
 

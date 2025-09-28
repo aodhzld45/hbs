@@ -9,9 +9,28 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface BoardRepository extends JpaRepository<Board, Long> {
+
+    // 활성 공지 (정렬 포함)만 조회
+    @Query("""
+       SELECT b FROM Board b
+       WHERE b.boardType = :boardType
+         AND b.delTf = 'N' AND b.useTf = 'Y'
+         AND b.noticeTf = 'Y'
+         AND (b.noticeStart IS NULL OR b.noticeStart <= :now)
+         AND (b.noticeEnd IS NULL OR :now <= b.noticeEnd)
+       ORDER BY b.noticeSeq DESC, b.id DESC
+    """)
+    List<Board> findActiveNotices(@Param("boardType") BoardType boardType, @Param("now") LocalDateTime now);
+
+    /**
+     * 특정 게시판 유형 + 삭제여부 + 사용여부로 전체 목록 조회
+     */
+    List<Board> findByBoardTypeAndDelTfAndUseTf(BoardType boardType, String delTf, String useTf);
 
     @Query("""
         SELECT b FROM Board b

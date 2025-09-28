@@ -22,6 +22,10 @@ public class BoardResponse {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private Integer viewCount;
+    private String noticeTf;
+    private int noticeSeq;
+    private LocalDateTime noticeStart;  // 공지 시작일 (NULL 가능)
+    private LocalDateTime noticeEnd;  // 공지 만료일 (NULL 가능)
     private String useTf;
     private String delTf;
     private String regAdm;
@@ -46,6 +50,10 @@ public class BoardResponse {
                 entity.getStartDate(),
                 entity.getEndDate(),
                 entity.getViewCount(),
+                entity.getNoticeTf(),
+                entity.getNoticeSeq(),
+                entity.getNoticeStart(),
+                entity.getNoticeEnd(),
                 entity.getUseTf(),
                 entity.getDelTf(),
                 entity.getRegAdm(),

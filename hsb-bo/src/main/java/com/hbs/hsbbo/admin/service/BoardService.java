@@ -25,9 +25,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -41,18 +40,71 @@ public class BoardService {
     @Autowired
     private final FileUtil fileUtil;
 
+    /* ========================= 유틸: 공지 활성 판단 ========================= */
+    private boolean isNoticeActive(Board b, LocalDateTime now) {
+        if (!"Y".equalsIgnoreCase(b.getNoticeTf())) return false;
+        // 기간이 모두 비어있으면 상시 공지
+        if (b.getNoticeStart() == null && b.getNoticeEnd() == null) return true;
+        // 시작/만료 한쪽만 있을 수도 있음
+        boolean afterStart = (b.getNoticeStart() == null) || !now.isBefore(b.getNoticeStart());
+        boolean beforeEnd  = (b.getNoticeEnd() == null) || !now.isAfter(b.getNoticeEnd());
+        return afterStart && beforeEnd;
+    }
+
     public BoardListResponse getBoardList(BoardType boardType, String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-        // 게시글 목록 조회
-        Page<Board> boardPage = boardRepository.findByBoardTypeAndKeyword(boardType, keyword, pageable);
-        List<Board> boards = boardPage.getContent();
-        List<Long> boardIds = boards.stream().map(Board::getId).toList();
+        LocalDateTime now = LocalDateTime.now();
 
-        // 파일 유무 조회
+        // 1) 활성 공지 먼저 조회 (boardType 범위, del_tf/use_tf 고려)
+        //    Repository에 맞는 JPQL/QueryMethod를 별도로 두는 걸 권장
+        //    여기서는 간단히 전체를 가져와 필터 → 정렬하는 형태
+        //    (데이터가 많아지면 반드시 쿼리 레벨에서 필터/정렬)
+        List<Board> allForType = boardRepository.findByBoardTypeAndDelTfAndUseTf(boardType, "N", "Y");
+        List<Board> activeNotices = allForType.stream()
+                .filter(b -> isNoticeActive(b, now))
+                .sorted(Comparator
+                        .comparingInt(Board::getNoticeSeq).reversed() // 우선순위 내림차순
+                        .thenComparing(Board::getId).reversed())       // 동일 우선순위면 최신순
+                .toList();
+
+        // 공지 ID 집합(중복 제거용)
+        Set<Long> noticeIds = activeNotices.stream().map(Board::getId).collect(Collectors.toSet());
+
+        // 2) 일반글 페이지 조회 (기존 메서드를 사용하되, 공지 제외)
+        //    - 현재 findByBoardTypeAndKeyword 가 공지를 포함한다면,
+        //      Repository에 "공지 제외" 조건을 추가한 메서드를 하나 더 두는게 제일 깔끔
+        Page<Board> boardPage = boardRepository.findByBoardTypeAndKeyword(boardType, keyword, pageable);
+        List<Board> pageContent = boardPage.getContent().stream()
+                .filter(b -> !noticeIds.contains(b.getId())) // 공지 제외
+                .toList();
+
+
+        // 게시글 목록 조회
+/*        Page<Board> boardPage = boardRepository.findByBoardTypeAndKeyword(boardType, keyword, pageable);
+        List<Board> boards = boardPage.getContent();
+        List<Long> boardIds = boards.stream().map(Board::getId).toList();*/
+
+        // 3) 파일 유무 맵
+        List<Long> itemIds = pageContent.stream().map(Board::getId).toList();
+        Map<Long, Boolean> fileMap = itemIds.isEmpty()
+                ? Collections.emptyMap()
+                : boardFileRepository.existsByBoardIds(itemIds);
+/*
         Map<Long, Boolean> fileMap = boardFileRepository.existsByBoardIds(boardIds);
 
-        // Entity → DTO + hasFile 적용
-        List<BoardResponse> items = boards.stream()
+
+*/
+        // 4) DTO 변환
+        List<BoardResponse> noticeDtos = activeNotices.stream()
+                .map(BoardResponse::from)
+                .peek(dto -> {
+                    // 공지 리스트에 파일뱃지 필요하면 별도 조회/설정
+                    // 여기서는 생략하거나 필요시 아래처럼 처리:
+                    // dto.setHasFile(fileMap.getOrDefault(dto.getId(), false));
+                })
+                .toList();
+
+        List<BoardResponse> itemDtos = pageContent.stream()
                 .map(board -> {
                     BoardResponse dto = BoardResponse.from(board);
                     dto.setHasFile(fileMap.getOrDefault(board.getId(), false));
@@ -60,7 +112,28 @@ public class BoardService {
                 })
                 .toList();
 
-        return new BoardListResponse(items, boardPage.getTotalElements(), boardPage.getTotalPages());
+        // Entity → DTO + hasFile 적용
+/*        List<BoardResponse> items = boards.stream()
+                .map(board -> {
+                    BoardResponse dto = BoardResponse.from(board);
+                    dto.setHasFile(fileMap.getOrDefault(board.getId(), false));
+                    return dto;
+                })
+                .toList();
+
+           return new BoardListResponse(items, boardPage.getTotalElements(), boardPage.getTotalPages());
+          */
+
+
+        // 5) 응답 조립 (기존 구조 유지 + notices 추가)
+        BoardListResponse resp = BoardListResponse.builder()
+                .items(itemDtos)
+                .totalCount(boardPage.getTotalElements())
+                .totalPages(boardPage.getTotalPages())
+                .build();
+        resp.setNotices(noticeDtos);
+        return resp;
+
     }
 
     public BoardResponse getBoardDetail(Long id) {
@@ -98,8 +171,13 @@ public class BoardService {
         board.setWriterName(request.getWriterName());
         board.setUseTf(request.getUseTf());
 
+        // ===== 공지 필드 반영 =====
+        board.setNoticeTf(request.getNoticeTf());
+        board.setNoticeSeq(request.getNoticeSeq());
+        board.setNoticeStart(request.getNoticeStart()); // null 허용
+        board.setNoticeEnd(request.getNoticeEnd()); // null 허용
+
         Board saved = boardRepository.save(board);
-        System.out.println("저장된 게시글 ID: " + saved.getId());
 
         // 2. 첨부파일 처리
         if (files != null && !files.isEmpty()) {
@@ -156,12 +234,15 @@ public class BoardService {
         board.setWriterName(request.getWriterName());
         board.setUseTf(request.getUseTf());
 
-        //board.setUpAdm("admin01"); // 실제 로그인한 관리자 아이디로 대체
+        // ===== 공지 필드 반영 =====
+        board.setNoticeTf(request.getNoticeTf());
+        board.setNoticeSeq(request.getNoticeSeq());
+        board.setNoticeStart(request.getNoticeStart()); // null 허용
+        board.setNoticeEnd(request.getNoticeEnd()); // null 허용
+
         board.setUpDate(LocalDateTime.now());
 
         boardRepository.save(board);
-        System.out.println("수정된 게시글 ID: " + board.getId());
-
         // 2. 기존 파일 유지 목록 추출
         List<Long> keepFileIds = request.getExistingFileIdList(); // "1,2,3" → [1,2,3]
 
