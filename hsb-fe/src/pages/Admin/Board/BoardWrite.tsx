@@ -13,6 +13,17 @@ import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { Base64UploadAdapterPlugin } from '../../../types/Common/ckeditor';
 
+/** datetime-local <-> ISO 헬퍼 */
+function toInputValue(v?: string | null): string {
+  if (!v) return '';
+  // 백엔드가 '2025-09-28T13:40:00' 형태면 그대로 사용 가능
+  // 혹시 초가 없거나 ' ' 공백이 오면 정규화
+  return v.replace(' ', 'T').slice(0, 16);
+}
+function fromInputValue(v: string): string | '' {
+  return v ? v : '';
+}
+
 const BoardWrite = () => {
   const navigate = useNavigate();
   const { boardType, id } = useParams();
@@ -28,7 +39,13 @@ const BoardWrite = () => {
     content: '',
     writerName: '',
     useTf: 'Y',
+    // 공지 기본값
+    noticeTf: 'N',
+    noticeSeq: 0,
+    noticeStart: null,
+    noticeEnd: null,
   });
+
   const [existingFiles, setExistingFiles] = useState<(BoardFileItem | File)[]>([]);
   const [dragOver, setDragOver] = useState(false);
 
@@ -37,8 +54,19 @@ const BoardWrite = () => {
       const loadData = async () => {
         try {
           const boardData: BoardItem = state?.board ?? await fetchBoardDetail(Number(id));
-          const { title, content, writerName, useTf, files } = boardData;
-          setForm({ title, content, writerName, useTf });
+          const {
+            title, content, writerName, useTf, files,
+            noticeTf, noticeSeq, noticeStart, noticeEnd
+          } = boardData; 
+
+          setForm({
+            title, content, writerName, useTf,
+            // 공지 필드 주입(없으면 기본값)
+            noticeTf: noticeTf ?? 'N',
+            noticeSeq: noticeSeq ?? 0,
+            noticeStart: noticeStart ?? null,
+            noticeEnd: noticeEnd ?? null,
+          });          
           setExistingFiles(files || []);
         } catch (err) {
           alert('게시글 정보를 불러오는 데 실패했습니다.');
@@ -46,7 +74,7 @@ const BoardWrite = () => {
       };
       loadData();
     }
-  }, [id, isEdit]);
+  }, [id, isEdit, state?.board]);
 
   const updateFiles = (
     prev: (BoardFileItem | File)[],
@@ -91,8 +119,25 @@ const BoardWrite = () => {
       return [...prev, ...addable].slice(0, 3);
     }
   };
-  
 
+    /** 간단 검증: 공지 설정 유효성 */
+  const validate = (): string | null => {
+    if (form.noticeTf === 'Y') {
+      const seq = Number(form.noticeSeq ?? 0);
+      if (Number.isNaN(seq) || seq < 0 || seq > 9999) {
+        return '공지 우선순위는 0~9999 사이 숫자여야 합니다.';
+      }
+      if (form.noticeStart && form.noticeEnd) {
+        const s = new Date(form.noticeStart);
+        const e = new Date(form.noticeEnd);
+        if (s.getTime() > e.getTime()) {
+          return '공지 시작일은 만료일보다 늦을 수 없습니다.';
+        }
+      }
+    }
+    return null;
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -102,6 +147,12 @@ const BoardWrite = () => {
       formData.append('content', form.content || '');
       formData.append('writerName', form.writerName || '');
       formData.append('useTf', form.useTf || 'Y');
+
+      // 공지 필드 추가
+      formData.append('noticeTf', form.noticeTf ?? 'N');
+      formData.append('noticeSeq', String(form.noticeSeq ?? 0));
+      formData.append('noticeStart', fromInputValue(toInputValue(form.noticeStart)));
+      formData.append('noticeEnd', fromInputValue(toInputValue(form.noticeEnd)));
 
       const existingFileIds = existingFiles
         .filter((f): f is BoardFileItem => !(f instanceof File))
@@ -115,7 +166,7 @@ const BoardWrite = () => {
       });
 
       formData.forEach((value, key) => {
-        console.log(`${key}: ${value}`);
+        //console.log(`${key}: ${value}`);
       });
   
       //  여기서 분기 처리 수정시
@@ -162,6 +213,63 @@ const BoardWrite = () => {
           {BoardTypeTitleMap[safeBoardType]} {isEdit ? '수정' : '등록'}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6 border p-6 bg-white rounded shadow">
+          {/*  공지 설정 UI */}
+          <div className="rounded-lg border p-4 bg-gray-50">
+            <div className="mb-3 flex items-center gap-4">
+              <label className="font-semibold w-28">공지 여부</label>
+              <select
+                value={form.noticeTf ?? 'N'}
+                onChange={(e) => setForm((prev) => ({ ...prev, noticeTf: e.target.value as 'Y'|'N' }))}
+                className="border px-3 py-2 rounded w-40"
+              >
+                <option value="N">일반글</option>
+                <option value="Y">공지글</option>
+              </select>
+
+              <label className="font-semibold w-28">우선순위</label>
+              <input
+                type="number"
+                min={0}
+                max={9999}
+                value={form.noticeSeq ?? 0}
+                onChange={(e) => setForm((prev) => ({ ...prev, noticeSeq: Number(e.target.value) }))}
+                className="border px-3 py-2 rounded w-32"
+                disabled={(form.noticeTf ?? 'N') !== 'Y'}
+                placeholder="예: 10"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="font-semibold block mb-1">공지 시작일</label>
+                <input
+                  type="datetime-local"
+                  value={toInputValue(form.noticeStart)}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, noticeStart: e.target.value || null }))
+                  }
+                  className="border px-3 py-2 rounded w-full"
+                  disabled={(form.noticeTf ?? 'N') !== 'Y'}
+                />
+              </div>
+              <div>
+                <label className="font-semibold block mb-1">공지 만료일</label>
+                <input
+                  type="datetime-local"
+                  value={toInputValue(form.noticeEnd)}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, noticeEnd: e.target.value || null }))
+                  }
+                  className="border px-3 py-2 rounded w-full"
+                  disabled={(form.noticeTf ?? 'N') !== 'Y'}
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500 mt-3">
+              • 공지는 리스트 1페이지 상단에만 표시됩니다. • 기간 미설정 시 해제 전까지 고정됩니다. • 우선순위가 클수록 더 위에 노출됩니다.
+            </p>
+          </div>
           <div className="grid grid-cols-5 gap-4 items-center">
             <label className="col-span-1 font-semibold">제목</label>
             <input

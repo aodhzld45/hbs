@@ -5,6 +5,20 @@ import { fetchBoardDetail, fetchBoardDelete } from '../../../services/Admin/boar
 import AdminLayout from '../../../components/Layout/AdminLayout';
 import { FILE_BASE_URL } from '../../../config/config';
 
+/** 공지 활성 여부(현재 now 기준) */
+function isNoticeActive(
+  noticeTf?: 'Y'|'N',
+  start?: string | null,
+  until?: string | null
+): boolean {
+  if (noticeTf !== 'Y') return false;
+  const now = new Date();
+
+  const sOk = !start || new Date(start) <= now;
+  const eOk = !until || now <= new Date(until);
+  return sOk && eOk;
+}
+
 const BoardDetail = () => {
   const navigate = useNavigate();
   const { boardType, id } = useParams();
@@ -54,6 +68,24 @@ const BoardDetail = () => {
             <tr className="border-b">
               <th className="w-40 p-2 bg-gray-100 text-left">제목</th>
               <td className="p-2">{board.title}</td>
+              {/* 공지 배지 */}
+              <th className="w-40 p-2 bg-gray-100 text-left">공지여부</th>
+              {board.noticeTf === 'Y' && (
+                <td
+                  className={
+                    isNoticeActive(board.noticeTf, board.noticeStart as any, board.noticeEnd as any)
+                      ? 'items-center px-2 text-xs font-semibold rounded text-rose-700'
+                      : 'items-center px-2 text-xs font-semibold rounded text-gray-700'
+                  }
+                  title={
+                    isNoticeActive(board.noticeTf, board.noticeStart as any, board.noticeEnd as any)
+                      ? '현재 공지로 상단 고정됨'
+                      : '공지 기간이 지나 상단 고정되지 않음'
+                  }
+                >
+                  📌 {isNoticeActive(board.noticeTf, board.noticeStart as any, board.noticeEnd as any) ? '공지(활성)' : '공지(만료)'}
+                </td>
+              )}
             </tr>
             <tr className="border-b">
               <th className="p-2 bg-gray-100 text-left">작성자</th>
@@ -62,6 +94,29 @@ const BoardDetail = () => {
             <tr className="border-b">
               <th className="p-2 bg-gray-100 text-left">등록일</th>
               <td className="p-2">{new Date(board.regDate).toLocaleString()}</td>
+            </tr>
+            <tr className="border-b">
+              <th className="p-2 bg-gray-100 text-left">공지 설정</th>
+              <td className="p-2">
+                {board.noticeTf === 'Y' ? (
+                  <div className="space-y-1">
+                    <div>우선순위: <b>{board.noticeSeq ?? 0}</b></div>
+                    <div>
+                      노출 기간:&nbsp;
+                      <b>{board.noticeStart ? new Date(board.noticeStart).toLocaleString() : '상시'}</b>
+                      &nbsp;~&nbsp;
+                      <b>{board.noticeEnd ? new Date(board.noticeEnd).toLocaleString() : '상시'}</b>
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      상태: {isNoticeActive(board.noticeTf, board.noticeStart as any, board.noticeEnd as any)
+                        ? <span className="text-rose-600 font-semibold">활성</span>
+                        : <span className="text-gray-700 font-semibold">만료</span>}
+                    </div>
+                  </div>
+                ) : (
+                  <span className="text-gray-500">일반 글</span>
+                )}
+              </td>
             </tr>
             <tr className="border-b align-top">
               <th className="p-2 bg-gray-100 text-left">내용</th>

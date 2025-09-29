@@ -11,6 +11,7 @@ const BoardManager = () => {
 
     const navigate = useNavigate();
     const { boardType } = useParams();
+    const [notices, setNotices] = useState<BoardItem[]>([]);
     const [boards, setBoards] = useState<BoardItem[]>([]);
     const [keyword, setKeyword] = useState('');
     const [page, setPage] = useState(0);
@@ -32,7 +33,8 @@ const BoardManager = () => {
             setIsLoading(true); //  로딩 시작
 
             const res = await fetchBoardList(safeBoardType, keyword, page, size);
-            setBoards(res.items);
+            setNotices(res.notices ?? []);   // 상단 공지
+            setBoards(res.items ?? []);      // 일반 목록(공지 제외)
             setTotalCount(res.totalCount);
             setTotalPages(res.totalPages);
             
@@ -155,7 +157,40 @@ const BoardManager = () => {
                     데이터를 불러오는 중입니다...
                 </td>
                 </tr>
-            ) : boards.length === 0 ? (
+            ) : (
+              <>
+               {/*  공지 영역 */}
+                {notices?.length > 0 &&
+                  notices.map((n) => (
+                    <tr
+                      key={`notice-${n.id}`}
+                      className="text-center hover:bg-gray-50"
+                    >
+                      <td className="py-3 text-rose-600 font-semibold">공지</td>
+                      <td
+                        className="text-left px-6 py-3 cursor-pointer"
+                        onClick={() => navigate(`/admin/board/${boardType}/detail/${n.id}`)}
+                      >
+                        <span className="inline-flex items-center gap-1 text-rose-600 font-semibold mr-2">
+                          📌
+                        </span>
+                        <span className="text-blue-700 hover:underline dark:text-yellow-400">
+                          {n.title}
+                        </span>
+                      </td>
+                      <td className="border p-2">{n.writerName || '-'}</td>
+                      <td className="border p-2">
+                        {n.regDate ? format(new Date(n.regDate), 'yyyy-MM-dd') : '-'}
+                      </td>
+                      <td className="border p-2">{n.viewCount ?? 0}</td>
+                      <td className="border p-2 text-sm">
+                        {n.useTf === 'Y' ? '보이기' : <span className="text-red-500">보이지 않기</span>}
+                      </td>
+                    </tr>
+                  ))}
+
+             {/*  일반 목록 */}
+              {boards.length === 0 ? (
                 <tr>
                 <td colSpan={5} className="py-8 text-center text-gray-400">
                     표시할 게시물이 없습니다.
@@ -180,7 +215,10 @@ const BoardManager = () => {
                     {board.useTf === 'Y' ? '보이기' : <span className="text-red-500">보이지 않기</span>}
                   </td>
                 </tr>
-              ))
+                ))
+              )}
+            </>
+
             )}
             </tbody>
           </table>

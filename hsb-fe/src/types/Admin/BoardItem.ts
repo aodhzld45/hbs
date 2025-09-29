@@ -1,4 +1,4 @@
-export type BoardType = 'NOTICE' | 'EVENT' | 'FAQ';
+export type BoardType = 'NOTICE' | 'EVENT' | 'FAQ' | 'DATA';
 
 export interface BoardItem {
     id: number;
@@ -13,6 +13,12 @@ export interface BoardItem {
     endDate?: string;
 
     viewCount: number;
+
+    noticeTf?: 'Y'|'N';
+    noticeSeq?: number;
+    noticeStart?: string | null; // ISO 문자열 (백엔드 LocalDateTime)
+    noticeEnd?: string | null;
+
     useTf: 'Y' | 'N';
     delTf?: 'Y' | 'N';
 
@@ -52,6 +58,7 @@ export const BoardTypeTitleMap: Record<BoardType, string> = {
     NOTICE: '공지사항',
     EVENT: '이벤트',
     FAQ: 'FAQ',
+    DATA: '자료실',
   };
 
 

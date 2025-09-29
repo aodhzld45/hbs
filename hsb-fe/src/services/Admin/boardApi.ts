@@ -9,11 +9,12 @@ export const fetchBoardList = async (
     page: number,
     size: number
     
-  ): Promise<{ items: BoardItem[]; totalCount: number; totalPages: number; }> => {
+  ): Promise<{ items: BoardItem[]; notices: BoardItem[]; totalCount: number; totalPages: number; }> => {
     try {
       const res = await api.get('/board/board-list', {
         params: { type, keyword, page, size },
       });
+
       return res.data;
     } catch (error) {
       console.error('게시글 조회 실패:', error);
