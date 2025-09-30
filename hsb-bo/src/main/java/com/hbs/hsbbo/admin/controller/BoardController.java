@@ -41,9 +41,11 @@ public class BoardController {
             @RequestParam BoardType type,
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String useTf // <- 사용자면 "Y", 관리자면 생략
+
     ) {
-        BoardListResponse result = boardService.getBoardList(type, keyword, page, size);
+        BoardListResponse result = boardService.getBoardList(type, keyword, page, size, useTf);
 
 
         return ResponseEntity.ok(result);
@@ -134,12 +136,24 @@ public class BoardController {
         }
     }
 
+    @PutMapping("/use-tf/{id}")
+    public ResponseEntity<Long> updateUseTf(
+            @PathVariable Long id,
+            @RequestParam String useTf,
+            @RequestParam String adminId
+    ) {
+        Long response = boardService.updateUseTf(id, useTf, adminId);
+
+        return ResponseEntity.ok(response);
+
+    }
+
     @GetMapping("/export")
     public ResponseEntity<Resource> getBoardExcel(
             @RequestParam BoardType type,
             @RequestParam(required = false) String keyword
     ){
-        BoardListResponse response = boardService.getBoardList(type, keyword, 0, 10);
+        BoardListResponse response = boardService.getBoardList(type, keyword, 0, 10, null);
 
         List<BoardResponse> boards = response.getItems();
 

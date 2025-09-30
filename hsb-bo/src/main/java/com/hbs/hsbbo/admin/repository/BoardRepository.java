@@ -33,12 +33,19 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     List<Board> findByBoardTypeAndDelTfAndUseTf(BoardType boardType, String delTf, String useTf);
 
     @Query("""
-        SELECT b FROM Board b
-        WHERE b.boardType = :boardType
-          AND b.delTf = 'N'
-          AND (:keyword IS NULL OR b.title LIKE %:keyword%)
-    """)
+            SELECT b FROM Board b
+            WHERE b.boardType = :boardType
+                AND (:useTf IS NULL OR b.useTf = :useTf)
+                AND b.delTf = 'N'
+                AND (
+                    :keyword = ''\s
+                     or b.title like concat('%', :keyword, '%')\s
+                     or b.content like concat('%', :keyword, '%')
+                   ) 
+              order by b.id desc
+            """)
     Page<Board> findByBoardTypeAndKeyword(@Param("boardType") BoardType boardType,
+                                          @Param("useTf") String useTf,
                                           @Param("keyword") String keyword,
                                           Pageable pageable);
 

@@ -10,6 +10,7 @@ import com.hbs.hsbbo.admin.dto.response.BoardResponse;
 import com.hbs.hsbbo.admin.repository.BoardFileRepository;
 import com.hbs.hsbbo.admin.repository.BoardRepository;
 import com.hbs.hsbbo.common.util.FileUtil;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -51,7 +52,7 @@ public class BoardService {
         return afterStart && beforeEnd;
     }
 
-    public BoardListResponse getBoardList(BoardType boardType, String keyword, int page, int size) {
+    public BoardListResponse getBoardList(BoardType boardType, String keyword, int page, int size, @Nullable String useTf) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
         LocalDateTime now = LocalDateTime.now();
 
@@ -59,13 +60,25 @@ public class BoardService {
         //    Repository에 맞는 JPQL/QueryMethod를 별도로 두는 걸 권장
         //    여기서는 간단히 전체를 가져와 필터 → 정렬하는 형태
         //    (데이터가 많아지면 반드시 쿼리 레벨에서 필터/정렬)
-        List<Board> allForType = boardRepository.findByBoardTypeAndDelTfAndUseTf(boardType, "N", "Y");
-        List<Board> activeNotices = allForType.stream()
-                .filter(b -> isNoticeActive(b, now))
-                .sorted(Comparator
-                        .comparingInt(Board::getNoticeSeq).reversed() // 우선순위 내림차순
-                        .thenComparing(Board::getId).reversed())       // 동일 우선순위면 최신순
-                .toList();
+        // 공지: 사용자 뷰이면 활성(기간+notice=Y+useTf=Y), 관리자면 전체 공지
+        List<Board> activeNotices;
+        if ("Y".equals(useTf)) {
+            // 사용자: 활성 공지만
+            List<Board> allForType = boardRepository.findByBoardTypeAndDelTfAndUseTf(boardType, "N", "Y");
+            activeNotices = allForType.stream()
+                    .filter(b -> isNoticeActive(b, now))
+                    .sorted(Comparator.comparingInt(Board::getNoticeSeq).reversed()
+                            .thenComparing(Board::getId).reversed())
+                    .toList();
+        } else {
+            // 관리자: 공지 플래그(Y)인 글을 최신순(기간 무관, useTf 무관)
+            List<Board> allForType = boardRepository.findByBoardTypeAndDelTfAndUseTf(boardType, "N", null);
+            activeNotices = allForType.stream()
+                    .filter(b -> "Y".equals(b.getNoticeTf()))
+                    .sorted(Comparator.comparingInt(Board::getNoticeSeq).reversed()
+                            .thenComparing(Board::getId).reversed())
+                    .toList();
+        }
 
         // 공지 ID 집합(중복 제거용)
         Set<Long> noticeIds = activeNotices.stream().map(Board::getId).collect(Collectors.toSet());
@@ -73,7 +86,7 @@ public class BoardService {
         // 2) 일반글 페이지 조회 (기존 메서드를 사용하되, 공지 제외)
         //    - 현재 findByBoardTypeAndKeyword 가 공지를 포함한다면,
         //      Repository에 "공지 제외" 조건을 추가한 메서드를 하나 더 두는게 제일 깔끔
-        Page<Board> boardPage = boardRepository.findByBoardTypeAndKeyword(boardType, keyword, pageable);
+        Page<Board> boardPage = boardRepository.findByBoardTypeAndKeyword(boardType,useTf, keyword, pageable);
         List<Board> pageContent = boardPage.getContent().stream()
                 .filter(b -> !noticeIds.contains(b.getId())) // 공지 제외
                 .toList();
@@ -290,6 +303,16 @@ public class BoardService {
         } else {
             System.out.println(" 신규 첨부파일 없음");
         }
+    }
+
+    // 사용 여부 변경
+    public Long updateUseTf(Long id, String useTf, String adminId) {
+        Board board = boardRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 페이지 ID입니다."));
+        board.setUseTf(useTf);
+        board.setUpAdm(adminId);
+        board.setUpDate(LocalDateTime.now());
+        return boardRepository.save(board).getId();
     }
 
     @Transactional

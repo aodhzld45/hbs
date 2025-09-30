@@ -7,13 +7,14 @@ export const fetchBoardList = async (
     type: BoardType,
     keyword: string = '',
     page: number,
-    size: number
-    
+    size: number,
+    useTf?: any   // <- optional
+
   ): Promise<{ items: BoardItem[]; notices: BoardItem[]; totalCount: number; totalPages: number; }> => {
     try {
-      const res = await api.get('/board/board-list', {
-        params: { type, keyword, page, size },
-      });
+      const params: any = { type, keyword, page, size };
+      if (useTf) params.useTf = useTf;  // 사용자일 때만 전송
+      const res = await api.get('/board/board-list', {params} );
 
       return res.data;
     } catch (error) {
@@ -21,6 +22,7 @@ export const fetchBoardList = async (
       throw error;
     }
   };
+
 
 // 게시글 상세 API
 export const fetchBoardDetail = async (id: number): Promise<BoardItem> => {
@@ -62,6 +64,18 @@ export const fetchBoardUpdate = async (formData: FormData, id: number) : Promise
 export const fetchBoardDelete = async (id: number): Promise<void> => {
   const res = await api.put(`/board/board-delete/${id}`);
   return res.data;
+};
+
+// 게시글 사용여부 변경 API
+export const updateBoardUseTf = async (
+  id: number,
+  useTf: "Y" | "N",
+  adminId: string
+): Promise<number> => {
+  const response = await api.put(`/board/use-tf/${id}`, null, {
+    params: { useTf, adminId }
+  });
+  return response.data; 
 };
 
 // 게시글 자료 엑셀 다운로드 API

@@ -1,49 +1,76 @@
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '../../../components/Layout/AdminLayout';
+
+// 관리자 정보 불러오기
+import AdminLayout from "../../../components/Layout/AdminLayout";
+import { useAuth } from '../../../context/AuthContext';
+
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { BoardItem, BoardType, BoardTypeTitleMap } from '../../../types/Admin/BoardItem';
-import { fetchBoardList, fetchExcelDownload } from '../../../services/Admin/boardApi';
+import { fetchBoardList, fetchExcelDownload, updateBoardUseTf } from '../../../services/Admin/boardApi';
 import Pagination from '../../../components/Common/Pagination';
 
-const BoardManager = () => {
 
-    const navigate = useNavigate();
-    const { boardType } = useParams();
-    const [notices, setNotices] = useState<BoardItem[]>([]);
-    const [boards, setBoards] = useState<BoardItem[]>([]);
-    const [keyword, setKeyword] = useState('');
-    const [page, setPage] = useState(0);
-    const [size] = useState(10); // 한 페이지에 보여줄 게시물 수 지정
-    const [totalPages, setTotalPages] = useState(0);
-    const [totalCount, setTotalCount] = useState(0);
-    const [isLoading, setIsLoading] = useState(false);
+const BoardManager: React.FC = () => {
 
-    // 소문자 파라미터를 BoardItem에 맞추어 대문자로 변경 ex) notice -> NOTICE
-    const safeBoardType = (boardType?.toUpperCase() ?? 'NOTICE') as BoardType;
+  const  admin  = useAuth();
+  const [adminId, setAdminId] = useState(admin.admin?.id || null);
+  
+  const navigate = useNavigate();
+  const { boardType } = useParams();
+  const [notices, setNotices] = useState<BoardItem[]>([]);
+  const [boards, setBoards] = useState<BoardItem[]>([]);
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(0);
+  const [size] = useState(10); // 한 페이지에 보여줄 게시물 수 지정
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-      //console.log('현재 boardType:', boardType);
-      //console.log('safeBoardType (대문자):', safeBoardType);
-    }, [boardType]);
+  // 소문자 파라미터를 BoardItem에 맞추어 대문자로 변경 ex) notice -> NOTICE
+  const safeBoardType = (boardType?.toUpperCase() ?? 'NOTICE') as BoardType;
 
-    const loadBoardList = async () => {
-        try {
-            setIsLoading(true); //  로딩 시작
 
-            const res = await fetchBoardList(safeBoardType, keyword, page, size);
-            setNotices(res.notices ?? []);   // 상단 공지
-            setBoards(res.items ?? []);      // 일반 목록(공지 제외)
-            setTotalCount(res.totalCount);
-            setTotalPages(res.totalPages);
-            
-        } catch (err) {
-            console.error('공지사항 조회 실패:', err);
-            alert('공지사항 목록을 불러오지 못했습니다.');
-        } finally {
-          setIsLoading(false);  // 로딩 종료
-        }          
+  useEffect(() => {
+    //console.log('현재 boardType:', boardType);
+    //console.log('safeBoardType (대문자):', safeBoardType);
+  }, [boardType]);
+
+  const loadBoardList = async () => {
+      try {
+          setIsLoading(true); //  로딩 시작
+
+          const res = await fetchBoardList(safeBoardType, keyword, page, size);
+          setNotices(res.notices ?? []);   // 상단 공지
+          setBoards(res.items ?? []);      // 일반 목록(공지 제외)
+          setTotalCount(res.totalCount);
+          setTotalPages(res.totalPages);
+          
+      } catch (err) {
+          console.error('공지사항 조회 실패:', err);
+          alert('공지사항 목록을 불러오지 못했습니다.');
+      } finally {
+        setIsLoading(false);  // 로딩 종료
+      }          
+  };
+
+    const handleToggleUseTf = async (board: BoardItem) => {
+      try {
+        const newUseTf = board.useTf === 'Y' ? 'N' : 'Y';
+
+        if(!adminId) {
+          alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
+          return;
+        }
+
+        await updateBoardUseTf(board.id, newUseTf, adminId);
+        alert('게시글 사용여부가 성공적으로 변경되었습니다.');
+        await loadBoardList();
+      } catch (error) {
+        console.error('useTf 변경 실패:', error);
+        alert('사용여부 변경에 실패했습니다.');
+      }   
     };
 
     //엑셀 다운로드 핸들러
@@ -147,7 +174,7 @@ const BoardManager = () => {
                 <th className="border p-2">작성자</th>
                 <th className="border p-2">등록일</th>
                 <th className="border p-2">조회수</th>
-                <th className="border p-2">노출여부</th>
+                <th className="border p-2">사용 여부</th>
               </tr>
             </thead>
             <tbody>
@@ -184,12 +211,21 @@ const BoardManager = () => {
                       </td>
                       <td className="border p-2">{n.viewCount ?? 0}</td>
                       <td className="border p-2 text-sm">
-                        {n.useTf === 'Y' ? '보이기' : <span className="text-red-500">보이지 않기</span>}
+                        <button
+                            onClick={() => handleToggleUseTf(n)}
+                            className={`px-3 py-1 rounded text-xs font-medium ${
+                              n.useTf === 'Y'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-200 text-gray-600'
+                            } hover:bg-green-200`}
+                          >
+                            {n.useTf === 'Y' ? '사용' : '미사용'}
+                        </button>                  
                       </td>
                     </tr>
                   ))}
 
-             {/*  일반 목록 */}
+              {/*  일반 목록 */}
               {boards.length === 0 ? (
                 <tr>
                 <td colSpan={5} className="py-8 text-center text-gray-400">
@@ -212,8 +248,18 @@ const BoardManager = () => {
                   </td>
                   <td className="border p-2">{board.viewCount}</td>
                   <td className="border p-2 text-sm">
-                    {board.useTf === 'Y' ? '보이기' : <span className="text-red-500">보이지 않기</span>}
+                    <button
+                        onClick={() => handleToggleUseTf(board)}
+                        className={`px-3 py-1 rounded text-xs font-medium ${
+                          board.useTf === 'Y'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-200 text-gray-600'
+                        } hover:bg-green-200`}
+                      >
+                        {board.useTf === 'Y' ? '사용' : '미사용'}
+                    </button>                  
                   </td>
+
                 </tr>
                 ))
               )}

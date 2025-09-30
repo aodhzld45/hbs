@@ -24,7 +24,7 @@ const BoardList = () => {
   const loadBoardList = async () => {
     try {
       setIsLoading(true);
-      const res = await fetchBoardList(safeBoardType, keyword, page, size);
+      const res = await fetchBoardList(safeBoardType, keyword, page, size, 'Y');
       setNotices(res.notices ?? []);   // 상단 공지
       setBoards(res.items ?? []);      // 일반 목록(공지 제외)
       setTotalCount(res.totalCount);
