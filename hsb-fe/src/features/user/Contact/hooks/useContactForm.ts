@@ -1,5 +1,5 @@
 // src/features/contact/hooks/useContactForm.ts
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ContactUserItem } from '../types/ContactUserItem';
 import { fetchContactCreate } from '../services/ContactApi';
 
@@ -17,6 +17,9 @@ export function useContactForm() {
     agreeTf: false,
   });
 
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   // 이메일 정규식 유효성 검사
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -63,10 +66,14 @@ export function useContactForm() {
       file: null,
       agreeTf: false,
     });
+    if (fileRef.current) fileRef.current.value = ''; // 파일 초기화
+
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    setLoading(true);   //  전송 시작
 
     if (!form.agreeTf) return alert('개인정보 수집 동의가 필요합니다.');
     if (!isValidEmail(form.email)) return alert('유효한 이메일 형식이 아닙니다.');
@@ -79,6 +86,8 @@ export function useContactForm() {
     } catch (err) {
       console.error(err);
       alert('문의 등록에 실패했습니다.');
+    } finally { 
+      setLoading(false);   // 전송 완료
     }
   };
 
@@ -88,5 +97,7 @@ export function useContactForm() {
     setShowModal,
     handleChange,
     handleSubmit,
+    loading,
+    fileRef, 
   };
 }

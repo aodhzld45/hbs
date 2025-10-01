@@ -11,6 +11,7 @@ const ContactDetail = () => {
     const { admin } = useAuth();
     const navigate = useNavigate();
     const [contents, setContents] = useState<ContactItem | null>(null);
+    const [submitting, setSubmitting] = useState(false); 
     const [loading, setLoading] = useState(true);
     const [reply, setReply] = useState('');
     const [replyMethod, setReplyMethod] = useState('EMAIL');
@@ -63,6 +64,8 @@ const ContactDetail = () => {
     }
 
     try {
+      setSubmitting(true);  // 전송 시작
+
       const res = await fetchContactReply({
         id: Number(id),
         replyContent: reply,
@@ -80,6 +83,8 @@ const ContactDetail = () => {
     } catch (error) {
       alert('답변 저장에 실패했습니다.');
       console.error(error);
+    }finally {
+      setSubmitting(false); // 전송 완료
     }
   };
 
@@ -159,10 +164,11 @@ const ContactDetail = () => {
         </div>
 
         <button
-            onClick={handleSubmit}
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          onClick={handleSubmit}
+          disabled={submitting}   //  로딩 중 비활성화
+          className={`px-6 py-2 rounded text-white ${submitting ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
         >
-            답변 저장 및 메일 발송
+          {submitting ? '처리중입니다...' : '답변 저장 및 메일 발송'}
         </button>
 
         <div className="flex justify-end mt-10 gap-3">
