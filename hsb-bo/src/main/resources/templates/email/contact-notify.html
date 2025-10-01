@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/></head>
+<body style="font-family:'Malgun Gothic',sans-serif; background-color:#f9f9f9; padding:20px;">
+<div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:30px; max-width:600px; margin:auto; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
+
+    <div style="font-size:18px; font-weight:bold; margin-bottom:20px; color:#2c3e50;">
+        새로운 문의가 접수되었습니다
+    </div>
+
+    <div style="font-size:14px; color:#333; line-height:1.6;">
+        <p><b>회사명:</b> <span th:text="${companyName}"></span></p>
+        <p><b>담당자:</b> <span th:text="${contactName}"></span></p>
+        <p><b>이메일:</b> <span th:text="${email}"></span></p>
+        <p><b>전화번호:</b> <span th:text="${phone}"></span></p>
+        <p><b>제목:</b> <span th:text="${title}"></span></p>
+
+        <div style="margin-top:20px; padding:15px; background:#f3f3f3; border-left:4px solid #4a90e2; white-space:pre-line;">
+            <span th:text="${message}"></span>
+        </div>
+    </div>
+
+    <div style="font-size:12px; color:#777; margin-top:30px; border-top:1px solid #e0e0e0; padding-top:15px;">
+        HSBS 관리자 알림 메일<br>
+        ⓒ HSBS All rights reserved.
+    </div>
+</div>
+</body>
+</html>
