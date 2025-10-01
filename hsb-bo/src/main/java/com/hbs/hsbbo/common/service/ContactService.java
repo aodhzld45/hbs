@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.common.service;
 
+import com.hbs.hsbbo.admin.repository.AdminRepository;
 import com.hbs.hsbbo.common.domain.entity.Contact;
 import com.hbs.hsbbo.common.dto.request.ContactReplyRequest;
 import com.hbs.hsbbo.common.dto.request.ContactRequest;
@@ -29,6 +30,9 @@ import java.util.Map;
 public class ContactService {
     @Autowired
     private final ContactRepository contactRepository;
+
+    @Autowired
+    private final AdminRepository adminRepository;
 
     // 공통 메일 서비스 관련 주입.
     @Autowired
@@ -95,6 +99,27 @@ public class ContactService {
         contact.setAgreeTf(request.getAgreeTf());
 
         Contact saved = contactRepository.save(contact);
+
+        // 시스템 관리자 조회.
+        List<String> adminEmails = adminRepository.findEmailsByGroupId(1L);
+
+        // 관리자들에게 메일 발송
+        for (String adminEmail : adminEmails) {
+            mailService.sendTemplateMail(
+                    adminEmail,
+                    "[HSBS] 새로운 문의가 접수되었습니다",
+                    "email/contact-notify",
+                    Map.of(
+                            "companyName", saved.getCompanyName(),
+                            "contactName", saved.getContactName(),
+                            "email", saved.getEmail(),
+                            "phone", saved.getPhone(),
+                            "title", saved.getTitle(),
+                            "message", saved.getMessage()
+                    )
+            );
+        }
+
         return ContactResponse.from(saved);
     }
 
@@ -113,7 +138,7 @@ public class ContactService {
         if ("EMAIL".equalsIgnoreCase(request.getReplyMethod())) {
             mailService.sendTemplateMail(
                     contact.getEmail(),
-                    "[HBS] 문의하신 내용에 대한 답변입니다.",
+                    "[HSBS] 문의하신 내용에 대한 답변입니다.",
                     "email/contact-reply", // templates/email/contact-reply.html 템플릿.
                     Map.of(
                             "companyName", contact.getCompanyName(),
