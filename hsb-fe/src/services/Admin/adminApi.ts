@@ -1,5 +1,22 @@
 import api from '../api';
+import axios from 'axios';
 import { Admin } from '../../types/Admin/Admin';
+
+type ApiErr = Error & { status?: number; code?: string; field?: string };
+
+function normErr(e: unknown): ApiErr {
+  if (axios.isAxiosError(e)) {
+    const status = e.response?.status;
+    const data = e.response?.data;
+    const msg = typeof data === 'string' ? data : (data?.message ?? e.message);
+    const err: ApiErr = Object.assign(new Error(msg), { status });
+    // 서버가 코드/필드 내려줄 경우 매핑(선택)
+    if (data?.code) err.code = data.code;
+    if (data?.field) err.field = data.field;
+    return err;
+  }
+  return Object.assign(new Error('요청 중 오류가 발생했습니다.'), {});
+}
 
 // 관리자 상세 api 요청 
 export const fetchAdminLogin = async (id: string, password: string): Promise<Admin> => {
@@ -13,14 +30,29 @@ export const fetchAdminLogin = async (id: string, password: string): Promise<Adm
   };
 
 // 관리자 등록
-  export const registerAdmin = async (adminData: Admin): Promise<Admin> => {
-    const response = await api.post('/admin/register', adminData);
-    return response.data;
+export async function registerAdmin(newAdmin: Admin, actorId?: string): Promise<Admin> {
+
+  const payload: Admin = {
+    ...newAdmin,
+    id: newAdmin.id.trim(),
+    email: newAdmin.email?.trim().toLowerCase(),
   };
 
+  try {
+    const response = await api.post('/admin/register', payload, {
+    params: { actorId }, // 쿼리로 전송
+  });
+    return response.data;
+  } catch (e) {
+    throw normErr(e);
+  }
+}
+
 // 관리자 수정
-export const updateAdmin = async (adminData: Admin): Promise<Admin> => {
-  const response = await api.put(`/admin/${adminData.id}`, adminData);
+export const updateAdmin = async (adminData: Admin, actorId?: string): Promise<Admin> => {
+  const response = await api.put(`/admin/${adminData.id}`, adminData, {
+    params: { actorId }, // 쿼리로 전송
+  });
   return response.data;
 };
 

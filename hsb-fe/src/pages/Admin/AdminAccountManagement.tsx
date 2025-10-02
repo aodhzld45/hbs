@@ -2,18 +2,22 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../components/Layout/AdminLayout';  
 import { Admin } from '../../types/Admin/Admin';
+import { useAuth } from '../../context/AuthContext';
+
 import { RoleGroup } from '../../types/Admin/RoleGroup'
 import { fetchAdminAccounts, registerAdmin, updateAdmin, deleteAdmin  } from '../../services/Admin/adminApi';
 
 import { fetchRoleGroups } from '../../services/Admin/roleApi';
 
 import AdminAccountCreateModal from '../../components/Admin/Account/AdminAccountCreateModal';
-import AdminAccountEditModal from '../../components/Admin/Account/AdminAccountEditModal';
 
 const AdminAccountManagement: React.FC = () => {
   const [admins, setAdmins] = useState<Admin[]>([]);
+  const { admin } = useAuth();
   const [loading, setLoading] = useState<boolean>(true);
+
   const [error, setError] = useState<string>('');
+  
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
   const [roles, setRoles] = useState<RoleGroup[]>([]);
@@ -46,21 +50,30 @@ const AdminAccountManagement: React.FC = () => {
     loadRoles();
   }, []);
 
+    const adminId = admin?.id;
+
+  if (!adminId) {
+    alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
+    return null;
+  }
+
   const handleSaveNewAdmin = async (newAdmin: Admin) => {
     try {
-      const created = await registerAdmin(newAdmin);
+      const created = await registerAdmin(newAdmin, adminId);
       setAdmins(prev => [...prev, created]);
       alert('관리자가 성공적으로 등록되었습니다.');
       setShowCreateModal(false);
     } catch (err) {
       console.error(err);
-      setError('관리자 등록에 실패했습니다. 다시 시도해주세요.');
+      alert(err);
+      throw err;                           // 실패를 호출자(모달)로 전파 → 모달 안 닫힘
+      //setError('관리자 등록에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
   const handleUpdateAdmin = async (updatedAdmin: Admin) => {
     try {
-      const saved = await updateAdmin(updatedAdmin);
+      const saved = await updateAdmin(updatedAdmin, adminId);
       setAdmins(prev =>
         prev.map(a => (a.id === saved.id ? saved : a))
       );
