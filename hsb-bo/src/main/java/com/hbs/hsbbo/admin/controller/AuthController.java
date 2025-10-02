@@ -2,6 +2,7 @@ package com.hbs.hsbbo.admin.controller;
 
 import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.domain.entity.Admin;
+import com.hbs.hsbbo.admin.domain.type.AdminStatus;
 import com.hbs.hsbbo.admin.dto.request.LoginRequest;
 import com.hbs.hsbbo.admin.repository.AdminRepository;
 import com.hbs.hsbbo.common.config.JwtTokenProvider;
@@ -13,10 +14,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -84,7 +88,7 @@ public class AuthController {
 
     // 현재 로그인된 관리자 정보 반환 (JWT 인증 기반)
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentAdmin(Authentication authentication) {
+    public ResponseEntity<?> getCurrentAdmin(Authentication authentication, HttpSession session) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("인증되지 않은 사용자입니다.");
         }
@@ -98,6 +102,15 @@ public class AuthController {
                     .map(a -> a.getAuthority())
                     .toList();
 
+            // 세션 ID와 필요한 세션 속성들 가져오기
+            String sessionId = session.getId();
+            Map<String, Object> sessionAttrs = new HashMap<>();
+            var attrNames = session.getAttributeNames();
+            while (attrNames.hasMoreElements()) {
+                String key = attrNames.nextElement();
+                sessionAttrs.put(key, session.getAttribute(key));
+            }
+
             return ResponseEntity.ok(Map.of(
                     "adminId", currentAdmin.getId(),
                     "name", currentAdmin.getName(),
@@ -105,7 +118,9 @@ public class AuthController {
                     "tel", currentAdmin.getTel(),
                     "memo", currentAdmin.getMemo(),
                     "email", currentAdmin.getEmail(),
-                    "roles", roles
+                    "roles", roles,
+                    "sessionId", sessionId,
+                    "sessionAttrs", sessionAttrs
             ));
 
         } else {
@@ -201,25 +216,70 @@ public class AuthController {
             action = "등록",
             detail = "관리자 계정 {id} 등록"
     )
-    public ResponseEntity<?> registerAdmin(@Valid @RequestBody Admin admin) {
-        // 동일한 id가 이미 존재하는지 확인
-        if(adminRepository.existsById(admin.getId())) {
+    public ResponseEntity<?> registerAdmin(
+            @Valid @RequestBody Admin admin,
+            @RequestParam(name = "actorId", required = false) String actorId
+    ) {
+        // 1) 입력 정규화
+        admin.setId(admin.getId().trim());
+        admin.setEmail(admin.getEmail().trim().toLowerCase());
+        admin.setName(admin.getName().trim());
+
+        // 2) 중복 체크
+        if (adminRepository.existsById(admin.getId())) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("해당 아이디의 관리자가 이미 존재합니다.");
         }
-
-        admin.setPassword(passwordEncoder.encode(admin.getPassword()));
-        // 생성일 및 수정일 설정
-        admin.setCreatedAt(LocalDateTime.now());
-        admin.setUpdatedAt(LocalDateTime.now());
-        // 기본 값 설정 (예: isDeleted 기본 false)
-        if(admin.getIsDeleted() == null) {
-            admin.setIsDeleted(false);
+        if (adminRepository.existsByEmail(admin.getEmail())) { // 레포지토리에 추가 필요
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("해당 이메일의 관리자가 이미 존재합니다.");
         }
 
-        // 관리자 등록 (저장)
-        Admin savedAdmin = adminRepository.save(admin);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedAdmin);
+        // 3) 서버가 관리하는 필드 무시/초기화
+        admin.setAccessFailCount(0);
+        admin.setIsDeleted(Boolean.FALSE);
+        admin.setDeletedAt(null);
+        admin.setLoggedAt(null);
+        admin.setLastLoginIp(null);
+        admin.setLastLoginDevice(null);
+        admin.setLastLoginLocation(null);
+
+        // 상태 기본값 보정
+        if (admin.getStatus() == null) admin.setStatus(AdminStatus.ACTIVE);
+
+        // 생성/수정일
+        LocalDateTime now = LocalDateTime.now();
+        admin.setCreatedAt(now);
+        admin.setUpdatedAt(now);
+        admin.setPasswordUpdatedAt(now);
+
+        // 감사자 (SecurityContext 있으면 반영)
+        String actor = (actorId != null && !actorId.isBlank())
+                ? actorId
+                : resolveActorFromSecurityContext().orElse("system");
+        admin.setCreatedBy(actor);
+        admin.setUpdatedBy(actor);
+
+        // 4) 비밀번호 해시
+        if (admin.getPassword() == null || admin.getPassword().isBlank()) {
+            return ResponseEntity.badRequest().body("비밀번호를 입력해주세요.");
+        }
+        admin.setPasswordLength(admin.getPassword().length()); // 서버가 굳이 저장 안 하거나, 저장하려면 길이 세팅
+        admin.setPassword(passwordEncoder.encode(admin.getPassword()));
+
+        // 5) 저장
+        Admin saved = adminRepository.save(admin);
+
+        // 6) 응답: 엔티티 그대로 보내도 password는 WRITE_ONLY라 숨겨짐
+        URI location = URI.create("/api/admin/" + saved.getId());
+        return ResponseEntity.created(location).body(saved);
     }
 
+    private Optional<String> resolveActorFromSecurityContext() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof Admin a) {
+            return Optional.ofNullable(a.getId());
+        }
+        return Optional.empty();
+    }
 }

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface AdminRepository extends JpaRepository<Admin, String>{
+    boolean existsByEmail(String email);
 
     @Query("""
         SELECT a 

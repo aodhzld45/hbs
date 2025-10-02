@@ -1,7 +1,9 @@
 package com.hbs.hsbbo.admin.domain.entity;
 
+import com.hbs.hsbbo.admin.domain.type.AdminStatus;
 import jakarta.persistence.*;
 import lombok.Data;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -51,4 +53,29 @@ public class Admin {
 
     @Column(name = "password_updated_at")
     private LocalDateTime passwordUpdatedAt;
+
+    // 1. 로그인 관련
+    @Column(name = "last_login_ip", length = 45)
+    private String lastLoginIp;
+
+    @Column(name = "last_login_device", length = 255)
+    private String lastLoginDevice;
+
+    @Column(name = "last_login_location", length = 255)
+    private String lastLoginLocation;
+
+    // 2. 계정 보안 관련
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 16, nullable = false)
+    private AdminStatus status = AdminStatus.ACTIVE;
+
+    // 3. 운영·감사 추적
+    @Column(name = "created_by", length = 100)
+    private String createdBy;
+
+    @Column(name = "updated_by", length = 100)
+    private String updatedBy;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }
