@@ -20,10 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -37,6 +34,9 @@ public class AuthController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    // 로그인 실패 카운트
+    private static final int LOCK_THRESHOLD = 5;
 
     @GetMapping("/login")
     public ResponseEntity<?> getIp(HttpServletRequest request) {
@@ -58,12 +58,49 @@ public class AuthController {
         Optional<Admin> adminOpt = adminRepository.findById(loginRequest.getId());
 
         if (adminOpt.isPresent()) {
-            Admin admin = adminOpt.get();
 
-            // 암호화된 비밀번호 비교
-            if (!passwordEncoder.matches(loginRequest.getPassword(), admin.getPassword())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login 실패");
+            Admin admin = adminOpt.get();
+            // 삭제/잠금 상태 가드
+            if (Boolean.TRUE.equals(admin.getIsDeleted())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("삭제된 계정입니다.");
             }
+
+            if (admin.getStatus() != null && admin.getStatus() == AdminStatus.LOCKED) {
+                return ResponseEntity.status(423 /* Locked */).body("계정이 잠금 상태입니다. 관리자에게 문의하세요.");
+            }
+
+            // 비밀번호 검사
+            if (!passwordEncoder.matches(loginRequest.getPassword(), admin.getPassword())) {
+                // 실패 카운트 + 잠금처리
+                int failCount = (admin.getAccessFailCount() == null ? 0 : admin.getAccessFailCount()) + 1;
+                admin.setAccessFailCount(failCount);
+                if (failCount >= LOCK_THRESHOLD) {
+                    admin.setStatus(AdminStatus.LOCKED); // 계정 잠금처리.
+                }
+
+                admin.setUpdatedAt(LocalDateTime.now());
+                admin.setUpdatedBy(admin.getId());
+                adminRepository.save(admin);
+
+                String msg = (admin.getStatus() == AdminStatus.LOCKED)
+                        ? "비밀번호 오류가 누적되어 계정이 잠겼습니다."
+                        : String.format("Login 실패 (남은 시도 가능 횟수 : %d)", Math.max(0,LOCK_THRESHOLD - failCount));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(msg);
+            }
+
+            // 로그인 성공시 계정 정보 업데이트
+            String ip = clientIp(request);
+            String ua = Optional.ofNullable(request.getHeader("User-Agent")).orElse("");
+            LocalDateTime now = LocalDateTime.now();
+            admin.setLastLoginIp(ip);
+            admin.setLastLoginDevice(ua);
+            admin.setLoggedAt(now);
+            admin.setAccessFailCount(0);
+            admin.setStatus(AdminStatus.ACTIVE);
+            admin.setUpdatedAt(now);
+            admin.setUpdatedBy(admin.getId());
+
+            adminRepository.save(admin);
 
             // JWT
             String token = jwtTokenProvider.createToken(admin.getId(), "ADMIN");
@@ -71,16 +108,22 @@ public class AuthController {
             // 권한도 함께 내려보냄
             List<String> roles = List.of("ROLE_ADMIN");
 
-            return ResponseEntity.ok(Map.of(
-                    "token", token,
-                    "adminId", admin.getId(),
-                    "name", admin.getName(),
-                    "groupId", admin.getGroupId(),
-                    "tel", admin.getTel(),
-                    "memo", admin.getMemo(),
-                    "email", admin.getEmail(),
-                    "roles", roles
-            ));
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("token", token);
+            body.put("adminId", admin.getId());
+            body.put("name", admin.getName());
+            body.put("groupId", admin.getGroupId());
+            body.put("tel", admin.getTel());                 // null 허용
+            body.put("memo", admin.getMemo());               // null 허용
+            body.put("email", admin.getEmail());
+            body.put("roles", roles);
+            body.put("status", admin.getStatus());
+            body.put("loggedAt", admin.getLoggedAt());
+            body.put("lastLoginIp", admin.getLastLoginIp());
+            body.put("lastLoginDevice", admin.getLastLoginDevice());
+
+            return ResponseEntity.ok(body);
+
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login 실패");
         }
@@ -111,17 +154,20 @@ public class AuthController {
                 sessionAttrs.put(key, session.getAttribute(key));
             }
 
-            return ResponseEntity.ok(Map.of(
-                    "adminId", currentAdmin.getId(),
-                    "name", currentAdmin.getName(),
-                    "groupId", currentAdmin.getGroupId(),
-                    "tel", currentAdmin.getTel(),
-                    "memo", currentAdmin.getMemo(),
-                    "email", currentAdmin.getEmail(),
-                    "roles", roles,
-                    "sessionId", sessionId,
-                    "sessionAttrs", sessionAttrs
-            ));
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("adminId", currentAdmin.getId());
+            body.put("name", currentAdmin.getName());
+            body.put("groupId", currentAdmin.getGroupId());
+            body.put("tel", currentAdmin.getTel());                 // null 허용
+            body.put("memo", currentAdmin.getMemo());               // null 허용
+            body.put("email", currentAdmin.getEmail());
+            body.put("roles", roles);
+            body.put("status", currentAdmin.getStatus());
+            body.put("loggedAt", currentAdmin.getLoggedAt());
+            body.put("lastLoginIp", currentAdmin.getLastLoginIp());
+            body.put("lastLoginDevice", currentAdmin.getLastLoginDevice());
+            return ResponseEntity.ok(body);
+
 
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("인증 정보가 올바르지 않습니다.");
@@ -281,5 +327,13 @@ public class AuthController {
             return Optional.ofNullable(a.getId());
         }
         return Optional.empty();
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) return xff.split(",")[0].trim();
+        String real = request.getHeader("X-Real-IP");
+        if (real != null && !real.isBlank()) return real.trim();
+        return request.getRemoteAddr();
     }
 }

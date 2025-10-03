@@ -20,8 +20,12 @@ function normErr(e: unknown): ApiErr {
 
 // 관리자 상세 api 요청 
 export const fetchAdminLogin = async (id: string, password: string): Promise<Admin> => {
-    const response = await api.post(`/admin/login`, {id, password});
-    return response.data;
+    try {
+      const response = await api.post(`/admin/login`, {id, password});
+      return response.data;
+    }catch (e) {
+      throw normErr(e);
+    }
   };
 
   export const fetchAdminAccounts = async (): Promise<Admin[]> => {

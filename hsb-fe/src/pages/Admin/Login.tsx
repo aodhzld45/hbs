@@ -2,6 +2,7 @@ import React, { useState, FormEvent, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { fetchAdminLogin, fetchGetIp } from '../../services/Admin/adminApi';
+import axios from 'axios';
 
 interface LoginForm {
   id: string;
@@ -68,19 +69,23 @@ const AdminLogin = () => {
       const adminInfo = loginResponse;
 
       // AuthContext에 token과 admin 함께 전달
-      login({
-        id: adminInfo.adminId,
-        name: adminInfo.name,
-        email: adminInfo.email,
-        groupId: adminInfo.groupId,
-        isDeleted: false,
-      }, token);
+      login(
+        {
+          id: adminInfo.adminId,
+          name: adminInfo.name,
+          email: adminInfo.email,
+          groupId: adminInfo.groupId,
+          isDeleted: false,
+        }, 
+        token
+      );
 
       // 로그인 성공 후 이동
       navigate('/admin/index');
-    } catch (err) {
-      setError('로그인에 실패했습니다. 다시 시도해주세요.');
+    } catch (err: any) {
+      setError(err?.message ?? '로그인에 실패했습니다.');
     }
+
   };
 
   return (
