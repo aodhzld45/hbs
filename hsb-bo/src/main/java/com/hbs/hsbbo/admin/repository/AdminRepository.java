@@ -10,6 +10,8 @@ import java.util.List;
 public interface AdminRepository extends JpaRepository<Admin, String>{
     boolean existsByEmail(String email);
 
+    // 기존 이메일 중복체크 + 자기 자신 제외
+    boolean existsByEmailAndIdNot(String email, String id);
     @Query("""
         SELECT a 
         FROM Admin a

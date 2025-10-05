@@ -218,24 +218,66 @@ public class AuthController {
 
     // 관리자 계정 수정 (간단한 예시: 이름과 이메일만 수정)
     @PutMapping("/{id}")
+    @AdminActionLog(
+            action = "수정",
+            detail = "관리자 계정 {id} 수정"
+    )
     public ResponseEntity<?> updateAdmin(@PathVariable("id") String id,
-                                         @RequestBody Admin updatedAdmin) {
+                                         @RequestBody Admin updatedAdmin,
+                                         @RequestParam(name = "actorId", required = false) String actorId
+    ) {
         return adminRepository.findById(id)
                 .map(admin -> {
-                    admin.setName(updatedAdmin.getName());
-                    admin.setEmail(updatedAdmin.getEmail());
-                    admin.setTel(updatedAdmin.getTel());
-                    admin.setMemo(updatedAdmin.getMemo());
-                    admin.setGroupId(updatedAdmin.getGroupId());
+                    // 1) 입력 정규화 (null-safe)
+                    String newName  = Optional.ofNullable(updatedAdmin.getName()).map(String::trim).orElse(null);
+                    String newEmail = Optional.ofNullable(updatedAdmin.getEmail()).map(s -> s.trim().toLowerCase()).orElse(null);
+                    String newTel   = Optional.ofNullable(updatedAdmin.getTel()).map(String::trim).orElse(null);
+                    String newMemo  = Optional.ofNullable(updatedAdmin.getMemo()).map(String::trim).orElse(null);
+                    Integer newGroup = updatedAdmin.getGroupId();
 
-                    // 비밀번호가 비어있지 않으면 새 비밀번호로 업데이트
-                    if (updatedAdmin.getPassword() != null && !updatedAdmin.getPassword().isEmpty()) {
-                        String encodedPassword = passwordEncoder.encode(updatedAdmin.getPassword());
-                        admin.setPassword(encodedPassword);
+                    // 2) 변경 의사가 있는 필드만 반영 + 유효성/중복 체크
+                    if (newEmail != null) {
+                        if (newEmail.isBlank()) {
+                            return ResponseEntity.badRequest().body("이메일을 비울 수 없습니다.");
+                        }
+                        if (adminRepository.existsByEmailAndIdNot(newEmail, id)) {
+                            return ResponseEntity.status(HttpStatus.CONFLICT)
+                                    .body("해당 이메일의 관리자가 이미 존재합니다.");
+                        }
+                        admin.setEmail(newEmail);
+                    }
+                    if (newName != null)  admin.setName(newName);
+                    if (newTel != null)   admin.setTel(newTel);
+                    if (newMemo != null)  admin.setMemo(newMemo);
+                    if (newGroup != null) admin.setGroupId(newGroup);
+
+                    // 상태 변경 허용 (nullable이면 무시)
+                    if (updatedAdmin.getStatus() != null) {
+                        admin.setStatus(updatedAdmin.getStatus());
                     }
 
-                    adminRepository.save(admin);
-                    return ResponseEntity.ok(admin);
+                    // 3) 비밀번호 처리(입력된 경우에만)
+                    String rawPwd = updatedAdmin.getPassword();
+                    if (rawPwd != null && !rawPwd.isBlank()) {
+                        admin.setPasswordLength(rawPwd.length());
+                        admin.setPassword(passwordEncoder.encode(rawPwd));
+                        admin.setPasswordUpdatedAt(LocalDateTime.now());
+
+                        // 선택: 비밀번호 변경 시 실패 카운트 초기화
+                        admin.setAccessFailCount(0);
+                    }
+
+                    // 4) 서버 관리 필드 업데이트(감사/타임스탬프)
+                    LocalDateTime now = LocalDateTime.now();
+                    admin.setUpdatedAt(now);
+                    String actor = (actorId != null && !actorId.isBlank())
+                            ? actorId
+                            : resolveActorFromSecurityContext().orElse("system");
+                    admin.setUpdatedBy(actor);
+
+                    // 5) 저장
+                    Admin saved = adminRepository.save(admin);
+                    return ResponseEntity.ok(saved);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
