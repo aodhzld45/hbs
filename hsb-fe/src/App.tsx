@@ -13,6 +13,7 @@ import AdminLogin from "./pages/Admin/Login";
 import AdminDashboard from "./pages/Admin";
 import AdminList from "./pages/Admin/AdminAccountManagement";
 import AdminCreate from "./pages/Admin/AdminRegister";
+import AdminProfile from './components/Admin/Account/AdminProfile';
 import AdminMenu from "./pages/Admin/Menu/AdminMenuManagement";
 import AdminAuthManagement from './pages/Admin/Role/AdminRoleManagement';
 import AdminLogManager from './pages/Admin/Log/AdminLogManager';
@@ -25,7 +26,6 @@ import ContactDetail from "./features/admin/Contact/components/ContactDetail";
 import PopupBannerManager from './pages/Admin/Main/PopupBannerManager';
 
 import PageManager from './pages/Admin/Page/PageManager';
-import PageSectionManager from './pages/Admin/Page/PageSectionManager';
 
 // 관리자 공통 게시판 관련 imports
 import BoardManager from './pages/Admin/Board/BoardManager';
@@ -43,6 +43,7 @@ import ContentDetail from './components/Contents/ContentDetail';
 import ContactForm from './features/user/Contact/index';
 
 // 각종 테스트용 imports
+import AIPlayground from './features/user/OpenAI/AIPlayground';
 import TestPage from './pages/User/TestPage';
 import SqlProblemTestPage from './features/admin/SqlProblem/SqlProblemTestPage';
 import KisPage from './features/user/Kis';
@@ -70,6 +71,7 @@ function App() {
             <Route path="/test" element={<TestPage />} />
             <Route path="/test/2depth" element={<SqlProblemTestPage />} />
             <Route path="/test/kis" element={<KisPage />} />
+            <Route path="/test/ai" element={<AIPlayground />} />
 
             {/* 관리자 공통 페이지 */}
 
@@ -90,6 +92,8 @@ function App() {
               <Route path="/admin/admin-manager" element={<AdminList />} />
               <Route path="/admin/auth-management" element={<AdminAuthManagement />} />
               <Route path="/admin/admin-create" element={<AdminCreate />} />
+              <Route path="/admin/profile" element={<AdminProfile />} />
+
               <Route path="/admin/admin-menu" element={<AdminMenu />} />
               <Route path="/admin/log-manager" element={<AdminLogManager />} />
 

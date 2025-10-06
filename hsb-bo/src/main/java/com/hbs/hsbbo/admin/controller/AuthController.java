@@ -60,13 +60,28 @@ public class AuthController {
         if (adminOpt.isPresent()) {
 
             Admin admin = adminOpt.get();
-            // 삭제/잠금 상태 가드
+            
+            // 삭제/정지/잠금 가드
             if (Boolean.TRUE.equals(admin.getIsDeleted())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("삭제된 계정입니다.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                        "loginState", "DELETED",
+                        "message", "삭제된 계정입니다.",
+                        "accountStatus", "DELETED"
+                ));
             }
-
-            if (admin.getStatus() != null && admin.getStatus() == AdminStatus.LOCKED) {
-                return ResponseEntity.status(423 /* Locked */).body("계정이 잠금 상태입니다. 관리자에게 문의하세요.");
+            if (admin.getStatus() == AdminStatus.SUSPENDED) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                        "loginState", "SUSPENDED",
+                        "message", "정지된 계정입니다. 관리자에게 문의하세요.",
+                        "accountStatus", admin.getStatus().name()
+                ));
+            }
+            if (admin.getStatus() == AdminStatus.LOCKED) {
+                return ResponseEntity.status(HttpStatus.LOCKED).body(Map.of(
+                        "loginState", "LOCKED",
+                        "message", "계정이 잠금 상태입니다. 관리자에게 문의하세요.",
+                        "accountStatus", admin.getStatus().name()
+                ));
             }
 
             // 비밀번호 검사

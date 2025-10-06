@@ -6,7 +6,7 @@ export interface RoleGroup {
   }
 
 export interface MenuMapping {
-  menuId: number;
+  menuId?: number;
   read: boolean;
   write: boolean;
   delete: boolean;
