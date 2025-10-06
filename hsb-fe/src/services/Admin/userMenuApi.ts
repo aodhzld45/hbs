@@ -3,9 +3,11 @@ import api from '../api';
 
 
 // 사용자 메뉴 트리 조회
-export const fetchUserMenuTree = async (): Promise<UserMenuNode[]> => {
-    const res = await api.get<UserMenuNode[]>('/user-menus/tree');
-    return res.data;
+export const fetchUserMenuTree = async (onlyUsable?: boolean): Promise<UserMenuNode[]> => {
+  const res = await api.get<UserMenuNode[]>('/user-menus/tree', {
+    params: onlyUsable ? { useTf: 'Y' } : undefined,
+  });
+  return res.data;
 };
 
 export const fetchUserMenuCreate = async (form: any, adminId: string) => {

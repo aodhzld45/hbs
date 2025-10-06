@@ -26,8 +26,10 @@ public class UserMenuController {
 
     // 공통 - 트리구조 메뉴 조회
     @GetMapping("/tree")
-    public List<UserMenuTreeResponse> getMenuTree() {
-        return userMenuService.getMenuTree();
+    public List<UserMenuTreeResponse> getMenuTree(
+            @RequestParam(name = "useTf", required = false) String useTf)
+    {
+        return userMenuService.getMenuTree(useTf);
     }
 
     // 관리자 - 사용자 메뉴 등록

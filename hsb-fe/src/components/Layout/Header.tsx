@@ -11,6 +11,9 @@ const Header = () => {
   const navigate = useNavigate();
   const [hoveredMenuId, setHoveredMenuId] = useState<number | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const onlyUsable = true;
+
   // 마우스를 올렸을 때
   const handleMouseEnter = (id: number) => {
     if (hoverTimeoutRef.current) {
@@ -29,7 +32,7 @@ const Header = () => {
   useEffect(() => {
     const loadTree = async () => {
       try {
-        const data = await fetchUserMenuTree();
+        const data = await fetchUserMenuTree(onlyUsable);
         setMenuTree(data);
       } catch (err) {
         console.error('메뉴 트리 조회 실패:', err);
@@ -38,7 +41,7 @@ const Header = () => {
       }
     };
     loadTree();
-  }, []);
+  }, [onlyUsable]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

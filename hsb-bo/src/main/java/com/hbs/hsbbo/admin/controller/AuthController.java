@@ -60,7 +60,7 @@ public class AuthController {
         if (adminOpt.isPresent()) {
 
             Admin admin = adminOpt.get();
-            
+
             // 삭제/정지/잠금 가드
             if (Boolean.TRUE.equals(admin.getIsDeleted())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(

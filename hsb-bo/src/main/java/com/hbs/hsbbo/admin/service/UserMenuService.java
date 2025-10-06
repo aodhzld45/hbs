@@ -5,6 +5,7 @@ import com.hbs.hsbbo.admin.dto.request.UserMenuRequest;
 import com.hbs.hsbbo.admin.dto.response.UserMenuResponse;
 import com.hbs.hsbbo.admin.dto.response.UserMenuTreeResponse;
 import com.hbs.hsbbo.admin.repository.UserMenuRepository;
+import jakarta.annotation.Nullable;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +31,12 @@ public class UserMenuService {
                 .collect(Collectors.toList());
     }
 
-    public List<UserMenuTreeResponse> getMenuTree() {
-        List<UserMenu> allMenus = userMenuRepository.findByDelTf("N");
+    public List<UserMenuTreeResponse> getMenuTree(@Nullable String useTf) {
+        //List<UserMenu> allMenus = userMenuRepository.findByDelTf("N");
+        // 분기: userTf=Y → 사용여부=Y만, 그 외/null → 전체
+        List<UserMenu> allMenus = "Y".equalsIgnoreCase(useTf)
+                ? userMenuRepository.findByDelTfAndUseTf("N", "Y")
+                : userMenuRepository.findByDelTf("N");
 
         allMenus.sort(Comparator.comparingInt(UserMenu::getOrderSeq));
 
