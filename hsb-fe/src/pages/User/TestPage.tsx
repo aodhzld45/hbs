@@ -55,12 +55,12 @@ const TestPage = () => {
       <div className="p-8 space-y-4">
         <h1 className="text-2xl font-bold">DynamicSelectBox 테스트</h1>
         <pre>
-          예시 group은 INDUSTRY입니다.
+          예시 group은 NATION입니다.
         </pre>
 
         {/* Dynamic SelectBox */}
         <DynamicSelectBox
-          group="INDUSTRY"
+          group="NATION"
           levels={[
             {
               label: "첫번째 - 산업 분류 선택",
