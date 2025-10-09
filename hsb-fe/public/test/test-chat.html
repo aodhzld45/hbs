@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>HSBS Chatbot Test</title>
+</head>
+<body>
+  <h2>HSBS Chatbot Test</h2>
+  <input id="q" value="안녕하세요" />
+  <button onclick="sendChat()">보내기</button>
+  <pre id="resp"></pre>
+
+  <script>
+    async function sendChat() {
+      const prompt = document.getElementById('q').value;
+      const res = await fetch('/api/ai/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      const data = await res.json();
+      document.getElementById('resp').textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
