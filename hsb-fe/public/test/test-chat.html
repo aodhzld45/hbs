@@ -10,6 +10,9 @@
   <button onclick="sendChat()">보내기</button>
   <pre id="resp"></pre>
 
+  <script src="/sdk/hsbs-chat.js"></script>
+  <script> HSBS.init({ apiBase:'/api', welcome:'무엇을 도와드릴까요?' }); </script>
+
   <script>
     async function sendChat() {
       const prompt = document.getElementById('q').value;
