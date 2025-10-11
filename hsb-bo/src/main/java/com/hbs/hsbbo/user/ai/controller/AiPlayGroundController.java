@@ -19,6 +19,7 @@ public class AiPlayGroundController {
     private final DailyQuotaSupport dailyQuotaSupport;
 
     @PostMapping("/complete")
+    @CrossOrigin(origins = "*", allowedHeaders = "*")
     public ResponseEntity<ChatResponse> complete(
             @RequestBody ChatRequest req,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
