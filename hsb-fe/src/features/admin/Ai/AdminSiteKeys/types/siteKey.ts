@@ -9,6 +9,7 @@ export type SiteKeySummary = {
   dailyTokenLimit?: number | null;
   domainCount: number;
   regDate?: string | null;
+  useTf?: string | null;
   upDate?: string | null;
 };
 
@@ -26,6 +27,7 @@ export type SiteKeyResponse = {
   defaultPromptProfileId?: number | null;
   notes?: string | null;
   regDate?: string | null;
+  useTf?: string | null;
   upDate?: string | null;
 };
 
