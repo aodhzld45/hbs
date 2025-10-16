@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.hbs.hsbbo.common.exception.CommonException.*;
@@ -104,8 +105,21 @@ public class SiteKeyService {
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<SiteKeySummaryResponse> search(SiteKeyQuery query) {
+    public PagedResponse<SiteKeySummaryResponse> search(SiteKeyQuery req) {
+
+        SiteKeyQuery query = SiteKeyQuery.builder()
+                .keyword(Optional.ofNullable(req.getKeyword()).map(String::trim).orElse(null))
+                .planCode(Optional.ofNullable(req.getPlanCode()).map(String::trim).orElse(null))
+                .status(Optional.ofNullable(req.getStatus()).map(String::trim).orElse(null))
+                .page(Optional.ofNullable(req.getPage()).orElse(0))
+                .size(Optional.ofNullable(req.getSize()).orElse(20))
+                .sort(Optional.ofNullable(req.getSort()).filter(s->!s.isBlank()).orElse("regDate,desc"))
+                .includeDeleted(Optional.ofNullable(req.getIncludeDeleted()).orElse(false))
+                .use(req.getUse())  // 'Y' | 'N' | null
+                .build();
+
         Page<SiteKey> page = siteKeyRepository.search(query);
+        
         return PagedResponse.<SiteKeySummaryResponse>builder()
                 .content(page.getContent()
                         .stream()
@@ -118,6 +132,7 @@ public class SiteKeyService {
                 .last(page.isLast())
                 .build();
     }
+
 
     // 서버 런타임 검증(위젯/API용)
     @Transactional(readOnly = true)

@@ -21,6 +21,7 @@ public class SiteKeySummaryResponse {
 
     private Integer domainCount;
 
+    private String useTf;
     private LocalDateTime regDate;
     private LocalDateTime upDate;
 

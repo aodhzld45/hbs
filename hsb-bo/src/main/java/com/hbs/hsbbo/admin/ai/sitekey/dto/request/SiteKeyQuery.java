@@ -17,6 +17,11 @@ public class SiteKeyQuery {
     private String planCode;     // 정확 일치
     private String status;       // ACTIVE|SUSPENDED|REVOKED
 
+    /** 공통 감사 필드 기반 필터 (DB 컬럼 추가 없음) */
+    @Builder.Default
+    private Boolean includeDeleted = false; // false면 delTf='N' 자동 적용
+    private String use;                     // 'Y' | 'N' -> useTf 컬럼에 매핑
+
     /** 페이징/정렬 */
     @Builder.Default
     private Integer page = 0;

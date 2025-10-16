@@ -95,6 +95,7 @@ public final class SiteKeyMapper {
                 .dailyCallLimit(e.getDailyCallLimit())
                 .dailyTokenLimit(e.getDailyTokenLimit())
                 .domainCount(domainCount)
+                .useTf(e.getUseTf())
                 .regDate(e.getRegDate())
                 .upDate(e.getUpDate())
                 .build();
