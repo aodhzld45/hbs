@@ -67,6 +67,23 @@ export const changeSiteKeyStatus = (id: number, status: Status, notes: string | 
     })
   );
 
+// 사이트키 사용여부 변경 API 요청
+export const updateSiteKeyUseTf = (id: number, newUseTf: "Y" | "N", actorId: string | number) => {
+  return okOrThrow<number>(
+    api.patch(`/ai/site-keys/${id}/use-tf`, null, {
+      params: { newUseTf, actor: String(actorId) },
+    })
+  )
+};
+
+// 사이트키 삭제 API 요청
+export const deleteSiteKey = (id: number, actorId: string | number) => {
+  return okOrThrow<number>(
+    api.patch(`/ai/site-keys/${id}/del-tf`, null, {
+      params: { actor: String(actorId) },
+    })
+  )
+};
 
 // (선택) 사이트키 검증 API 요청 - verify는 actor 안 받으면 기존대로
 export const verifySiteKey = (siteKey: string, clientDomain: string) =>

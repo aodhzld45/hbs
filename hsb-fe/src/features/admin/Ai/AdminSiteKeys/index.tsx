@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useSiteKeys } from "./hooks/useSiteKey";
-import { CreateRequest, SiteKeyResponse, Status, UpdateRequest } from "./types/siteKey";
+import { CreateRequest, SiteKeyResponse, SiteKeySummary, Status, UpdateRequest } from "./types/siteKey";
 import SiteKeyFormModal from "./components/SiteKeyFormModal";
 import Pagination from "../../../../components/Common/Pagination"; // ← 공통 컴포넌트 경로에 맞게 조정
+
+import { updateSiteKeyUseTf, deleteSiteKey } from "./services/siteKeyApi";
 
 import { useNavigate } from "react-router-dom";
 
@@ -59,15 +61,48 @@ export default function AdminSiteKeys() {
 
   const onSearch = async () => { await load({ page: 0 }); };
 
-  const onToggleUse = async (id: number, newUseTf: 'Y' | 'N') => {
-    alert('사용여부 변경');
-    //await changeStatus(id, undefined, undefined, newUseTf);
-    await load(); // 변경 후 목록 새로고침
+  const handleToggleUseTf = async (siteKey:SiteKeySummary) => {
+    try {
+      if (!window.confirm("사용여부를 변경 하시겠습니까?")) return;
+
+      if(!adminId) {
+        alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
+        return;
+      }
+
+      const newUseTf: "Y" | "N" = siteKey.useTf === "Y" ? "N" : "Y";
+      const updatedId = await updateSiteKeyUseTf(siteKey.id, newUseTf, adminId);
+      const statusLabel = newUseTf === "Y" ? "사용" : "미사용";
+
+      alert(`${updatedId}번 사이트키의 사용여부가 '${statusLabel}'으로 변경되었습니다.`);
+       
+      await load(); // 변경 후 목록 새로고침
+    } catch (e) {
+      alert("사용여부 변경에 실패했습니다.");
+      console.error(e);
+      return;
+    }
   } 
 
-  const onDelete = async (id: number) => {
-    if (!window.confirm("정말 삭제하시겠습니까?")) return;
-    alert('삭제');
+  const handleDelete = async (id: number) => {
+    try {
+      if (!window.confirm("정말 삭제하시겠습니까?")) return;
+
+      if(!adminId) {
+        alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
+        return;
+      }
+
+      const deletedId = await deleteSiteKey(id, adminId);
+      alert(`${deletedId}번 사이트키가 삭제되었습니다.`);
+
+      await load(); // 삭제 후 목록 새로고침
+      
+    } catch (error) {
+      alert("삭제에 실패했습니다.");
+      console.error(error);
+      return;
+    }
   }
 
   const openCreate = () => { setMode("create"); setSelected(null); setOpenModal(true); };
@@ -177,7 +212,7 @@ export default function AdminSiteKeys() {
                 <td className="p-2">{row.regDate?.replace("T"," ") ?? "-"}</td>
                 <td className="p-2 border text-center">
                   <button
-                    onClick={() => onToggleUse(row.id, row.useTf === 'Y' ? 'N' : 'Y')}
+                    onClick={() => handleToggleUseTf(row)}
                     className={`px-2 py-1 rounded text-xs ${
                       row.useTf === 'Y'
                         ? 'bg-green-100 text-green-700'
@@ -200,7 +235,7 @@ export default function AdminSiteKeys() {
                 </td>
                 <td className="px-4 py-2 text-sm">
                     <button className="text-blue-500 hover:underline mr-2" onClick={() => openEdit(row.id)}>수정</button>
-                    <button className="text-red-500 hover:underline" onClick={() => onDelete(row.id)}>
+                    <button className="text-red-500 hover:underline" onClick={() => handleDelete(row.id)}>
                       삭제
                     </button>
                 </td>  
