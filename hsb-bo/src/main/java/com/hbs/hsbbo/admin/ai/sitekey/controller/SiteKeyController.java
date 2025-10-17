@@ -12,6 +12,7 @@ import com.hbs.hsbbo.admin.ai.sitekey.service.SiteKeyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -57,6 +58,30 @@ public class SiteKeyController {
         SiteKeyResponse response = siteKeyService.changeStatus(id, req, actor);
 
         return  response;
+    }
+
+    // 사용 여부 변경
+    @PatchMapping("/{id}/use-tf")
+    public ResponseEntity<Long> updateUseTf(
+        @PathVariable Long id,
+        @RequestParam String newUseTf,
+        @RequestParam String actor
+    ) {
+        Long response = siteKeyService.updateUseTf(id, newUseTf, actor);
+
+        return ResponseEntity.ok(response);
+
+    }
+
+    // SiteKey 삭제 - 논리 삭제 (delTf = "Y")
+    @PatchMapping("/{id}/del-tf")
+    public ResponseEntity<Long> deleteSiteKey(
+        @PathVariable Long id,
+        @RequestParam String actor
+    ) {
+        Long response = siteKeyService.deleteSiteKey(id, actor);
+
+        return ResponseEntity.ok(response);
     }
 
     // SiteKey 상세 조회

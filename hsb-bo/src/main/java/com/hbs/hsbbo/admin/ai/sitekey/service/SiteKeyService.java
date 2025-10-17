@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -89,6 +90,31 @@ public class SiteKeyService {
         return SiteKeyMapper.toResponse(entity);
     }
 
+    // 사용 여부 변경
+    public Long updateUseTf(Long id, String newUseTf, String actor)
+    {
+        SiteKey siteKey = siteKeyRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사이트키 ID입니다."));
+        siteKey.setUseTf(newUseTf);
+        siteKey.setUpAdm(actor);
+        siteKey.setUpDate(LocalDateTime.now());
+
+        return siteKeyRepository.save(siteKey).getId();
+    }
+
+    // 삭제
+    public Long deleteSiteKey(Long id, String actor)
+    {
+        SiteKey siteKey = siteKeyRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사이트키 ID입니다."));
+        siteKey.setDelTf("Y");
+        siteKey.setDelAdm(actor);
+        siteKey.setDelDate(LocalDateTime.now());
+
+        return siteKeyRepository.save(siteKey).getId();
+
+    }
+
     // 조회
     @Transactional(readOnly = true)
     public SiteKeyResponse get(Long id) {
@@ -119,7 +145,7 @@ public class SiteKeyService {
                 .build();
 
         Page<SiteKey> page = siteKeyRepository.search(query);
-        
+
         return PagedResponse.<SiteKeySummaryResponse>builder()
                 .content(page.getContent()
                         .stream()
