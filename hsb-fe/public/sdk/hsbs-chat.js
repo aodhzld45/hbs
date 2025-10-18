@@ -25,7 +25,11 @@
   }
 
   function init(opts){
-    const cfg=Object.assign({ apiBase:'/api', welcome:'무엇을 도와드릴까요?' }, opts||{});
+    const cfg=Object.assign({ apiBase:'/api', welcome:'무엇을 도와드릴까요?', siteKey:null }, opts||{});
+    if (!cfg.siteKey) {
+      console.warn('[HSBS] siteKey가 없어 위젯을 표시하지 않습니다.');
+      return;  // ← 말풍선/패널 생성 안 함
+    }    
     injectCss();
 
     const $bubble=h(`<button id="hsbs-chat-bubble" aria-label="Open chat">💬</button>`);
@@ -58,9 +62,24 @@
       try{
         const res=await fetch(cfg.apiBase+'/ai/complete',{
           method:'POST',
-          headers:{ 'Content-Type':'application/json' },
+          headers:{ 
+            'Content-Type':'application/json',
+            ...(cfg.siteKey ? { 'X-HSBS-Site-Key': cfg.siteKey } : {})
+         },
           body:JSON.stringify({ prompt:q })
         });
+
+        // HTTP 에러 코드별 사용자 메시지
+        if (!res.ok) {
+          let msg='오류가 발생했습니다';
+          if (res.status===401) msg='인증 정보가 없습니다. SiteKey를 확인해주세요.';
+          else if (res.status===403) msg='이 사이트키는 비활성/삭제/도메인 불일치 또는 사용 제한 상태입니다.';
+          else if (res.status===429) msg='쿼ота/레이트리밋 도달. 잠시 후 다시 시도해주세요.';
+          else if (res.status>=500) msg='서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+          bot.textContent=msg;
+          return;
+        }
+
         const data=await res.json();
         bot.textContent=data?.text??'(응답이 없습니다)';
       }catch(e){ bot.textContent='오류가 발생했습니다'; }
