@@ -47,11 +47,17 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // 프리플라이트/HEAD는 전부 허용(브라우저 사전요청)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.HEAD, "/**").permitAll()
+
+                        // 공개 엔드포인트
                         .requestMatchers("/api/admin/login",
                                 "/v3/api-docs/**","/swagger-ui/**","/swagger-ui.html",
                                 "/api/v3/api-docs/**","/api/swagger-ui/**","/api/swagger-ui.html",  // /api 밑 경로 허용
                                 "/files/**","/api/kis/**").permitAll()
+
+                        // 관리자 API만 인증
                         .requestMatchers("/api/admin/**").authenticated()
                         .anyRequest().permitAll()
                 )
@@ -66,12 +72,17 @@ public class SecurityConfig {
         CorsConfiguration cfg = new CorsConfiguration();
         if (allowedOriginsCsv != null && !allowedOriginsCsv.isBlank()) {
             Arrays.stream(allowedOriginsCsv.split(","))
-                    .map(String::trim).filter(s -> !s.isEmpty())
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
                     .forEach(cfg::addAllowedOrigin);
+        } else {
+            // 기본 로컬 허용
+            cfg.addAllowedOrigin("http://localhost:3000");
+            cfg.addAllowedOrigin("http://localhost:8080");
         }
-        cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
+        cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","HEAD","OPTIONS"));
         cfg.setAllowedHeaders(List.of("*"));
-        cfg.setExposedHeaders(List.of("Content-Disposition"));
+        cfg.setExposedHeaders(List.of("X-DailyReq-Remaining", "Content-Disposition"));
         cfg.setAllowCredentials(true);
         cfg.setMaxAge(3600L);
 
