@@ -11,6 +11,9 @@ import com.hbs.hsbbo.admin.ai.sitekey.dto.request.SiteKeyUpdateRequest;
 import com.hbs.hsbbo.admin.ai.sitekey.dto.response.SiteKeyResponse;
 import com.hbs.hsbbo.admin.ai.sitekey.dto.response.SiteKeySummaryResponse;
 import com.hbs.hsbbo.admin.ai.sitekey.repository.SiteKeyRepository;
+
+import com.hbs.hsbbo.common.exception.CommonException.*;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -22,8 +25,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static com.hbs.hsbbo.common.exception.CommonException.*;
 
 @Service
 @RequiredArgsConstructor
@@ -163,17 +164,35 @@ public class SiteKeyService {
     // 서버 런타임 검증(위젯/API용)
     @Transactional(readOnly = true)
     public SiteKey assertActiveAndDomainAllowed(String siteKey, String clientDomain) {
+        if (siteKey == null || siteKey.isBlank()) {
+            throw new UnauthorizedException("사이트키가 누락되었습니다.");
+        }
+
         SiteKey sk = siteKeyRepository.findBySiteKey(siteKey)
-                .orElseThrow(() -> new NotFoundException("siteKey not found"));
+                .orElseThrow(() -> new NotFoundException("해당 사이트키를 찾을 수 없습니다."+ siteKey));
 
-        if (!sk.isActive()) throw new ForbiddenException("siteKey inactive: " + sk.getStatus());
+        // 1. 소프트 삭제 차단
+        if ("Y".equalsIgnoreCase(sk.getDelTf())) {
+            throw new ForbiddenException("삭제된 사이트 키 입니다.");
+        }
 
+        // 2. 사용 여부(use_tf) 확인
+        if (!"Y".equalsIgnoreCase(sk.getUseTf())) {
+            throw new ForbiddenException("사이트키 사용 여부가 미사용 상태입니다. 관리자에게 문의 바랍니다.");
+        }
+
+        // 3. 상태 ACTIVE 확인
+        if (!sk.isActive()) {
+            throw new ForbiddenException("사이트키의 현재 상태: " + sk.getStatus());
+        }
+
+        // 4. 도메인 검증 (정책에 따라 clientDomain null 허용/차단)
         // Origin/Referer 없을 수 있는 서버사이드 호출 대비: clientDomain null 허용 여부는 정책에 따름
         if (clientDomain == null || clientDomain.isBlank()) {
-            throw new ForbiddenException("client domain required");
+            throw new ForbiddenException("사용자 도메인은 필수입니다.");
         }
         if (!sk.isDomainAllowed(clientDomain)) {
-            throw new ForbiddenException("domain not allowed: " + clientDomain);
+            throw new ForbiddenException("허용되지 않은 도메인입니다.: " + clientDomain);
         }
         return sk;
     }
