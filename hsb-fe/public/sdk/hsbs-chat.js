@@ -1,4 +1,8 @@
 (function () {
+  //  기본값을 '로컬'로 고정
+  // const DEFAULT_API_BASE = 'https://www.hsbs.kr/api'; // 운영용 (주석 유지)
+  const DEFAULT_API_BASE = 'http://localhost:8080/api';     // 로컬용
+
   function injectCss() {
     const css = `
     #hsbs-chat-bubble{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border:none;border-radius:50%;
@@ -24,14 +28,44 @@
     div.textContent=text; $body.appendChild(div); $body.scrollTop=$body.scrollHeight; return div;
   }
 
-  function init(opts){
-    const cfg=Object.assign({ apiBase:'/api', welcome:'무엇을 도와드릴까요?', siteKey:null }, opts||{});
+  async function init(opts){
+    const cfg=Object.assign({ apiBase: DEFAULT_API_BASE, welcome:'무엇을 도와드릴까요?', siteKey:null }, opts||{});
     if (!cfg.siteKey) {
       console.warn('[HSBS] siteKey가 없어 위젯을 표시하지 않습니다.');
       return;  // ← 말풍선/패널 생성 안 함
     }    
-    injectCss();
 
+    // 1) 서버 사전 검증: /api/ai/ping (204만 통과)
+    try {
+      const r = await fetch(
+        `${cfg.apiBase}/ai/ping?siteKey=${encodeURIComponent(cfg.siteKey)}`,
+        { method:'GET', cache:'no-store' }
+      );
+      if (r.status !== 204) {
+        // 에러 바디 파싱(전역 핸들러 {code,message} 가정)
+        let detail = '';
+        try {
+          const ct = r.headers.get('content-type') || '';
+          if (ct.includes('application/json')) {
+            const j = await r.json();
+            detail = j?.message ? `${j.code ?? 'ERROR'}: ${j.message}` : JSON.stringify(j);
+          } else {
+            detail = await r.text();
+          }
+        } catch {}
+        const msg = `[HSBS] ping 실패: ${r.status}${detail ? ' - ' + detail : ''}`;
+        console.warn(msg);
+        alert(msg);               // ← 알림으로도 확인
+        return;                   // UI 생성 중단
+      }
+    } catch (e) {
+      console.warn('[HSBS] ping 예외:', e);
+      alert(`[HSBS] ping 예외: ${e?.message ?? e}`);
+      return;
+    }
+
+    // 2) 통과 시 UI 주입
+    injectCss();
     const $bubble=h(`<button id="hsbs-chat-bubble" aria-label="Open chat">💬</button>`);
     const $panel =h(`<div id="hsbs-chat-panel" role="dialog" aria-label="HSBS Chat">
         <div id="hsbs-chat-header">HSBS Assistant</div>
@@ -60,33 +94,39 @@
       const bot=append($body,'bot','...');
 
       try{
-        const res=await fetch(cfg.apiBase+'/ai/complete',{
+        const res=await fetch(cfg.apiBase+'/ai/complete2',{
           method:'POST',
-          headers:{ 
+          headers:{
             'Content-Type':'application/json',
-            ...(cfg.siteKey ? { 'X-HSBS-Site-Key': cfg.siteKey } : {})
-         },
+            'X-HSBS-Site-Key': cfg.siteKey
+          },
           body:JSON.stringify({ prompt:q })
         });
 
-        // HTTP 에러 코드별 사용자 메시지
         if (!res.ok) {
           let msg='오류가 발생했습니다';
           if (res.status===401) msg='인증 정보가 없습니다. SiteKey를 확인해주세요.';
           else if (res.status===403) msg='이 사이트키는 비활성/삭제/도메인 불일치 또는 사용 제한 상태입니다.';
           else if (res.status===429) msg='쿼ота/레이트리밋 도달. 잠시 후 다시 시도해주세요.';
           else if (res.status>=500) msg='서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+          // 상세 메시지(전역 핸들러 {code,message})가 있으면 보강
+          try {
+            const j = await res.json();
+            if (j?.message) msg = msg + ' (' + j.message + ')';
+          } catch {}
           bot.textContent=msg;
           return;
         }
 
         const data=await res.json();
         bot.textContent=data?.text??'(응답이 없습니다)';
-      }catch(e){ bot.textContent='오류가 발생했습니다'; }
+      }catch(e){ bot.textContent='네트워크 오류가 발생했습니다'; }
 
       $body.scrollTop=$body.scrollHeight;
     }
-    $send.onclick=ask; $input.addEventListener('keydown',e=>{ if(e.key==='Enter') ask(); });
+
+    $send.onclick=ask;
+    $input.addEventListener('keydown',e=>{ if(e.key==='Enter') ask(); });
   }
 
   window.HSBS={ init };
