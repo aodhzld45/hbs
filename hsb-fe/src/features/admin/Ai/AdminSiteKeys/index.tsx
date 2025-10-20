@@ -191,9 +191,9 @@ export default function AdminSiteKeys() {
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-center" colSpan={9}>불러오는 중...</td></tr>}
+            {loading && <tr><td className="p-4 text-center" colSpan={11}>불러오는 중...</td></tr>}
             {!loading && (data?.content?.length ?? 0) === 0 && (
-              <tr><td className="p-4 text-center" colSpan={9}>데이터가 없습니다.</td></tr>
+              <tr><td className="p-4 text-center" colSpan={11}>데이터가 없습니다.</td></tr>
             )}
             {!loading && data?.content?.map(row => (
               <tr key={row.id} className="border-t text-center">
