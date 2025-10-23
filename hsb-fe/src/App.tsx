@@ -45,6 +45,7 @@ import ContactForm from './features/user/Contact/index';
 // 각종 테스트용 imports
 import AIPlayground from './features/user/OpenAI/AIPlayground';
 import AdminSiteKeys from './features/admin/Ai/AdminSiteKeys';
+import AdminWidgetConfig from './features/admin/Ai/AdminWidgetConfig';
 import TestPage from './pages/User/TestPage';
 import SqlProblemTestPage from './features/admin/SqlProblem/SqlProblemTestPage';
 import KisPage from './features/user/Kis';
@@ -89,6 +90,7 @@ function App() {
               <Route path="/admin/content-manager/:fileId" element={<ContentManagerDetail />} />
 
               <Route path="/admin/ai/site-keys" element={<AdminSiteKeys />} />
+              <Route path="/admin/ai/widget-configs" element={<AdminWidgetConfig />} />
 
               <Route path="/admin/sql-manager" element={<SqlProblemManager />} />
               <Route path="/admin/sql-manager/:id" element={<SqlProblemDetail />} />
