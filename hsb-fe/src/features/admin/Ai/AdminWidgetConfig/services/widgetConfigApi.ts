@@ -1,7 +1,7 @@
 import api from '../../../../../services/api';
 import type { WidgetConfig, WidgetConfigListResponse, WidgetConfigRequest } from '../types/widgetConfig';
  
-const BASE = '/api/ai/widget-configs';
+const BASE = '/ai/widget-configs';
 
 // 위젯 설정 목록 조회 API 요청
 export const fetchWidgetConfigList = async (
