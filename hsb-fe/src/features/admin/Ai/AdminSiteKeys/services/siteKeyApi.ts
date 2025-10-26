@@ -40,6 +40,11 @@ export const fetchSiteKeyList = async (
     );
 }
 
+export async function fetchLinkedSiteKeys(widgetConfigId: number) {
+  const { data } = await api.get('/ai/site-keys/linked', { params: { widgetConfigId }});
+  return data as SiteKeySummary[];
+}
+
 // 사이트키 상세 조회 API 요청
 export const fetchSiteKeyDetail = async (
     id: number
