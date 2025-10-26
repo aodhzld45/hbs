@@ -2,12 +2,14 @@ package com.hbs.hsbbo.admin.ai.sitekey.controller;
 
 import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
 import com.hbs.hsbbo.admin.ai.sitekey.dto.PagedResponse;
+import com.hbs.hsbbo.admin.ai.sitekey.dto.mapper.SiteKeyMapper;
 import com.hbs.hsbbo.admin.ai.sitekey.dto.request.SiteKeyCreateRequest;
 import com.hbs.hsbbo.admin.ai.sitekey.dto.request.SiteKeyQuery;
 import com.hbs.hsbbo.admin.ai.sitekey.dto.request.SiteKeyStatusRequest;
 import com.hbs.hsbbo.admin.ai.sitekey.dto.request.SiteKeyUpdateRequest;
 import com.hbs.hsbbo.admin.ai.sitekey.dto.response.SiteKeyResponse;
 import com.hbs.hsbbo.admin.ai.sitekey.dto.response.SiteKeySummaryResponse;
+import com.hbs.hsbbo.admin.ai.sitekey.repository.SiteKeyRepository;
 import com.hbs.hsbbo.admin.ai.sitekey.service.SiteKeyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -23,6 +26,7 @@ import java.util.Map;
 public class SiteKeyController {
 
     private final SiteKeyService siteKeyService;
+    private final SiteKeyRepository siteKeyRepository;
 
     //  사이트 키 등록
     @PostMapping
@@ -89,6 +93,15 @@ public class SiteKeyController {
     public SiteKeyResponse get(@PathVariable Long id) {
         SiteKeyResponse response = siteKeyService.get(id);
         return  response;
+    }
+
+    /** 특정 위젯을 기본으로 쓰는 사이트키 목록 (삭제 제외) */
+    @GetMapping("/linked")
+    public List<SiteKeySummaryResponse> findLinked(@RequestParam("widgetConfigId") Long widgetConfigId) {
+        return siteKeyRepository.findAllByDefaultWidgetConfigId(widgetConfigId)
+                .stream()
+                .map(SiteKeyMapper::toSummary)
+                .toList();
     }
 
     @GetMapping("/by-key/{siteKey}")

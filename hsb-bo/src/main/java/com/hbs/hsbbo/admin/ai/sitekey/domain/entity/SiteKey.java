@@ -1,6 +1,7 @@
 package com.hbs.hsbbo.admin.ai.sitekey.domain.entity;
 
 import com.hbs.hsbbo.admin.ai.sitekey.domain.type.Status;
+import com.hbs.hsbbo.admin.ai.widgetconfig.domain.entity.WidgetConfig;
 import com.hbs.hsbbo.common.AuditBase.AuditBase;
 import com.hbs.hsbbo.common.util.StringListJsonConverter;
 import jakarta.persistence.*;
@@ -81,10 +82,11 @@ public class SiteKey extends AuditBase {
     private List<String> allowedDomains = List.of();
 
     /**
-     * 기본 연결 (지연 FK; 실제 FK는 후속 마이그레이션에서 추가 가능)
+     * 기본 연결 (지연 FK; 실제 FK는 후속 마이그레이션에서 추가완료)
      */
-    @Column(name = "default_widget_config_id")
-    private Long defaultWidgetConfigId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "default_widget_config_id")
+    private WidgetConfig defaultWidgetConfig;
 
     @Column(name = "default_prompt_profile_id")
     private Long defaultPromptProfileId;

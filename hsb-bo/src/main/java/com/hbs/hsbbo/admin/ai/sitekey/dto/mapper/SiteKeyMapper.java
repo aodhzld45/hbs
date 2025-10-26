@@ -20,7 +20,6 @@ public final class SiteKeyMapper {
                 .monthlyTokenLimit(req.getMonthlyTokenLimit())
                 .rateLimitRps(req.getRateLimitRps())
                 .allowedDomains(req.getAllowedDomains())
-                .defaultWidgetConfigId(req.getDefaultWidgetConfigId())
                 .defaultPromptProfileId(req.getDefaultPromptProfileId())
                 .notes(trimOrNull(req.getNotes()))
                 .build();
@@ -50,7 +49,6 @@ public final class SiteKeyMapper {
             e.setAllowedDomains(req.getAllowedDomains());
         }
 
-        if (req.getDefaultWidgetConfigId() != null) e.setDefaultWidgetConfigId(req.getDefaultWidgetConfigId());
         if (req.getDefaultPromptProfileId() != null) e.setDefaultPromptProfileId(req.getDefaultPromptProfileId());
         if (req.getNotes() != null) e.setNotes(trimOrNull(req.getNotes()));
 
@@ -69,7 +67,6 @@ public final class SiteKeyMapper {
                 .monthlyTokenLimit(e.getMonthlyTokenLimit())
                 .rateLimitRps(e.getRateLimitRps())
                 .allowedDomains(e.getAllowedDomains()) // 이미 List<String>
-                .defaultWidgetConfigId(e.getDefaultWidgetConfigId())
                 .defaultPromptProfileId(e.getDefaultPromptProfileId())
                 .notes(nullSafe(e.getNotes()))
                 // 감사 필드
