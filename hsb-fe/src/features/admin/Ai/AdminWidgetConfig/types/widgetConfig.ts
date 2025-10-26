@@ -2,6 +2,9 @@ export type WidgetConfig = {
   id: number;
   name: string;
 
+  /* 이 위젯설정을 연결할 SiteKey ID */
+  linkedSiteKeyId?: number | null;
+
   panelTitle?: string;
   welcomeText?: string;
   inputPlaceholder?: string;

@@ -43,7 +43,9 @@ export const fetchWidgetConfigUpdate = async (id: number, data: WidgetConfigRequ
 
 // 위젯 설정 사용 여부 변경 API 요청
 export const updateWidgetConfigUseTf = async (id: number, useTf: 'Y' | 'N', actorId: string): Promise<WidgetConfig> => {
-  const res = await api.patch(`${BASE}/${id}/use-tf`, { params: useTf, actor: actorId });
+  const res = await api.patch(`${BASE}/${id}/use-tf`, null, {
+      params: { useTf, actor: String(actorId) },
+  });
   return res.data as WidgetConfig;
 }
 
