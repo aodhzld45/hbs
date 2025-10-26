@@ -16,6 +16,9 @@ public class WidgetConfigRequest {
     @NotBlank
     private String name;
 
+    // 위젯 생성과 동시에 연결할 SiteKey ID
+    private Long linkedSiteKeyId;
+
     // 문구/라벨
     private String panelTitle;
     private String welcomeText;

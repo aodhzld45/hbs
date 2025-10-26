@@ -1,7 +1,9 @@
 package com.hbs.hsbbo.admin.ai.widgetconfig.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
+import com.hbs.hsbbo.admin.ai.sitekey.repository.SiteKeyRepository;
 import com.hbs.hsbbo.admin.ai.widgetconfig.domain.entity.WidgetConfig;
 import com.hbs.hsbbo.admin.ai.widgetconfig.dto.request.WidgetConfigRequest;
 import com.hbs.hsbbo.admin.ai.widgetconfig.dto.response.WidgetConfigListResponse;
@@ -24,6 +26,8 @@ import java.util.Map;
 @Transactional
 public class WidgetConfigService {
     private final WidgetConfigRepository widgetConfigRepository;
+    private final SiteKeyRepository siteKeyRepository;
+
     private final ObjectMapper om;
     private final FileUtil fileUtil;
 
@@ -48,21 +52,36 @@ public class WidgetConfigService {
     }
 
     // 위젯 관리 등록
+    @Transactional
     public Long create(WidgetConfigRequest req, String actor) {
-        // 이름 중복 방지(소프트삭제 제외)
+        // 1) 이름 중복 방지(소프트삭제 제외)
         if (widgetConfigRepository.existsByNameAndDelTf(req.getName(), "N"))
             throw new IllegalArgumentException("이미 존재하는 이름입니다: " + req.getName());
 
+        // 2) 위젯 엔티티 저장
         WidgetConfig e = new WidgetConfig();
         apply(e, req);
         e.setRegAdm(actor);
+        widgetConfigRepository.save(e); // e.getId() 확보
 
-        return widgetConfigRepository.save(e).getId();
+        // 3) 선택: 사이트키와 매핑 (linkedSiteKeyId가 있을 때만)
+        if (req.getLinkedSiteKeyId() != null) {
+            SiteKey sk = siteKeyRepository.findByIdForUpdate(req.getLinkedSiteKeyId())
+                    .orElseThrow(() -> new IllegalArgumentException("사이트키가 존재하지 않습니다. id=" + req.getLinkedSiteKeyId()));
+
+            // 여기서 매핑: site_key.default_widget_config_id = 위젯 id
+            sk.setDefaultWidgetConfig(e);
+            sk.setUpAdm(actor);
+            siteKeyRepository.save(sk);
+        }
+
+        return e.getId();
     }
 
     // 위젯 관리 업데이트
     public Long update(Long id, WidgetConfigRequest req, String actor) {
-        WidgetConfig e = widgetConfigRepository.findActiveById(id).orElseThrow();
+        WidgetConfig e = widgetConfigRepository.findActiveById(id)
+                .orElseThrow(() -> new IllegalArgumentException("위젯을 찾을 수 없습니다. id=" + id));
 
         // 이름 변경 시 중복 체크
         if (!e.getName().equals(req.getName()) && widgetConfigRepository.existsByNameAndDelTf(req.getName(), "N"))
@@ -70,6 +89,24 @@ public class WidgetConfigService {
 
         apply(e, req);
         e.setUpAdm(actor);
+
+        // 사이트키 매핑: linkedSiteKeyId가 넘어오면 해당 SiteKey에 이 위젯을 기본으로 설정
+        if (req.getLinkedSiteKeyId() != null) {
+            SiteKey sk = siteKeyRepository.findByIdForUpdate(req.getLinkedSiteKeyId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "사이트키가 존재하지 않습니다. id=" + req.getLinkedSiteKeyId()));
+
+            // 상태/삭제여부 등 추가 검증이 필요하면 여기서 체크 지금은 생략 ㅎ
+            // if (!"ACTIVE".equals(sk.getStatus()) || "Y".equals(sk.getDelTf())) { ... }
+
+            sk.setDefaultWidgetConfig(e);
+            sk.setUpAdm(actor);
+            // save 호출은 생략 가능(JPA flush 시 반영)
+            siteKeyRepository.save(sk);
+
+        }
+
+
         return e.getId();
     }
 
