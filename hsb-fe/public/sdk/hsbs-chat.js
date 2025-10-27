@@ -99,7 +99,6 @@
     const cfg = Object.assign({
       apiBase: DEFAULT_API_BASE,
       siteKey: null,
-      welcome: '무엇을 도와드릴까요?',
       debug: false, // 강제 디버그(서버 설정과 OR)
     }, opts||{});
 
@@ -134,7 +133,7 @@
     // 2) 위젯 설정 불러오기: /public/widget-config
     let wc = null;
     try {
-      const res = await fetch(`${cfg.apiBase}/public/widget-config?siteKey=${encodeURIComponent(cfg.siteKey)}`, {
+      const res = await fetch(`${cfg.apiBase}/ai/public/widget-config?siteKey=${encodeURIComponent(cfg.siteKey)}`, {
         method:'GET', cache:'no-store',
         headers: { 'Accept':'application/json' }
       });
@@ -145,72 +144,77 @@
       wc = {};
     }
 
-    // 서버 설정을 옵션에 병합 (클라이언트 옵션이 우선)
+     // 3) 서버 응답 → merged 매핑 (필드명 1:1)
     const merged = {
       // 배치/위치
-      position: wc?.position || 'right',        // 'left'|'right'
-      offsetX: wc?.offsetX ?? 20,
-      offsetY: wc?.offsetY ?? 20,
-      panelWidthPx: wc?.panelWidthPx ?? 360,
-      zIndex: wc?.zIndex ?? 2147483000,
+      position: wc.position || 'right',                 // 'left'|'right'
+      offsetX: wc.offsetX ?? 20,
+      offsetY: wc.offsetY ?? 20,
+      panelWidthPx: wc.panelWidthPx ?? 360,
+      zIndex: wc.zIndex ?? 2147483000,
+      panelMaxHeightPx: wc.panelMaxHeightPx ?? null,    // px 값이면 아래서 px로 변환
 
-      // 행동
-      openOnLoad: wc?.openOnLoad === 'Y',
-      greetOncePerOpen: wc?.greetOncePerOpen !== 'N', // 기본 true
-      closeOnEsc: wc?.closeOnEsc !== 'N',
-      closeOnOutsideClick: wc?.closeOnOutsideClick !== 'N',
+      // 동작(Y/N → boolean)
+      openOnLoad: wc.openOnLoad === 'Y',
+      greetOncePerOpen: wc.greetOncePerOpen !== 'N',
+      closeOnEsc: wc.closeOnEsc !== 'N',
+      closeOnOutsideClick: wc.closeOnOutsideClick !== 'N',
 
       // 표시/브랜딩
-      headerTitle: wc?.headerTitle || 'HSBS Assistant',
-      welcome: wc?.welcome || cfg.welcome,
-      logoUrl: wc?.logoUrl || null, // 예: /files/ai_widget/logo/xxx.png
-      emoji: wc?.emoji || '💬',     // 로고 없을 때 버블 이모지
-      sendButtonStyle: wc?.sendButtonStyle || 'text', // text|icon|icon-text
-      sendButtonText: wc?.sendButtonText || '보내기',
+      panelTitle: wc.panelTitle || 'HSBS Assistant',
+      welcomeText: wc.welcomeText || '무엇을 도와드릴까요?',
+      inputPlaceholder: wc.inputPlaceholder || '메시지를 입력하세요',
+      sendButtonLabel: wc.sendButtonLabel || '보내기',
+      logoUrl: wc.logoUrl || null,
+      bubbleIconEmoji: wc.bubbleIconEmoji || '💬',
 
-      // 테마
-      theme: wc?.theme || 'dark',
-      colorAccent: wc?.colorAccent || '#4f46e5',
-      colorBg: wc?.colorBg || '#111827',
-      colorBg2: wc?.colorBg2 || '#0b0f1a',
-      colorBorder: wc?.colorBorder || '#1f2937',
-      colorInputBg: wc?.colorInputBg || '#0f1422',
-      colorText: wc?.colorText || '#e5e7eb',
+      // 색상(서버 필드 그대로)
+      primaryColor: wc.primaryColor || '#4f46e5',
+      panelBgColor: wc.panelBgColor || '#111827',
+      panelTextColor: wc.panelTextColor || '#e5e7eb',
+      headerBgColor: wc.headerBgColor || '#0b0f1a',
+      headerBorderColor: wc.headerBorderColor || '#1f2937',
+      inputBgColor: wc.inputBgColor || '#0f1422',
+      inputTextColor: wc.inputTextColor || '#e5e7eb',
 
       // 로깅
-      debug: cfg.debug || (wc?.debug === 'Y')
+      debug: cfg.debug
     };
 
-    // 3) CSS 변수로 테마/치수/위치 주입
+    // 4) CSS 변수 주입 (서버 컬러 매핑에 맞춤)
     injectCss({
-      '--hsbs-accent': merged.colorAccent,
-      '--hsbs-bg': merged.colorBg,
-      '--hsbs-bg-2': merged.colorBg2,
-      '--hsbs-border': merged.colorBorder,
-      '--hsbs-input-bg': merged.colorInputBg,
-      '--hsbs-text': merged.colorText,
+      '--hsbs-accent': merged.primaryColor,
+      '--hsbs-bg':     merged.panelBgColor,
+      '--hsbs-bg-2':   merged.headerBgColor,
+      '--hsbs-border': merged.headerBorderColor,
+      '--hsbs-input-bg': merged.inputBgColor,
+      '--hsbs-text':   merged.panelTextColor,
       '--hsbs-z': String(merged.zIndex),
       '--hsbs-panel-w': `${merged.panelWidthPx}px`,
       '--hsbs-offset-x': `${merged.offsetX}px`,
       '--hsbs-offset-y': `${merged.offsetY}px`,
       '--hsbs-position': merged.position,
-      '--hsbs-send-text': JSON.stringify(merged.sendButtonText), // 따옴표 처리
+      '--hsbs-send-text': JSON.stringify(merged.sendButtonLabel),
+      ...(merged.panelMaxHeightPx ? {'--hsbs-max-h': `${merged.panelMaxHeightPx}px`} : {})
     });
 
-    // 4) UI 구성 (버블: 로고/이모지)
-    const $bubble = h(`<button id="hsbs-chat-bubble" aria-label="Open chat">${merged.logoUrl ? '' : merged.emoji}</button>`);
+    // 5) UI 구성 (버블: 로고/이모지)
+    const bubbleLabel = merged.logoUrl ? '' : (merged.bubbleIconEmoji || '💬');
+    const $bubble = h(`<button id="hsbs-chat-bubble" aria-label="Open chat">${bubbleLabel}</button>`);
     if (merged.logoUrl) {
       const img = document.createElement('img');
-      img.alt = 'HSBS Logo'; img.src = merged.logoUrl; $bubble.appendChild(img);
+      img.alt = 'HSBS Logo';
+      img.src = merged.logoUrl;
+      $bubble.appendChild(img);
     }
 
     const headerLogo = merged.logoUrl ? `<img class="logo" src="${merged.logoUrl}" alt="logo"/>` : '';
     const $panel = h(`<div id="hsbs-chat-panel" role="dialog" aria-label="HSBS Chat">
-        <div id="hsbs-chat-header">${headerLogo}<span>${merged.headerTitle}</span></div>
+        <div id="hsbs-chat-header">${headerLogo}<span>${merged.panelTitle}</span></div>
         <div id="hsbs-chat-body"></div>
         <div id="hsbs-chat-footer">
-          <input id="hsbs-chat-input" placeholder="메시지를 입력하세요" />
-          <button id="hsbs-chat-send" data-style="${merged.sendButtonStyle}"></button>
+          <input id="hsbs-chat-input" placeholder="${merged.inputPlaceholder}" />
+          <button id="hsbs-chat-send" data-style="text"></button>
         </div>
       </div>`);
     document.body.appendChild($bubble);
@@ -220,17 +224,17 @@
     const $input=$panel.querySelector('#hsbs-chat-input');
     const $send =$panel.querySelector('#hsbs-chat-send');
 
-    // 5) 동작(열기/환영문/ESC/바깥클릭)
+    // 6) 동작(열기/환영문/ESC/바깥클릭)
     function openPanel() {
       $panel.style.display='flex';
       if (merged.greetOncePerOpen) {
         const k = onceKey('greet');
-        if (!ss.getItem(k) && merged.welcome) {
-          append($body,'bot',merged.welcome);
+        if (!ss.getItem(k) && merged.welcomeText) {
+          append($body,'bot',merged.welcomeText);
           ss.setItem(k,'1');
         }
-      } else if (merged.welcome) {
-        append($body,'bot',merged.welcome);
+      } else if (merged.welcomeText) {
+        append($body,'bot',merged.welcomeText);
       }
       $input.focus();
     }
@@ -252,11 +256,12 @@
     }
     if (merged.openOnLoad) { openPanel(); }
 
-    // 6) 디버그 로그
+    // 7) 디버그 로그
     const log = (...a)=> merged.debug && console.info('[HSBS]', ...a);
-    log('widget-config:', merged);
+    log('widget-config(raw):', wc);
+    log('widget-config(merged):', merged);
 
-    // 7) 질문/응답
+    // 8) 질문/응답
     async function ask(){
       const q=($input.value||'').trim(); if(!q) return;
       $input.value=''; append($body,'user',q);
