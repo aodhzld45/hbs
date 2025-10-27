@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
 import com.hbs.hsbbo.admin.ai.sitekey.repository.SiteKeyRepository;
+import com.hbs.hsbbo.admin.ai.sitekey.service.SiteKeyService;
 import com.hbs.hsbbo.admin.ai.widgetconfig.domain.entity.WidgetConfig;
 import com.hbs.hsbbo.admin.ai.widgetconfig.dto.request.WidgetConfigRequest;
 import com.hbs.hsbbo.admin.ai.widgetconfig.dto.response.WidgetConfigListResponse;
@@ -26,10 +27,53 @@ import java.util.Map;
 @Transactional
 public class WidgetConfigService {
     private final WidgetConfigRepository widgetConfigRepository;
+    private final SiteKeyService siteKeyService;
     private final SiteKeyRepository siteKeyRepository;
 
     private final ObjectMapper om;
     private final FileUtil fileUtil;
+
+    /**
+     * 공개 위젯 설정 조회 (hsbs-chat.js 초기 로딩에서 사용)
+     * - siteKey + host(Origin/Referer의 host) 검증
+     * - 연결된 기본 WidgetConfig를 찾아서 WidgetConfigResponse로 반환
+     */
+    @Transactional
+    public WidgetConfigResponse loadForPublic(String siteKey, String host) {
+        if (siteKey == null || siteKey.isBlank()) {
+            throw new IllegalArgumentException("사이트키가 비어 있습니다.");
+        }
+
+        // 1) 도메인/상태 검증
+        if (siteKeyService != null) {
+            siteKeyService.assertActiveAndDomainAllowed(siteKey, host); // 실패 시 403 성격 예외
+        } else {
+            SiteKey sk = siteKeyRepository.findBySiteKey(siteKey)
+                    .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사이트키 입니다."));
+            if (!"Y".equalsIgnoreCase(sk.getUseTf()) || "Y".equalsIgnoreCase(sk.getDelTf())) {
+                throw new IllegalStateException("비활성화되었거나 삭제된 사이트키 입니다.");
+            }
+        }
+
+        // 2) 연결된 기본 위젯 설정 식별
+        SiteKey sk = siteKeyRepository.findBySiteKey(siteKey)
+                .orElseThrow(() -> new IllegalArgumentException("사이트 키 조회 실패"));
+        WidgetConfig linked = sk.getDefaultWidgetConfig();
+        if (linked == null) {
+            // 정책에 따라 404 또는 기본 설정 반환 결정
+            throw new IllegalStateException("연결된 기본 위젯 설정이 없습니다. siteKey=" + siteKey);
+        }
+        if ("Y".equalsIgnoreCase(linked.getDelTf())) {
+            throw new IllegalStateException("삭제된 위젯 설정입니다. id=" + linked.getId());
+        }
+
+        // 3) options 파싱 및 응답 매핑 (관리 응답 포맷 재사용)
+        Map<String, Object> options = readOptions(linked.getOptionsJson());
+        WidgetConfigResponse response = WidgetConfigResponse.from(linked, options);
+
+        return response;
+
+    }
 
     // 단건 조회
     @Transactional(readOnly = true)

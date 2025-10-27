@@ -1,6 +1,8 @@
 package com.hbs.hsbbo.user.ai.controller;
 
 import com.hbs.hsbbo.admin.ai.sitekey.service.SiteKeyService;
+import com.hbs.hsbbo.admin.ai.widgetconfig.dto.response.WidgetConfigResponse;
+import com.hbs.hsbbo.admin.ai.widgetconfig.service.WidgetConfigService;
 import com.hbs.hsbbo.common.exception.CommonException;
 import com.hbs.hsbbo.common.exception.CommonException.TooManyRequestsException;
 import com.hbs.hsbbo.user.ai.dto.ChatRequest;
@@ -9,19 +11,24 @@ import com.hbs.hsbbo.user.ai.service.OpenAiService;
 import com.hbs.hsbbo.user.ai.support.DailyQuotaSupport;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/ai")
 @RequiredArgsConstructor
+@Slf4j
 public class AiPlayGroundController {
     private final OpenAiService openAiService;
     private final DailyQuotaSupport dailyQuotaSupport;
     private final SiteKeyService siteKeyService;
+    private final WidgetConfigService widgetConfigService;
 
     //  HEAD /api/ai/ping : 유효 키면 204, 없거나 무효면 401/403
     @RequestMapping(value = "/ping", method = {RequestMethod.GET, RequestMethod.HEAD})
@@ -42,6 +49,38 @@ public class AiPlayGroundController {
 
         siteKeyService.assertActiveAndDomainAllowed(siteKey, host); // 정책 위반 시 ForbiddenException → 403
         return ResponseEntity.noContent().build(); // 204
+    }
+
+    // Get /api/ai/public/widget=config : 위젯 설정 불러오기
+    @GetMapping("/public/widget-config")
+    @CrossOrigin(origins = "*", allowedHeaders = { "Content-Type", "Authorization", "X-HSBS-Site-Key" })
+    public ResponseEntity<WidgetConfigResponse> getPublicWidgetConfig(
+            @RequestHeader(value = "X-HSBS-Site-Key", required = false) String siteKeyHeader,
+            @RequestParam(value = "siteKey", required = false) String siteKeyQuery,
+            HttpServletRequest http
+    ) {
+
+        String origin   = http.getHeader("Origin");
+        String referer  = http.getHeader("Referer");
+        String ua       = http.getHeader("User-Agent");
+        String ip       = Optional.ofNullable(http.getHeader("X-Forwarded-For"))
+                .map(v -> v.split(",", 2)[0].trim())
+                .filter(s -> !s.isBlank())
+                .orElse(http.getRemoteAddr());
+
+        log.info("[public-widget-config] siteKeyHeader={}, siteKeyQuery={}, origin={}, referer={}, ua={}, ip={}",
+                mask(siteKeyHeader), mask(siteKeyQuery), origin, referer, ua, ip);
+
+
+        String siteKey = (siteKeyHeader != null && !siteKeyHeader.isBlank())
+                ? siteKeyHeader : siteKeyQuery;
+        String host = extractClientHost(http);
+
+        WidgetConfigResponse body = widgetConfigService.loadForPublic(siteKey, host);
+
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(300, TimeUnit.SECONDS).cachePublic())
+                .body(body);
     }
 
     //  POST /api/ai/complete : - 포트폴리오용
@@ -161,5 +200,12 @@ public class AiPlayGroundController {
     private String hostOrNull(String url) {
         if (url == null || url.isBlank()) return null;
         try { return new URI(url).getHost(); } catch (Exception e) { return null; }
+    }
+
+    private String mask(String v) {
+        if (v == null || v.isBlank()) return v;
+        int n = v.length();
+        if (n <= 4) return "****";
+        return v.substring(0, Math.min(2, n)) + "****" + v.substring(n - Math.min(2, n));
     }
 }
