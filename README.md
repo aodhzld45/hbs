@@ -42,7 +42,7 @@ Spring Boot + OpenAPI 기반의 자동 API 문서입니다.
 
 | 항목    | 내용                                                   |
 | ----- | ---------------------------------------------------- |
-| 프로젝트명 | HBS 내부 콘텐츠 시스템                                       |
+| 프로젝트명 | HSBS 내부 콘텐츠 시스템                                       |
 | 목적    | 콘텐츠(뉴스, 유튜브(홍보물), 영상등) 등록 및 열람                   |
 | 주요 기술 | React (Frontend), Spring Boot + JPA (Backend), MySQL |
 | 배포 환경 | OCI Apache 내부 프록시                                   |
@@ -111,7 +111,7 @@ Spring Boot + OpenAPI 기반의 자동 API 문서입니다.
 * SiteKey 목록/검색/상태변경(토글), 논리삭제
 * WidgetConfig 생성/수정(파일/이미지 포함), 미리보기
 * PromptProfile 등록/버전관리(시스템/가드레일)
-* UsageLog 조회(필터: 기간/모델/상태), 엑셀 내보내기
+* UsageLog 조회(필터: 기간/모델/상태), 엑셀 내보내기, 
 * Plan/Quota 정책: 일일 요청 제한, 초과 시 차단/경고
 
 ## 보안/검증
@@ -133,7 +133,8 @@ Spring Boot + OpenAPI 기반의 자동 API 문서입니다.
 
 * 기본 API Base: 운영/로컬 자동 스위칭
 * CSS/버블/패널 동적 주입, 오픈/닫기 상태 기억
-
+* 위젯 UI 설정시 Option Json으로 세부 옵션 고도화
+* web/app/기타 시스템 소프트웨어 호환성 추가 (예정)
 ---
 
 # 📈 KRX/KIS 증권 데이터 모듈 (포트폴리오 연동)
