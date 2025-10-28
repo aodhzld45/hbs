@@ -13,14 +13,26 @@ const api = axios.create({
   timeout: 15000,
 });
 
-// JWT 자동 첨부 인터셉터
+// ---- helper: FormData 판별 ----
+const isFormData = (v: any): v is FormData =>
+  typeof FormData !== 'undefined' && v instanceof FormData;
+
+// JWT 자동 첨부 + FormData 분기
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('jwtToken');
-    if (token) {
+    if (token && config.headers) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Body가 FormData면 JSON 기본 헤더 제거 → 브라우저가 multipart 헤더 자동 세팅
+    if (isFormData(config.data)) {
       if (config.headers) {
-        config.headers['Authorization'] = `Bearer ${token}`;
+        // axios v1 타입 가드 회피용 캐스팅
+        delete (config.headers as any)['Content-Type'];
       }
+      // 필요 시 캐시 방지 파라미터도 추가 가능
+      // (config.params = { ...(config.params||{}), _ts: Date.now() });
     }
     return config;
   },
