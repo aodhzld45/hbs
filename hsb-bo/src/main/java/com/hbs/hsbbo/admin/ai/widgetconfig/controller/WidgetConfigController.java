@@ -6,8 +6,10 @@ import com.hbs.hsbbo.admin.ai.widgetconfig.dto.response.WidgetConfigResponse;
 import com.hbs.hsbbo.admin.ai.widgetconfig.service.WidgetConfigService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 
@@ -37,23 +39,26 @@ public class WidgetConfigController {
     }
 
     // 생성
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> create(
-            @Valid @RequestBody WidgetConfigRequest req,
-            @RequestParam String actor
+            @Valid @RequestPart("form") WidgetConfigRequest req,
+            @RequestParam String actor,
+            @RequestPart(value = "iconFile", required = false) MultipartFile iconFile
     ) {
-        Long id = widgetConfigService.create(req, actor);
+        Long id = widgetConfigService.create(req, iconFile, actor);
         return ResponseEntity.created(URI.create("/api/ai/widget-configs/" + id)).body(id);
     }
 
     // 수정
-    @PutMapping("/{id}")
+    @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> update(
             @PathVariable Long id,
-            @Valid @RequestBody WidgetConfigRequest req,
-            @RequestParam String actor
+            @Valid @RequestPart("form") WidgetConfigRequest req,
+            @RequestParam String actor,
+            @RequestPart(value = "iconFile", required = false) MultipartFile iconFile
+
     ) {
-        return ResponseEntity.ok(widgetConfigService.update(id, req, actor));
+        return ResponseEntity.ok(widgetConfigService.update(id, req, iconFile, actor));
     }
 
     // 사용 여부 토글(use_tf)

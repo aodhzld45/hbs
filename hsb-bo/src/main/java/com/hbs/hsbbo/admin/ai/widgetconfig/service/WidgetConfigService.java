@@ -18,7 +18,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -97,7 +99,18 @@ public class WidgetConfigService {
 
     // 위젯 관리 등록
     @Transactional
-    public Long create(WidgetConfigRequest req, String actor) {
+    public Long create(WidgetConfigRequest req, MultipartFile iconFile, String actor) {
+        // 0) 첨부파일 처리
+        Path basePath = fileUtil.resolveContactPath("widget");
+
+        String savedPath = null;
+        // String originalFileName = null; -> 원본 파일명이 필요할때,
+
+        if (iconFile != null && !iconFile.isEmpty()) {
+            // originalFileName = iconFile.getOriginalFilename(); //  오리지널 파일명 저장
+            savedPath = fileUtil.saveFile(basePath, iconFile); //  /files/contact/uuid.ext
+        }
+
         // 1) 이름 중복 방지(소프트삭제 제외)
         if (widgetConfigRepository.existsByNameAndDelTf(req.getName(), "N"))
             throw new IllegalArgumentException("이미 존재하는 이름입니다: " + req.getName());
@@ -105,6 +118,7 @@ public class WidgetConfigService {
         // 2) 위젯 엔티티 저장
         WidgetConfig e = new WidgetConfig();
         apply(e, req);
+        e.setBubbleIconUrl(savedPath);
         e.setRegAdm(actor);
         widgetConfigRepository.save(e); // e.getId() 확보
 
@@ -123,7 +137,8 @@ public class WidgetConfigService {
     }
 
     // 위젯 관리 업데이트
-    public Long update(Long id, WidgetConfigRequest req, String actor) {
+    public Long update(Long id, WidgetConfigRequest req, MultipartFile iconFile, String actor) {
+
         WidgetConfig e = widgetConfigRepository.findActiveById(id)
                 .orElseThrow(() -> new IllegalArgumentException("위젯을 찾을 수 없습니다. id=" + id));
 
@@ -131,7 +146,30 @@ public class WidgetConfigService {
         if (!e.getName().equals(req.getName()) && widgetConfigRepository.existsByNameAndDelTf(req.getName(), "N"))
             throw new IllegalArgumentException("이미 존재하는 이름입니다: " + req.getName());
 
+        // 기존 아이콘 경로 보관
+        String oldIconUrl = e.getBubbleIconUrl();
+
         apply(e, req);
+
+        String finalIconUrl = e.getBubbleIconUrl(); // apply에서 들어간 값(요청값) 기준
+        boolean replacedByNewFile = false;
+
+        if (iconFile != null && !iconFile.isEmpty()) {
+            Path basePath = fileUtil.resolveContactPath("widget"); // 예: /upload/widget
+            String savedPath = fileUtil.saveFile(basePath, iconFile); // 예: /files/widget/uuid.ext
+            finalIconUrl = savedPath;
+            replacedByNewFile = true;
+        } else {
+            // 파일이 없을 때의 분기
+            if (req.getBubbleIconUrl() != null && req.getBubbleIconUrl().isEmpty()) {
+                // 빈 문자열이면 제거
+                finalIconUrl = null;
+            } else if (req.getBubbleIconUrl() == null) {
+                // 미전달(null)이면 기존 유지
+                finalIconUrl = oldIconUrl;
+            }
+        }
+        e.setBubbleIconUrl(finalIconUrl);
         e.setUpAdm(actor);
 
         // 사이트키 매핑: linkedSiteKeyId가 넘어오면 해당 SiteKey에 이 위젯을 기본으로 설정
@@ -147,9 +185,20 @@ public class WidgetConfigService {
             sk.setUpAdm(actor);
             // save 호출은 생략 가능(JPA flush 시 반영)
             siteKeyRepository.save(sk);
-
         }
 
+        // 새 파일로 교체되었으면, 이전 파일 삭제 시도 (서버 소유 경로만)
+        if (replacedByNewFile
+                && oldIconUrl != null && !oldIconUrl.isBlank()
+                && !oldIconUrl.equals(finalIconUrl)
+                && oldIconUrl.startsWith("/files/")) {
+            try {
+                java.nio.file.Files.deleteIfExists(fileUtil.resolveAbsolutePath(oldIconUrl));
+            } catch (Exception ex) {
+                // 실패해도 흐름 막지 않음 (로그만)
+                // log.warn("이전 아이콘 삭제 실패: {}", oldIconUrl, ex);
+            }
+        }
 
         return e.getId();
     }
@@ -203,8 +252,8 @@ public class WidgetConfigService {
 
         // 아이콘/로고
         e.setBubbleIconEmoji(trim(r.getBubbleIconEmoji()));
-        e.setBubbleIconUrl(trim(r.getBubbleIconUrl()));
-        e.setLogoUrl(trim(r.getLogoUrl()));
+//        e.setBubbleIconUrl(trim(r.getBubbleIconUrl()));
+//        e.setLogoUrl(trim(r.getLogoUrl()));
 
         // 동작
         e.setOpenOnLoad(flag(r.getOpenOnLoad()));
