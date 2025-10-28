@@ -5,6 +5,8 @@ import {
   fetchWidgetConfigDetail,
   fetchWidgetConfigCreate,
   fetchWidgetConfigUpdate,
+  fetchWidgetConfigUpdateWithFile,
+  fetchWidgetConfigCreateWithFile,
   updateWidgetConfigUseTf,
   fetchWidgetConfigDelete,
 } from '../services/widgetConfigApi';

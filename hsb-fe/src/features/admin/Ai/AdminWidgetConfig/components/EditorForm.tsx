@@ -8,7 +8,7 @@ import type { SiteKeySummary } from '../../AdminSiteKeys/types/siteKey';
 
 type Props = {
   value?: WidgetConfig | null;      // id === 0(신규)일 때는 undefined/null 전달
-  onSubmit: (data: WidgetConfigRequest) => void;
+  onSubmit: (data: WidgetConfigRequest, iconFile?: File | null) => void;
   onCancel: () => void;
 };
 
@@ -29,6 +29,10 @@ export default function EditorForm({ value, onSubmit, onCancel }: Props) {
     linkedSiteKeyId: null,
   });
 
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [iconPreviewUrl, setIconPreviewUrl] = useState<string | null>(null);
+  const [iconError, setIconError] = useState<string | null>(null);
+
   const [linkedTouched, setLinkedTouched] = useState(false);
 
     // 사이트키 목록 상태
@@ -44,11 +48,15 @@ export default function EditorForm({ value, onSubmit, onCancel }: Props) {
       ...rest, // 넘어온 값으로 덮어쓰기
       // linkedSiteKeyId가 value 안에 없으면 기존 유지
       linkedSiteKeyId: rest?.linkedSiteKeyId ?? prev.linkedSiteKeyId ?? null,
-    }));    
+    }));
+    // 기존 URL이 있으면 미리보기는 URL로, 파일은 비움
+    setIconFile(null);
+    setIconPreviewUrl(rest?.bubbleIconUrl || null);
+    setIconError(null);    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value?.id]); // 값 바뀔 때만 초기화
 
-  // 사이트키 목록 로드 (ACTIVE 위주, 첫 페이지 크게)
+  // 사이트키 목록 로드 (ACTIVE 위주)
   useEffect(() => {
     (async () => {
       try {
@@ -111,10 +119,52 @@ export default function EditorForm({ value, onSubmit, onCancel }: Props) {
     [siteKeys]
   );
 
+  // 아이콘 첨부파일 관련,
+    // 아이콘 파일 선택 이벤트
+  function handleIconChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] || null;
+    setIconError(null);
+
+    if (!file) {
+      setIconFile(null);
+      // 파일 선택 취소 시, 기존 URL 미리보기를 유지
+      return;
+    }
+    // 간단 검증(이미지 + 1MB)
+    if (!file.type.startsWith('image/')) {
+      setIconError('이미지 파일만 업로드 가능합니다.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 9_000_000) {
+      setIconError('아이콘 파일은 최대 1MB까지만 허용됩니다.');
+      e.target.value = '';
+      return;
+    }
+
+    setIconFile(file);
+    setIconPreviewUrl(URL.createObjectURL(file)); // 로컬 미리보기
+    // 파일을 새로 올리면 기존 URL은 덮어쓸 예정 → 폼의 bubbleIconUrl은 그대로 두고 서버에서 세팅
+  }
+
+  // 아이콘 URL 제거(이모지로 복귀)
+  function clearIconUrl() {
+    setIconFile(null);
+    setIconPreviewUrl(null);
+    update('bubbleIconUrl', ''); // 빈 값 → 서버 저장 시 이모지가 사용됨
+  }
+
+  // 제출
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    // 멀티파트로 보낼 수 있도록 부모에 iconFile까지 전달
+    onSubmit(form, iconFile);
+  }
+
   return (
     <form
       className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-      onSubmit={(e) => { e.preventDefault(); onSubmit(form); }}
+      onSubmit={handleSubmit}
     >
       {/* 기본 섹션 */}
       <section className="space-y-3">
@@ -216,18 +266,69 @@ export default function EditorForm({ value, onSubmit, onCancel }: Props) {
       {/* 아이콘/로고 섹션 */}
       <section className="space-y-3">
         <h3 className="font-semibold">아이콘/로고</h3>
+
         <div className="grid grid-cols-3 gap-2">
           <label className="text-sm self-center">이모지</label>
-          <input className="col-span-2 border rounded px-2 py-1"
-                 value={form.bubbleIconEmoji || ''} onChange={(e) => update('bubbleIconEmoji', e.target.value)} />
-          <label className="text-sm self-center">아이콘 URL</label>
-          <input className="col-span-2 border rounded px-2 py-1"
-                 value={form.bubbleIconUrl || ''} onChange={(e) => update('bubbleIconUrl', e.target.value)} />
-          <label className="text-sm self-center">로고 URL</label>
-          <input className="col-span-2 border rounded px-2 py-1"
-                 value={form.logoUrl || ''} onChange={(e) => update('logoUrl', e.target.value)} />
+          <input
+            className="col-span-2 border rounded px-2 py-1"
+            value={form.bubbleIconEmoji || ''}
+            onChange={(e) => update('bubbleIconEmoji', e.target.value)}
+            placeholder="예: 💬"
+          />
         </div>
-        <p className="text-xs text-gray-500">아이콘 URL이 있으면 이모지보다 우선합니다.</p>
+
+        {/* 기존 URL 표시 + 제거 */}
+        <div className="grid grid-cols-3 gap-2 items-start">
+          <label className="text-sm self-center">현재 아이콘 URL</label>
+          <div className="col-span-2 flex items-center gap-2">
+            <input
+              className="flex-1 border rounded px-2 py-1 text-xs"
+              value={form.bubbleIconUrl || ''}
+              onChange={(e) => update('bubbleIconUrl', e.target.value)}
+              placeholder="/files/ai_widget/icon/uuid.png"
+            />
+            {!!form.bubbleIconUrl && (
+              <button
+                type="button"
+                className="px-2 py-1 text-xs border rounded"
+                onClick={clearIconUrl}
+                title="아이콘 제거(이모지 사용)"
+              >
+                제거
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 파일 업로드 → 서버에서 URL로 저장 */}
+        <div className="grid grid-cols-3 gap-2 items-start">
+          <label className="text-sm self-center">아이콘 파일</label>
+          <div className="col-span-2 space-y-2">
+            <input type="file" accept="image/*" onChange={handleIconChange} />
+            {iconError && <div className="text-xs text-red-500">{iconError}</div>}
+
+            {(iconPreviewUrl || form.bubbleIconUrl) && (
+              <div className="flex items-center gap-3">
+                <img
+                  src={iconPreviewUrl || form.bubbleIconUrl || ''}
+                  alt="icon preview"
+                  className="w-10 h-10 object-contain border rounded"
+                />
+                {iconPreviewUrl && (
+                  <span className="text-xs text-gray-500">
+                    (미리보기: 저장 시 업로드됨)
+                  </span>
+                )}
+              </div>
+            )}
+
+            {!iconPreviewUrl && !form.bubbleIconUrl && (
+              <p className="text-xs text-gray-500">
+                아이콘 파일을 선택하면 이모지보다 아이콘이 우선 표시됩니다.
+              </p>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* 동작 섹션 */}

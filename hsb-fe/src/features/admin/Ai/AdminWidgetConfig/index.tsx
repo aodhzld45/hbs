@@ -5,7 +5,7 @@ import EditorForm from './components/EditorForm';
 import PreviewPanel from './components/PreviewPanel';
 import Pagination from "../../../../components/Common/Pagination"; // ← 공통 컴포넌트 경로에 맞게 조정
 
-import { fetchWidgetConfigCreate, fetchWidgetConfigUpdate, updateWidgetConfigUseTf, fetchWidgetConfigDelete } from "./services/widgetConfigApi";
+import { fetchWidgetConfigCreateWithFile, fetchWidgetConfigUpdateWithFile, fetchWidgetConfigCreate, fetchWidgetConfigUpdate, updateWidgetConfigUseTf, fetchWidgetConfigDelete } from "./services/widgetConfigApi";
 
 // 공통 메뉴 목록 불러오기
 import {
@@ -64,14 +64,41 @@ export default function AdminWidgetConfig() {
   const openEdit = (id: number) => setSelectedId(id);
   const closeEditor = () => setSelectedId(null);
 
-  const handleSubmit = async (data: WidgetConfigRequest) => {
-    if (!selectedId || selectedId === 0) {
-      await fetchWidgetConfigCreate(data, adminId ?? "");
-    } else {
-      await fetchWidgetConfigUpdate(selectedId, data, adminId ?? "");
+  const handleSubmit = async (data: WidgetConfigRequest, iconFile?: File | null) => {
+    try {
+      const isCreate = !selectedId || selectedId === 0;
+      const actor = adminId ?? '';
+
+      if (iconFile) {
+        // 멀티파트(FormData) 전송: form(JSON) + iconFile
+        const fd = new FormData();
+        fd.append('form', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+        fd.append('iconFile', iconFile);
+
+        if (isCreate) {
+          await fetchWidgetConfigCreateWithFile(data, actor, iconFile);
+        } else {
+          await fetchWidgetConfigUpdateWithFile(selectedId!, data, actor, iconFile);
+        }
+      } else {
+        // 기존 JSON 경로 유지
+        if (isCreate) {
+          await fetchWidgetConfigCreate(data, actor);
+        } else {
+          await fetchWidgetConfigUpdate(selectedId!, data, actor);
+        }
+      }
+
+      closeEditor();
+      await list.refresh();
+    } catch (e: any) {
+      console.error('[WidgetConfig] 저장 실패:', e);
+      const msg =
+        e?.response?.data?.message ||
+        e?.message ||
+        '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+      alert(msg);
     }
-    closeEditor();
-    await list.refresh();
   };
 
   const previewData = useMemo(() => detail.data ?? (selectedId === 0 ? {} : {}), [detail.data, selectedId]);
