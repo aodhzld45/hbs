@@ -94,6 +94,21 @@
     div.textContent=text; $body.appendChild(div); $body.scrollTop=$body.scrollHeight; return div;
   }
 
+  function resolveAssetUrl(resourceUrl, cfg) {
+  if (!resourceUrl) return null;
+  const u = String(resourceUrl).trim();
+
+  // 이미 절대 URL이면 그대로 사용
+  if (/^https?:\/\//i.test(u)) return u;
+
+  // apiBase에서 '/api'를 떼어 사이트 루트(baseRoot) 계산
+  const api = new URL(cfg.apiBase, window.location.href); // ex) http://localhost:8080/api
+  const baseRootHref = api.href.replace(/\/api\/?$/, '/'); // -> http://localhost:8080/
+
+  // 상대/루트 경로를 baseRoot 기준으로 절대 URL화
+  return new URL(u, baseRootHref).href;                    // ex) /files/x.png -> http://localhost:8080/files/x.png
+}
+
   // ===== 메인 초기화 =====
   async function init(opts){
     const cfg = Object.assign({
@@ -165,8 +180,9 @@
       welcomeText: wc.welcomeText || '무엇을 도와드릴까요?',
       inputPlaceholder: wc.inputPlaceholder || '메시지를 입력하세요',
       sendButtonLabel: wc.sendButtonLabel || '보내기',
-      logoUrl: wc.logoUrl || null,
       bubbleIconEmoji: wc.bubbleIconEmoji || '💬',
+      logoUrl: wc.logoUrl ? resolveAssetUrl(wc.logoUrl, cfg) : null,
+      bubbleIconUrl: wc.bubbleIconUrl ? resolveAssetUrl(wc.bubbleIconUrl, cfg) : null,
 
       // 색상(서버 필드 그대로)
       primaryColor: wc.primaryColor || '#4f46e5',
@@ -199,16 +215,18 @@
     });
 
     // 5) UI 구성 (버블: 로고/이모지)
-    const bubbleLabel = merged.logoUrl ? '' : (merged.bubbleIconEmoji || '💬');
+    const bubbleImgUrl = merged.bubbleIconUrl || merged.logoUrl;
+    const bubbleLabel  = bubbleImgUrl ? '' : (merged.bubbleIconEmoji || '💬');
+
     const $bubble = h(`<button id="hsbs-chat-bubble" aria-label="Open chat">${bubbleLabel}</button>`);
-    if (merged.logoUrl) {
+    if (bubbleImgUrl) {
       const img = document.createElement('img');
-      img.alt = 'HSBS Logo';
-      img.src = merged.logoUrl;
+      img.alt = 'HSBS Icon';
+      img.src = bubbleImgUrl;
       $bubble.appendChild(img);
     }
-
     const headerLogo = merged.logoUrl ? `<img class="logo" src="${merged.logoUrl}" alt="logo"/>` : '';
+
     const $panel = h(`<div id="hsbs-chat-panel" role="dialog" aria-label="HSBS Chat">
         <div id="hsbs-chat-header">${headerLogo}<span>${merged.panelTitle}</span></div>
         <div id="hsbs-chat-body"></div>
