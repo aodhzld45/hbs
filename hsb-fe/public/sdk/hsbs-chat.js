@@ -9,6 +9,27 @@
 
   function h(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
 
+  // 아바타(원형) 엘리먼트 생성: 이미지 → 이모지 → 이니셜
+  function createCircleAvatar({ size=28, imgUrl, emoji='💬', initial='H', title }){
+    const wrap = document.createElement('div');
+    wrap.className = 'hsbs-avatar';
+    wrap.style.width = `${size}px`;
+    wrap.style.height = `${size}px`;
+    wrap.title = title || '';
+
+    if (imgUrl) {
+      const img = document.createElement('img');
+      img.alt = title || 'icon';
+      img.src = imgUrl;
+      img.onload = () => { wrap.appendChild(img); };
+      img.onerror = () => { wrap.appendChild(document.createTextNode(emoji || initial)); };
+      return wrap; // onload/onerror 후 자식 결정
+    }
+    // 이미지가 없으면 이모지/이니셜 즉시
+    wrap.appendChild(document.createTextNode(emoji || initial || 'H'));
+    return wrap;
+  }
+
   // CSS는 변수 기반으로 주입해서 서버 설정으로 쉽게 테마 변경
   function injectCss(vars) {
     const v = Object.assign({
@@ -31,7 +52,6 @@
       '--hsbs-position':    'right',   // right|left
     }, vars || {});
 
-    // 위치 계산(right/left)
     const isLeft = (v['--hsbs-position'] || 'right') === 'left';
     const sideRule = isLeft
       ? `left:var(--hsbs-offset-x); right:auto;`
@@ -56,6 +76,16 @@
       --hsbs-send-text:${v['--hsbs-send-text']};
       --hsbs-position:${v['--hsbs-position']};
     }
+
+    /* 공통 아바타(원형) */
+    .hsbs-avatar{
+      display:flex; align-items:center; justify-content:center;
+      border-radius:50%; border:1px solid rgba(255,255,255,.08);
+      background:#ffffffe6; color:#111827; box-shadow:0 2px 6px rgba(0,0,0,.15);
+      overflow:hidden; font-size:14px; font-weight:600; user-select:none;
+    }
+    .hsbs-avatar img{ width:100%; height:100%; object-fit:contain; display:block }
+
     #hsbs-chat-bubble{
       position:fixed; ${sideRule} bottom:var(--hsbs-offset-y);
       width:var(--hsbs-bubble-size); height:var(--hsbs-bubble-size);
@@ -63,7 +93,7 @@
       background:var(--hsbs-accent); color:#fff; box-shadow:0 10px 25px rgba(0,0,0,.2);
       cursor:pointer; z-index:var(--hsbs-z)
     }
-    #hsbs-chat-bubble img{ width:60%; height:60%; object-fit:contain; }
+    #hsbs-chat-bubble .inner{ width:36px; height:36px; display:flex; align-items:center; justify-content:center }
     #hsbs-chat-panel{
       position:fixed; ${sideRule} bottom:calc(var(--hsbs-offset-y) + 68px);
       width:var(--hsbs-panel-w); max-height:var(--hsbs-max-h);
@@ -72,7 +102,6 @@
       display:none; flex-direction:column; overflow:hidden; z-index:var(--hsbs-z)
     }
     #hsbs-chat-header{ padding:12px 14px; font-weight:600; background:var(--hsbs-bg-2); border-bottom:1px solid var(--hsbs-border); display:flex; align-items:center; gap:8px }
-    #hsbs-chat-header .logo{ width:20px; height:20px; object-fit:contain }
     #hsbs-chat-body{ padding:12px; gap:8px; display:flex; flex-direction:column; overflow:auto }
     .hsbs-msg{ padding:10px 12px; border-radius:12px; max-width:85% }
     .hsbs-user{ align-self:flex-end; background:#1f2937 }
@@ -86,6 +115,7 @@
     @media (max-width:480px){
       #hsbs-chat-panel{ ${isLeft ? 'left:8px; right:8px;' : 'right:8px; left:8px;'} width:auto; bottom:88px; }
     }`;
+
     const s=document.createElement('style'); s.textContent=css; document.head.appendChild(s);
   }
 
@@ -95,19 +125,13 @@
   }
 
   function resolveAssetUrl(resourceUrl, cfg) {
-  if (!resourceUrl) return null;
-  const u = String(resourceUrl).trim();
-
-  // 이미 절대 URL이면 그대로 사용
-  if (/^https?:\/\//i.test(u)) return u;
-
-  // apiBase에서 '/api'를 떼어 사이트 루트(baseRoot) 계산
-  const api = new URL(cfg.apiBase, window.location.href); // ex) http://localhost:8080/api
-  const baseRootHref = api.href.replace(/\/api\/?$/, '/'); // -> http://localhost:8080/
-
-  // 상대/루트 경로를 baseRoot 기준으로 절대 URL화
-  return new URL(u, baseRootHref).href;                    // ex) /files/x.png -> http://localhost:8080/files/x.png
-}
+    if (!resourceUrl) return null;
+    const u = String(resourceUrl).trim();
+    if (/^https?:\/\//i.test(u)) return u; // 절대 URL
+    const api = new URL(cfg.apiBase, window.location.href);       // ex) http://localhost:8080/api
+    const baseRootHref = api.href.replace(/\/api\/?$/, '/');      // -> http://localhost:8080/
+    return new URL(u, baseRootHref).href;                         // ex) /files/x.png -> http://localhost:8080/files/x.png
+  }
 
   // ===== 메인 초기화 =====
   async function init(opts){
@@ -159,7 +183,7 @@
       wc = {};
     }
 
-     // 3) 서버 응답 → merged 매핑 (필드명 1:1)
+    // 3) 서버 응답 → merged 매핑
     const merged = {
       // 배치/위치
       position: wc.position || 'right',                 // 'left'|'right'
@@ -167,7 +191,7 @@
       offsetY: wc.offsetY ?? 20,
       panelWidthPx: wc.panelWidthPx ?? 360,
       zIndex: wc.zIndex ?? 2147483000,
-      panelMaxHeightPx: wc.panelMaxHeightPx ?? null,    // px 값이면 아래서 px로 변환
+      panelMaxHeightPx: wc.panelMaxHeightPx ?? null,
 
       // 동작(Y/N → boolean)
       openOnLoad: wc.openOnLoad === 'Y',
@@ -176,6 +200,7 @@
       closeOnOutsideClick: wc.closeOnOutsideClick !== 'N',
 
       // 표시/브랜딩
+      brandName: wc.brandName || 'HSBS',
       panelTitle: wc.panelTitle || 'HSBS Assistant',
       welcomeText: wc.welcomeText || '무엇을 도와드릴까요?',
       inputPlaceholder: wc.inputPlaceholder || '메시지를 입력하세요',
@@ -184,7 +209,7 @@
       logoUrl: wc.logoUrl ? resolveAssetUrl(wc.logoUrl, cfg) : null,
       bubbleIconUrl: wc.bubbleIconUrl ? resolveAssetUrl(wc.bubbleIconUrl, cfg) : null,
 
-      // 색상(서버 필드 그대로)
+      // 색상
       primaryColor: wc.primaryColor || '#4f46e5',
       panelBgColor: wc.panelBgColor || '#111827',
       panelTextColor: wc.panelTextColor || '#e5e7eb',
@@ -197,7 +222,7 @@
       debug: cfg.debug
     };
 
-    // 4) CSS 변수 주입 (서버 컬러 매핑에 맞춤)
+    // 4) CSS 변수 주입
     injectCss({
       '--hsbs-accent': merged.primaryColor,
       '--hsbs-bg':     merged.panelBgColor,
@@ -214,27 +239,45 @@
       ...(merged.panelMaxHeightPx ? {'--hsbs-max-h': `${merged.panelMaxHeightPx}px`} : {})
     });
 
-    // 5) UI 구성 (버블: 로고/이모지)
+    // 5) UI 구성 — 버블(아이콘/이모지/이니셜)
+    const brandInitial = (merged.brandName && merged.brandName.trim().charAt(0).toUpperCase()) || 'H';
     const bubbleImgUrl = merged.bubbleIconUrl || merged.logoUrl;
-    const bubbleLabel  = bubbleImgUrl ? '' : (merged.bubbleIconEmoji || '💬');
+    const bubbleEmoji  = merged.bubbleIconEmoji || '💬';
 
-    const $bubble = h(`<button id="hsbs-chat-bubble" aria-label="Open chat">${bubbleLabel}</button>`);
-    if (bubbleImgUrl) {
-      const img = document.createElement('img');
-      img.alt = 'HSBS Icon';
-      img.src = bubbleImgUrl;
-      $bubble.appendChild(img);
-    }
-    const headerLogo = merged.logoUrl ? `<img class="logo" src="${merged.logoUrl}" alt="logo"/>` : '';
+    const $bubble = h(`<button id="hsbs-chat-bubble" aria-label="Open chat"><div class="inner"></div></button>`);
+    const $bubbleInner = $bubble.querySelector('.inner');
+    // 원 안에 작은 아바타 배치
+    $bubbleInner.appendChild(createCircleAvatar({
+      size: 36,
+      imgUrl: bubbleImgUrl,
+      emoji: bubbleEmoji,
+      initial: brandInitial,
+      title: '채팅 아이콘'
+    }));
 
+    // 패널 스켈레톤
     const $panel = h(`<div id="hsbs-chat-panel" role="dialog" aria-label="HSBS Chat">
-        <div id="hsbs-chat-header">${headerLogo}<span>${merged.panelTitle}</span></div>
+        <div id="hsbs-chat-header"></div>
         <div id="hsbs-chat-body"></div>
         <div id="hsbs-chat-footer">
           <input id="hsbs-chat-input" placeholder="${merged.inputPlaceholder}" />
           <button id="hsbs-chat-send" data-style="text"></button>
         </div>
       </div>`);
+
+    // 헤더(로고 아바타 + 타이틀)
+    const $header = $panel.querySelector('#hsbs-chat-header');
+    $header.appendChild(createCircleAvatar({
+      size: 20,
+      imgUrl: merged.logoUrl,
+      emoji: bubbleEmoji,
+      initial: brandInitial,
+      title: '브랜드 로고'
+    }));
+    const $title = document.createElement('span');
+    $title.textContent = merged.panelTitle;
+    $header.appendChild($title);
+
     document.body.appendChild($bubble);
     document.body.appendChild($panel);
 
@@ -268,7 +311,8 @@
     if (merged.closeOnOutsideClick) {
       document.addEventListener('click', (e)=>{
         if ($panel.style.display==='flex') {
-          const t=e.target; if (!$panel.contains(t) && t!==$bubble) closePanel();
+          const t=e.target; 
+          if (!$panel.contains(t) && !$bubble.contains(t)) closePanel();
         }
       });
     }
