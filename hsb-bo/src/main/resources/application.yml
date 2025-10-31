@@ -28,6 +28,11 @@ spring:
       force: true
 
 # 공통: 비밀 아님(도메인/경로는 프로필에서 덮어씀)
+app:
+  cors:
+    enabled: true
+    allowed-origins: "*"           # 프로필에서 지정
+
 kis:
   domain: https://openapivts.koreainvestment.com:29443   # 기본값(모의). prod에서 덮어씀
   oauth-path: /oauth2/tokenP

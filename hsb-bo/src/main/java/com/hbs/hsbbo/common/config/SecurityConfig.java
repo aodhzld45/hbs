@@ -44,10 +44,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                //.cors(c -> { if (!corsEnabled) c.disable(); })   // 프로퍼티로 on/off
                 // CORS: on/off (on일 때는 기본설정으로 활성화)
-                .cors(c -> { if (corsEnabled) c.configurationSource(corsConfigurationSource()); else c.disable(); })
-                .csrf(csrf -> csrf.disable())
+                .cors(c -> {}) // 전역 CorsFilter가 처리하므로 켜두기만
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
