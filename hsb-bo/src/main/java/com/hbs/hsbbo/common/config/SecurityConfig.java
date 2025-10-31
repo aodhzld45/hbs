@@ -7,8 +7,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -19,6 +19,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 @RequiredArgsConstructor
@@ -43,11 +44,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(c -> { if (!corsEnabled) c.disable(); })   // 프로퍼티로 on/off
+                //.cors(c -> { if (!corsEnabled) c.disable(); })   // 프로퍼티로 on/off
+                // CORS: on/off (on일 때는 기본설정으로 활성화)
+                .cors(c -> { if (corsEnabled) c.configurationSource(corsConfigurationSource()); else c.disable(); })
+                .csrf(csrf -> csrf.disable())
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 프리플라이트/HEAD는 전부 허용(브라우저 사전요청)
+                        // Preflight/HEAD 허용
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.HEAD, "/**").permitAll()
 
@@ -77,40 +81,44 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         if (!corsEnabled) return req -> null;
         CorsConfiguration cfg = new CorsConfiguration();
-        if (allowedOriginsCsv != null && !allowedOriginsCsv.isBlank()) {
-            Arrays.stream(allowedOriginsCsv.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .forEach(cfg::addAllowedOrigin);
-        } else {
-            // 기본 허용 (운영 + 로컬)
-            cfg.addAllowedOrigin("https://www.hsbs.kr");
-            cfg.addAllowedOrigin("https://hsbs.kr");
-            cfg.addAllowedOrigin("http://localhost:3000");
-            cfg.addAllowedOrigin("http://localhost:8080");
-        }
+
+        // 1) 허용 Origin(패턴) 구성
+        List<String> defaults = List.of(
+                "https://www.hsbs.kr",
+                "https://hsbs.kr",
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:5500",
+                "http://127.0.0.1:5500",
+                "http://localhost:8080",
+                "http://localhost:8081"
+        );
+
+        List<String> fromProp = (allowedOriginsCsv == null || allowedOriginsCsv.isBlank())
+                ? defaults
+                : Arrays.stream(allowedOriginsCsv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+
+        // 패턴 기반으로 허용(정확 매칭도 OK)
+        cfg.setAllowedOriginPatterns(fromProp);
+
+        // 2) 메서드/헤더
         cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","HEAD","OPTIONS"));
-        //cfg.setAllowedHeaders(List.of("*"));
-        // 브라우저가 보내는 헤더 화이트리스트 (커스텀 헤더 포함)
-        cfg.setAllowedHeaders(List.of(
-                "Content-Type",
-                "X-HSBS-Site-Key",
-                "Accept",
-                "Origin",
-                "Referer",
-                "User-Agent",
-                "Authorization",
-                "Accept-Language",
-                "Cache-Control",
-                "Pragma",
-                "X-Requested-With"   // 일부 라이브러리 호환
-        ));
+        cfg.setAllowedHeaders(List.of("*"));
         cfg.setExposedHeaders(List.of("X-DailyReq-Remaining", "Content-Disposition"));
-        cfg.setAllowCredentials(true);
+
+        // 3) 공개 API(위젯)는 크리덴셜 불필요 → false 권장
+        //    (관리자 콘솔은 동일 오리진이므로 CORS와 무관)
+        cfg.setAllowCredentials(false);
+
         cfg.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
-        src.registerCorsConfiguration("/**", cfg);
+        // API 경로에만 CORS 적용
+        src.registerCorsConfiguration("/api/**", cfg);
         return src;
+
     }
 }
