@@ -1,34 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
   <head>
-    <!-- Favicon / PWA -->
+    <meta charset="utf-8" />
+    <!-- 기본 파비콘/PWA -->
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
     <meta name="theme-color" content="#0d1117" />
 
-    <!-- 기본 SEO -->
-    <title>HSBS</title>
+    <!-- SEO 추가 수정 - 2025-11-01 -->
+    <title>반갑습니다. 저는 서현석입니다 – HSBS 포트폴리오</title>
     <meta name="description"
-          content="ONE DEVELOPER FULLSTACK FLOW · Spring Boot + React 기반 포트폴리오. CMS, 데이터 파이프라인, 증권 API 연동, 배포 자동화 경험." />
+          content="AI와 풀스택 기술로 솔루션을 만드는 개발자 서현석의 포트폴리오. React + Spring Boot 기반, CMS/데이터 파이프라인/증권 API/배포 자동화 경험." />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
 
-    <!-- Open Graph (공유 썸네일) -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://hsbs.kr" />
-    <meta property="og:title" content="풀스택 개발자 서현석 | HSBS 포트폴리오" />
-    <meta property="og:description"
-          content="Spring Boot + React 기반 풀스택 프로젝트. 데이터 파이프라인, CMS, 증권 API 연동, 배포 자동화 경험." />
-    <meta property="og:image" content="https://hsbs.kr/hsbs-icon.png" />
+    <!-- 정규 URL(중복 URL 신호 제거) -->
+    <link rel="canonical" href="https://www.hsbs.kr/" />
+    <link rel="alternate" href="https://www.hsbs.kr/" hreflang="ko" />
 
-    <!-- Twitter Card (큰 썸네일 권장) -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="HSBS 포트폴리오" />
-    <meta name="twitter:description"
-          content="풀스택 개발자 서현석의 포트폴리오 - React + Spring Boot 기반 프로젝트" />
-    <meta name="twitter:image" content="https://hsbs.kr/hsbs-icon.png" />
+    <!-- Open Graph (카카오톡/디스코드/노션/슬랙 공통) -->
+     meta property="og:site_name" content="HSBS 포트폴리오">
+    <meta property="og:locale" content="ko_KR">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.hsbs.kr/">
+    <meta property="og:title" content="반갑습니다. 저는 서현석입니다 – HSBS 포트폴리오">
+    <meta property="og:description" content="React + Spring Boot 기반 포트폴리오 프로젝트 모음">
+    <meta property="og:image" content="https://www.hsbs.kr/og/hsbs-card.png">
+    <!-- 이미지 크기 -->
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
 
+    <!-- Twitter Card (트위터/X 전용, 다른 플랫폼에서도 종종 사용) -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="반갑습니다. 저는 서현석입니다 – HSBS 포트폴리오">
+    <meta name="twitter:description" content="AI/풀스택 포트폴리오 — CMS, 데이터 파이프라인, 증권 API, 배포 자동화">
+    <meta name="twitter:image" content="https://www.hsbs.kr/og/hsbs-card.png">
+
+    <!-- 구조화 데이터: Person -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "서현석",
+      "jobTitle": "AI 및 소프트웨어 솔루션 엔지니어",
+      "url": "https://www.hsbs.kr/",
+      "description": "AI와 풀스택으로 솔루션을 만드는 개발자 서현석의 포트폴리오.",
+      "sameAs": [
+        "https://github.com/samslow",
+        "https://www.linkedin.com/in/%EC%84%9C%ED%98%84%EC%84%9D" 
+      ]
+    }
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
