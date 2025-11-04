@@ -2,9 +2,14 @@ package com.hbs.hsbbo.admin.service;
 
 import com.hbs.hsbbo.admin.domain.entity.AppCorsOrigin;
 import com.hbs.hsbbo.admin.dto.request.CorsOriginRequest;
+import com.hbs.hsbbo.admin.dto.response.CorsOriginListResponse;
+import com.hbs.hsbbo.admin.dto.response.CorsOriginResponse;
 import com.hbs.hsbbo.admin.repository.CorsOriginRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,14 +36,18 @@ public class CorsOriginService {
                 .orElseThrow(() -> new IllegalArgumentException("활성 CORS Origin을 찾을 수 없습니다. id=" + id));
     }
 
-    public Page<AppCorsOrigin> search(String keyword, String useTf, String tenantId, Pageable pageable) {
-        return corsOriginRepository.search(
-                normalize(keyword),
-                normalizeFlag(useTf),
-                normalize(tenantId),
-                pageable
-        );
+    @Transactional(readOnly = true)
+    public CorsOriginListResponse list(String keyword, int page, int size, String sort, String useTf, String tenantId){
+        Pageable pageable = buildPageable(page, size, sort);
+        Page<AppCorsOrigin> result = corsOriginRepository.search(keyword, useTf, tenantId, pageable);
+
+        List<CorsOriginResponse> items = result.getContent().stream()
+                .map(e -> CorsOriginResponse.from(e)) // options 는 상세 조회 시 디코딩 (리스트는 경량)
+                .toList();
+
+        return CorsOriginListResponse.of(items, result.getTotalElements(), result.getTotalPages());
     }
+
 
     // 생성, 수정
     @Transactional
@@ -130,6 +139,16 @@ public class CorsOriginService {
     private static String required(String s) {
         if (!notBlank(s)) throw new IllegalArgumentException("필수 값 누락: originPat");
         return s.trim();
+    }
+
+    private Pageable buildPageable(int page, int size, String sort) {
+        if (sort == null || sort.isBlank()) return PageRequest.of(page, size, Sort.by(Sort.Order.desc("regDate")));
+        // 지원 예: "regDate,desc" / "name,asc"
+        String[] p = sort.split(",");
+        if (p.length == 2) {
+            return PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(p[1].trim()), p[0].trim()));
+        }
+        return PageRequest.of(page, size, Sort.by(Sort.Order.desc("regDate")));
     }
 
 }

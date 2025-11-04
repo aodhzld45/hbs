@@ -2,6 +2,7 @@ package com.hbs.hsbbo.admin.controller;
 
 import com.hbs.hsbbo.admin.domain.entity.AppCorsOrigin;
 import com.hbs.hsbbo.admin.dto.request.CorsOriginRequest;
+import com.hbs.hsbbo.admin.dto.response.CorsOriginListResponse;
 import com.hbs.hsbbo.admin.service.CorsOriginService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,15 +44,18 @@ public class CorsOriginController {
         return ResponseEntity.ok(corsOriginService.findActiveById(id));
     }
 
-    /** 검색 + 페이지 */
+    // 목록 조회 (페이징 + 검색)
     @GetMapping
-    public ResponseEntity<Page<AppCorsOrigin>> search(
+    public ResponseEntity<CorsOriginListResponse> list(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String useTf,      // 'Y'/'N' 또는 null
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "regDate,desc") String sort,
+            @RequestParam(defaultValue = "Y", required = false) String useTf,      // 'Y'/'N' 또는 null
             @RequestParam(required = false) String tenantId,
             @PageableDefault(sort = "regDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(corsOriginService.search(keyword, useTf, tenantId, pageable));
+        return ResponseEntity.ok(corsOriginService.list(keyword, page, size, sort, useTf, tenantId));
     }
 
     /** 생성 */
