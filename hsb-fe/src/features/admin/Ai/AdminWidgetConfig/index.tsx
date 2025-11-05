@@ -6,6 +6,8 @@ import PreviewPanel from './components/PreviewPanel';
 import Pagination from "../../../../components/Common/Pagination"; // ← 공통 컴포넌트 경로에 맞게 조정
 
 import { fetchWidgetConfigCreateWithFile, fetchWidgetConfigUpdateWithFile, fetchWidgetConfigCreate, fetchWidgetConfigUpdate, updateWidgetConfigUseTf, fetchWidgetConfigDelete } from "./services/widgetConfigApi";
+import { useWidgetConfigDetail, useWidgetConfigList, useWidgetConfigMutations } from './hooks/useWidgetConfig';
+import type { WidgetConfigRequest } from './types/widgetConfig';
 
 // 공통 메뉴 목록 불러오기
 import {
@@ -17,8 +19,6 @@ import { useLocation } from "react-router-dom";
 // 관리자 정보 불러오기
 import AdminLayout from "../../../../components/Layout/AdminLayout";
 import { useAuth } from "../../../../context/AuthContext";
-import { useWidgetConfigDetail, useWidgetConfigList, useWidgetConfigMutations } from './hooks/useWidgetConfig';
-import type { WidgetConfigRequest } from './types/widgetConfig';
 
 export default function AdminWidgetConfig() {
     const [selectedId, setSelectedId] = useState<number | null>(null);
