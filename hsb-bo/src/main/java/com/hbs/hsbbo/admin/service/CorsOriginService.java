@@ -31,15 +31,15 @@ public class CorsOriginService {
         return corsOriginRepository.findAllActiveByTenant(tenantId);
     }
 
-    public AppCorsOrigin findActiveById(Long id) {
+    public CorsOriginResponse findActiveById(Long id) {
         return corsOriginRepository.findActiveById(id)
                 .orElseThrow(() -> new IllegalArgumentException("활성 CORS Origin을 찾을 수 없습니다. id=" + id));
     }
 
     @Transactional(readOnly = true)
-    public CorsOriginListResponse list(String keyword, int page, int size, String sort, String useTf, String tenantId){
+    public CorsOriginListResponse list(String keyword, int page, int size, String sort, String tenantId){
         Pageable pageable = buildPageable(page, size, sort);
-        Page<AppCorsOrigin> result = corsOriginRepository.search(keyword, useTf, tenantId, pageable);
+        Page<AppCorsOrigin> result = corsOriginRepository.search(keyword, tenantId, pageable);
 
         List<CorsOriginResponse> items = result.getContent().stream()
                 .map(e -> CorsOriginResponse.from(e)) // options 는 상세 조회 시 디코딩 (리스트는 경량)
