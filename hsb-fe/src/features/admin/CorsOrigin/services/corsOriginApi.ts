@@ -6,11 +6,10 @@ export const fetchCorsOriginList = async (
   page: number,
   size: number,
   sort: string,
-  useTf?: 'Y' | 'N',
   tenantId?: string
 ): Promise<CorsOriginListResponse> => {
   const res = await api.get('/admin/cors-origins', {
-    params: { keyword, page, size, sort, useTf, tenantId },
+    params: { keyword, page, size, sort, tenantId },
   });
   return res.data;
 };
