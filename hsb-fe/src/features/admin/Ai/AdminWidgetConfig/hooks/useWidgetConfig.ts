@@ -57,7 +57,6 @@ export function useWidgetConfigList(initial?: {
     page, setPage: setPageSafe,
     size, setSize: setSizeSafe,
     sort, setSort,
-    // data
     data, loading, error,
     // actions
     refresh,

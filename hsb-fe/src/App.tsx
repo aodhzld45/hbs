@@ -23,6 +23,8 @@ import CodeManager from "./pages/Admin/Code/CodeManager"
 import ContactManager from "./features/admin/Contact/index";
 import ContactDetail from "./features/admin/Contact/components/ContactDetail";
 
+import CorsOriginPage from "./features/admin/CorsOrigin";
+
 import PopupBannerManager from './pages/Admin/Main/PopupBannerManager';
 
 import PageManager from './pages/Admin/Page/PageManager';
@@ -114,6 +116,8 @@ function App() {
 
               <Route path="/admin/contact" element={<ContactManager />} />
               <Route path="/admin/contact/detail/:id" element={<ContactDetail />} />
+
+              <Route path="/admin/cors-origins" element={<CorsOriginPage />} />
 
               <Route path='/admin/main/popup-banner-manager' element={<PopupBannerManager />} />
             </Route>
