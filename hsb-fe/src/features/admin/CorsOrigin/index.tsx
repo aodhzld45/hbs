@@ -171,13 +171,11 @@ export default function CorsOriginPage() {
         />
 
         {/* 페이지네이션 (0-base 가정) */}
-        <div className="flex items-center justify-between">
-          <Pagination
-            currentPage={page}
-            totalPages={data?.totalPages ?? 0}
-            onPageChange={(p) => { setPage(p); void refresh(); }}
-          />
-        </div>
+        <Pagination
+          currentPage={page}
+          totalPages={data?.totalPages ?? 0}
+          onPageChange={(p) => { setPage(p); void refresh(); }}
+        />
 
         {/* 모달 */}
         <CorsOriginFormModal
