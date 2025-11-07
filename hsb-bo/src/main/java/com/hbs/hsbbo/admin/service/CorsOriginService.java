@@ -5,6 +5,7 @@ import com.hbs.hsbbo.admin.dto.request.CorsOriginRequest;
 import com.hbs.hsbbo.admin.dto.response.CorsOriginListResponse;
 import com.hbs.hsbbo.admin.dto.response.CorsOriginResponse;
 import com.hbs.hsbbo.admin.repository.CorsOriginRepository;
+import com.hbs.hsbbo.common.cors.CorsOriginProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,12 +20,27 @@ import java.util.List;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class CorsOriginService {
+public class CorsOriginService implements CorsOriginProvider {
     private final CorsOriginRepository corsOriginRepository;
 
     // 조회
     public List<AppCorsOrigin> findAllActive() {
         return corsOriginRepository.findAllActive();
+    }
+
+    public List<String> getAllowedOriginPatterns(String tenantId) {
+        // 기존 레포지토리 메서드 활용: use_tf='Y' and del_tf='N'
+        // null 이면 공통, 아니면 해당 테넌트
+        var rows = (tenantId == null || tenantId.isBlank())
+                ? corsOriginRepository.findAllActive()               // 공통
+                : corsOriginRepository.findAllActiveByTenant(tenantId); // 테넌트별
+
+        // 엔티티에서 패턴 필드(ex. originPat)만 뽑음
+        return rows.stream()
+                .map(o -> o.getOriginPat().trim())
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .toList();
     }
 
     public List<AppCorsOrigin> findAllActiveByTenant(String tenantId) {
