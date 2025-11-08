@@ -3,8 +3,8 @@ import type { WidgetConfig, WidgetConfigListResponse, WidgetConfigRequest } from
 import {
   fetchWidgetConfigList,
   fetchWidgetConfigDetail,
-  fetchWidgetConfigCreate,
-  fetchWidgetConfigUpdate,
+  fetchWidgetConfigCreateMultipart,
+  fetchWidgetConfigUpdateMultipart,
   fetchWidgetConfigUpdateWithFile,
   fetchWidgetConfigCreateWithFile,
   updateWidgetConfigUseTf,
@@ -117,10 +117,10 @@ export function useWidgetConfigMutations(actorId: string) {
     error,
     /** 생성 */
     create: (body: WidgetConfigRequest) =>
-      wrap(() => fetchWidgetConfigCreate(body, actorId)),
+      wrap(() => fetchWidgetConfigCreateMultipart(body, actorId)),
     /** 수정 */
     update: (id: number, body: WidgetConfigRequest) =>
-      wrap(() => fetchWidgetConfigUpdate(id, body, actorId)),
+      wrap(() => fetchWidgetConfigUpdateMultipart(id, body, actorId)),
     /** 사용 여부 토글
      *  주: 현재 services 함수 시그니처가 (id, useTf, actorId)
      *  서버가 토글 방식이면 useTf 인자는 무시되더라도 전달

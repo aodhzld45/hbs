@@ -5,7 +5,7 @@ import EditorForm from './components/EditorForm';
 import PreviewPanel from './components/PreviewPanel';
 import Pagination from "../../../../components/Common/Pagination"; // ← 공통 컴포넌트 경로에 맞게 조정
 
-import { fetchWidgetConfigCreateWithFile, fetchWidgetConfigUpdateWithFile, fetchWidgetConfigCreate, fetchWidgetConfigUpdate, updateWidgetConfigUseTf, fetchWidgetConfigDelete } from "./services/widgetConfigApi";
+import { fetchWidgetConfigCreateWithFile, fetchWidgetConfigUpdateWithFile, fetchWidgetConfigCreateMultipart, fetchWidgetConfigUpdateMultipart, updateWidgetConfigUseTf, fetchWidgetConfigDelete } from "./services/widgetConfigApi";
 import { useWidgetConfigDetail, useWidgetConfigList, useWidgetConfigMutations } from './hooks/useWidgetConfig';
 import type { WidgetConfigRequest } from './types/widgetConfig';
 
@@ -83,9 +83,9 @@ export default function AdminWidgetConfig() {
       } else {
         // 기존 JSON 경로 유지
         if (isCreate) {
-          await fetchWidgetConfigCreate(data, actor);
+          await fetchWidgetConfigCreateMultipart(data, actor);
         } else {
-          await fetchWidgetConfigUpdate(selectedId!, data, actor);
+          await fetchWidgetConfigUpdateMultipart(selectedId!, data, actor);
         }
       }
 
@@ -129,13 +129,11 @@ export default function AdminWidgetConfig() {
             onDelete={async (id) => { await fetchWidgetConfigDelete(id, adminId ?? ""); await list.refresh(); }}
           />
 
-          <div className="flex justify-end">
-            <Pagination
-              currentPage={list.page}
-              totalPages={list.data?.totalPages ?? 0}
-              onPageChange={(p) => { list.setPage(p); void list.refresh(); }}
-            />
-          </div>
+          <Pagination
+            currentPage={list.page}
+            totalPages={list.data?.totalPages ?? 0}
+            onPageChange={(p) => { list.setPage(p); void list.refresh(); }}
+          />
         </>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

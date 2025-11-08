@@ -1,6 +1,15 @@
 import api from '../../../../../services/api';
 import type { WidgetConfig, WidgetConfigListResponse, WidgetConfigRequest } from '../types/widgetConfig';
  
+
+// 공통: JSON을 Blob으로 감싸서 form 파트에 넣기 (서버 @RequestPart("form") 매핑)
+function buildFormData(form: WidgetConfigRequest, iconFile?: File | null) {
+  const fd = new FormData();
+  fd.append('form', new Blob([JSON.stringify(form)], { type: 'application/json' }));
+  if (iconFile) fd.append('iconFile', iconFile);
+  return fd;
+}
+
 const BASE = '/ai/widget-configs';
 
 // 위젯 설정 목록 조회 API 요청
@@ -30,10 +39,15 @@ export const fetchWidgetConfigDetail = async (id: number): Promise<WidgetConfig>
 };
 
 // 위젯 설정 등록 API 요청
-export const fetchWidgetConfigCreate = async (data: WidgetConfigRequest, actorId: string): Promise<WidgetConfig> => {
-  const res = await api.post(`${BASE}`, data, { params: { actor: actorId } });
-  return res.data as WidgetConfig;
-};
+export async function fetchWidgetConfigCreateMultipart(
+  form: WidgetConfigRequest,
+  actorId: string,
+  iconFile?: File | null,
+): Promise<number> {
+  const fd = buildFormData(form, iconFile);
+  const res = await api.post<number>(BASE, fd, { params: { actor: actorId } });
+  return res.data;
+}
 
 // 위젯 설정 등록 API 요청 (아이콘 파일 대응)
 // - iconFile 있으면: multipart(form + iconFile)
@@ -91,10 +105,16 @@ export const fetchWidgetConfigUpdateWithFile = async (
 };
 
 // 위젯 설정 수정 API 요청
-export const fetchWidgetConfigUpdate = async (id: number, data: WidgetConfigRequest, actorId: string): Promise<WidgetConfig> => {
-  const res = await api.put(`${BASE}/${id}`, data, { params: { actor: actorId } });
-  return res.data as WidgetConfig;
-};
+export async function fetchWidgetConfigUpdateMultipart(
+  id: number,
+  form: WidgetConfigRequest,
+  actorId: string,
+  iconFile?: File | null,
+): Promise<number> {
+  const fd = buildFormData(form, iconFile);
+  const res = await api.put<number>(`${BASE}/${id}`, fd, { params: { actor: actorId } });
+  return res.data;
+}
 
 // 위젯 설정 사용 여부 변경 API 요청
 export const updateWidgetConfigUseTf = async (id: number, useTf: 'Y' | 'N', actorId: string): Promise<WidgetConfig> => {
