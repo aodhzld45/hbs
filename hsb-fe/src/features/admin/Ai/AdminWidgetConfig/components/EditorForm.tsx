@@ -4,6 +4,7 @@ import type { WidgetConfig, WidgetConfigRequest } from '../types/widgetConfig';
 import { fetchSiteKeyList, fetchLinkedSiteKeys } from '../../AdminSiteKeys/services/siteKeyApi'; 
 import type { SiteKeySummary } from '../../AdminSiteKeys/types/siteKey';
 
+import ColorPickerField from './ColorPickerField';  // 재사용 가능한 컬러 피커 컴포넌트
 
 
 type Props = {
@@ -251,15 +252,13 @@ export default function EditorForm({ value, onSubmit, onCancel }: Props) {
           ['inputBgColor', 'Input BG'],
           ['inputTextColor', 'Input Text'],
         ] as const).map(([key, label]) => (
-          <div key={key} className="grid grid-cols-3 gap-2">
-            <label className="text-sm self-center">{label}</label>
-            <input
-              className="col-span-2 border rounded px-2 py-1"
-              placeholder="#RRGGBB"
-              value={(form as any)[key] || ''}
-              onChange={(e) => update(key as any, e.target.value)}
-            />
-          </div>
+          <ColorPickerField
+            key={key}
+            label={label}
+            value={(form as any)[key] || ''}
+            onChange={(next) => update(key as any, next)}
+            name={key}
+          />
         ))}
       </section>
 
