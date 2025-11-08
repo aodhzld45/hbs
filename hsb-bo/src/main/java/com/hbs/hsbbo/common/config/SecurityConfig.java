@@ -1,6 +1,8 @@
 package com.hbs.hsbbo.common.config;
 
+import com.hbs.hsbbo.common.cors.CorsOriginProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +17,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,9 +24,11 @@ import java.util.stream.Collectors;
 
 @Configuration
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CorsOriginProvider corsOriginProvider;
 
     @Value("${app.cors.enabled:false}")
     private boolean corsEnabled;
@@ -42,10 +45,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
                 // CORS: on/off (on일 때는 기본설정으로 활성화)
-                .cors(c -> {}) // 전역 CorsFilter가 처리하므로 켜두기만
+                //.cors(c -> {}) // 전역 CorsFilter가 처리하므로 켜두기만
+                .cors(c -> c.configurationSource(corsConfigurationSource)) //  명시 바인딩
+
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -77,46 +82,52 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        if (!corsEnabled) return req -> null;
-        CorsConfiguration cfg = new CorsConfiguration();
+        if (!corsEnabled) return request -> null;
 
-        // 1) 허용 Origin(패턴) 구성
-        List<String> defaults = List.of(
-                "https://www.hsbs.kr",
-                "https://hsbs.kr",
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://localhost:5500",
-                "http://127.0.0.1:5500",
-                "http://localhost:8080",
-                "http://localhost:8081"
-        );
+        return request -> {
+            final String path = request.getRequestURI();
+            if (!path.startsWith("/api/")) return null;
 
-        List<String> fromProp = (allowedOriginsCsv == null || allowedOriginsCsv.isBlank())
-                ? defaults
-                : Arrays.stream(allowedOriginsCsv.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+            final String origin = request.getHeader("Origin");
+            if (origin == null) return null; // 브라우저 CORS 아님
 
-        // 패턴 기반으로 허용(정확 매칭도 OK)
-        cfg.setAllowedOriginPatterns(fromProp);
+            // 1) 기본: DB
+            List<String> patterns = corsOriginProvider.getAllowedOriginPatterns(null);
+            log.info("[CORS] DB patterns={}", patterns);
 
-        // 2) 메서드/헤더
-        cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","HEAD","OPTIONS"));
-        cfg.setAllowedHeaders(List.of("*"));
-        cfg.setExposedHeaders(List.of("X-DailyReq-Remaining", "Content-Disposition"));
+            // 2) yml 덮어쓰기 (값이 있을 때만)
+            if (allowedOriginsCsv != null && !allowedOriginsCsv.isBlank()) {
+                patterns = Arrays.stream(allowedOriginsCsv.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .distinct()
+                        .collect(Collectors.toList());
+            }
 
-        // 3) 공개 API(위젯)는 크리덴셜 불필요 → false 권장
-        //    (관리자 콘솔은 동일 오리진이므로 CORS와 무관)
-        cfg.setAllowCredentials(false);
+            if (patterns == null || patterns.isEmpty()) {
+                log.info("[CORS] no patterns → deny. path={}, origin={}", path, origin);
+                return null; // 헤더 미부착 → 브라우저에서 CORS 에러 발생
+            }
 
-        cfg.setMaxAge(3600L);
+            // 3) Spring의 검사 로직을 이용해 매칭 확인
+            CorsConfiguration probe = new CorsConfiguration();
+            probe.setAllowedOriginPatterns(patterns);
+            String allowed = probe.checkOrigin(origin); // 매칭되면 origin/“*” 반환, 아니면 null
 
-        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
-        // API 경로에만 CORS 적용
-        src.registerCorsConfiguration("/api/**", cfg);
-        return src;
+            if (allowed == null) {
+                log.info("[CORS] origin not allowed. path={}, origin={}, patterns={}", path, origin, patterns);
+                return null;
+            }
 
+            // 4) 실제 응답에는 “그 요청 origin만” 허용 (보수적)
+            CorsConfiguration cfg = new CorsConfiguration();
+            cfg.setAllowedOrigins(List.of(origin));      // ★ 요청 origin만 반영
+            cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","HEAD","OPTIONS"));
+            cfg.setAllowedHeaders(List.of("*"));
+            cfg.setExposedHeaders(List.of("X-DailyReq-Remaining","Content-Disposition"));
+            cfg.setAllowCredentials(false);
+            cfg.setMaxAge(1L);                           // ★ 테스트 중엔 캐시 최소화
+            return cfg;
+        };
     }
 }

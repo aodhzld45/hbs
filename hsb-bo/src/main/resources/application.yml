@@ -31,7 +31,7 @@ spring:
 app:
   cors:
     enabled: true
-    allowed-origins: "*"           # 프로필에서 지정
+    allowed-origins: ""           # 프로필에서 지정
 
 kis:
   domain: https://openapivts.koreainvestment.com:29443   # 기본값(모의). prod에서 덮어씀
