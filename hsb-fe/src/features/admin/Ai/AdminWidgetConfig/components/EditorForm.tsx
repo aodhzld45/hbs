@@ -11,9 +11,10 @@ type Props = {
   value?: WidgetConfig | null;      // id === 0(신규)일 때는 undefined/null 전달
   onSubmit: (data: WidgetConfigRequest, iconFile?: File | null) => void;
   onCancel: () => void;
+  onChangePreview?: (cfg: Partial<WidgetConfigRequest>) => void; // 미리보기 패널 value용
 };
 
-export default function EditorForm({ value, onSubmit, onCancel }: Props) {
+export default function EditorForm({ value, onSubmit, onCancel, onChangePreview }: Props) {
   const [form, setForm] = useState<WidgetConfigRequest>({
     name: '',
     position: 'right',
@@ -53,7 +54,13 @@ export default function EditorForm({ value, onSubmit, onCancel }: Props) {
     // 기존 URL이 있으면 미리보기는 URL로, 파일은 비움
     setIconFile(null);
     setIconPreviewUrl(rest?.bubbleIconUrl || null);
-    setIconError(null);    
+    setIconError(null);
+    
+    // 미리보기 패널 초기값 설정
+    onChangePreview?.({
+      ...rest,
+      bubbleIconUrl: rest?.bubbleIconUrl ?? undefined,
+    });    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value?.id]); // 값 바뀔 때만 초기화
 
@@ -105,9 +112,15 @@ export default function EditorForm({ value, onSubmit, onCancel }: Props) {
   }, [value?.id, linkedTouched]);
 
   const update = <K extends keyof WidgetConfigRequest>(k: K, v: WidgetConfigRequest[K]) =>
-    setForm((f) => ({ ...f, [k]: v }));
+    setForm(f => {
+      const next = { ...f, [k]: v };
+      // 아이콘 파일 미리보기 중이면 그 URL을 우선 사용
+      const bubbleIconUrlForPreview = iconPreviewUrl ?? next.bubbleIconUrl ?? undefined;
+      onChangePreview?.({ ...next, bubbleIconUrl: bubbleIconUrlForPreview });
+      return next;
+    });
 
-    // Select 라벨 가독성 향상
+  // Select 라벨 가독성 향상
   const siteKeyOptions = useMemo(
     () =>
       siteKeys.map((k) => ({
@@ -121,7 +134,7 @@ export default function EditorForm({ value, onSubmit, onCancel }: Props) {
   );
 
   // 아이콘 첨부파일 관련,
-    // 아이콘 파일 선택 이벤트
+  // 아이콘 파일 선택 이벤트
   function handleIconChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
     setIconError(null);
@@ -129,6 +142,7 @@ export default function EditorForm({ value, onSubmit, onCancel }: Props) {
     if (!file) {
       setIconFile(null);
       // 파일 선택 취소 시, 기존 URL 미리보기를 유지
+      onChangePreview?.({ ...form, bubbleIconUrl: form.bubbleIconUrl ?? undefined });
       return;
     }
     // 간단 검증(이미지 + 1MB)
@@ -143,16 +157,23 @@ export default function EditorForm({ value, onSubmit, onCancel }: Props) {
       return;
     }
 
+    const localUrl = URL.createObjectURL(file);
     setIconFile(file);
-    setIconPreviewUrl(URL.createObjectURL(file)); // 로컬 미리보기
-    // 파일을 새로 올리면 기존 URL은 덮어쓸 예정 → 폼의 bubbleIconUrl은 그대로 두고 서버에서 세팅
+    setIconPreviewUrl(localUrl);
+    // 미리보기 패널에 반영
+    onChangePreview?.({ ...form, bubbleIconUrl: localUrl });
+
   }
 
   // 아이콘 URL 제거(이모지로 복귀)
   function clearIconUrl() {
     setIconFile(null);
     setIconPreviewUrl(null);
-    update('bubbleIconUrl', ''); // 빈 값 → 서버 저장 시 이모지가 사용됨
+    const next = { ...form, bubbleIconUrl: '' as any }; // 서버에선 '' → 제거
+    setForm(next);
+
+    // 이모지로 회귀(아이콘 없음) 상태를 미리보기에도 반영
+    onChangePreview?.({ ...next, bubbleIconUrl: undefined });
   }
 
   // 제출

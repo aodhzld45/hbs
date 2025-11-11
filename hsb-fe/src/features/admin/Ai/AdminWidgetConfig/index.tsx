@@ -53,7 +53,9 @@ export default function AdminWidgetConfig() {
     setAdminId(admin?.id || null);
     }, [admin?.id]);
   
-
+  // 미리보기 패널용 설정 상태  
+  const [previewCfg, setPreviewCfg] = useState<Partial<WidgetConfigRequest>>({});
+  
   // 목록 훅
   const list = useWidgetConfigList({ page: 0, size: 20, sort: 'regDate,desc', keyword: '' });
 
@@ -101,7 +103,28 @@ export default function AdminWidgetConfig() {
     }
   };
 
-  const previewData = useMemo(() => detail.data ?? (selectedId === 0 ? {} : {}), [detail.data, selectedId]);
+    // 상세가 로드되면 미리보기 초기화
+  useEffect(() => {
+    if (detail.data) {
+      const { id, useTf, delTf, regDate, upDate, ...rest } = detail.data;
+      setPreviewCfg({ ...rest });
+    } else if (selectedId === 0) {
+      // 신규 기본값
+      setPreviewCfg({
+        name: '',
+        position: 'right',
+        offsetX: 20,
+        offsetY: 20,
+        panelWidthPx: 360,
+        zIndex: 2147483000,
+        openOnLoad: 'N',
+        greetOncePerOpen: 'Y',
+        closeOnEsc: 'Y',
+        closeOnOutsideClick: 'Y',
+        linkedSiteKeyId: null,
+      });
+    }
+  }, [detail.data, selectedId]);
 
   return (
     <AdminLayout>
@@ -138,10 +161,15 @@ export default function AdminWidgetConfig() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="order-2 lg:order-1">
-            <EditorForm value={detail.data || (selectedId === 0 ? undefined : null)} onSubmit={handleSubmit} onCancel={closeEditor} />
+            <EditorForm 
+              value={detail.data || (selectedId === 0 ? undefined : null)}
+              onSubmit={handleSubmit}
+              onCancel={closeEditor}
+              onChangePreview={setPreviewCfg}
+            />
           </div>
           <div className="order-1 lg:order-2">
-            <PreviewPanel cfg={previewData} />
+            <PreviewPanel cfg={previewCfg} />
           </div>
         </div>
       )}
