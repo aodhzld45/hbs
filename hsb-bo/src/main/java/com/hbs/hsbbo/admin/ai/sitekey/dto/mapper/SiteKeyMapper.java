@@ -20,7 +20,6 @@ public final class SiteKeyMapper {
                 .monthlyTokenLimit(req.getMonthlyTokenLimit())
                 .rateLimitRps(req.getRateLimitRps())
                 .allowedDomains(req.getAllowedDomains())
-                .defaultPromptProfileId(req.getDefaultPromptProfileId())
                 .notes(trimOrNull(req.getNotes()))
                 .build();
 
@@ -49,7 +48,6 @@ public final class SiteKeyMapper {
             e.setAllowedDomains(req.getAllowedDomains());
         }
 
-        if (req.getDefaultPromptProfileId() != null) e.setDefaultPromptProfileId(req.getDefaultPromptProfileId());
         if (req.getNotes() != null) e.setNotes(trimOrNull(req.getNotes()));
 
         e.setUpAdm(upAdm);
@@ -67,7 +65,6 @@ public final class SiteKeyMapper {
                 .monthlyTokenLimit(e.getMonthlyTokenLimit())
                 .rateLimitRps(e.getRateLimitRps())
                 .allowedDomains(e.getAllowedDomains()) // 이미 List<String>
-                .defaultPromptProfileId(e.getDefaultPromptProfileId())
                 .notes(nullSafe(e.getNotes()))
                 // 감사 필드
                 .useTf(e.getUseTf())

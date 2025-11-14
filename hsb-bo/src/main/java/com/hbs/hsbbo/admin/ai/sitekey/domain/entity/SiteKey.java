@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.ai.sitekey.domain.entity;
 
+import com.hbs.hsbbo.admin.ai.promptprofile.domain.entity.PromptProfile;
 import com.hbs.hsbbo.admin.ai.sitekey.domain.type.Status;
 import com.hbs.hsbbo.admin.ai.widgetconfig.domain.entity.WidgetConfig;
 import com.hbs.hsbbo.common.AuditBase.AuditBase;
@@ -88,8 +89,9 @@ public class SiteKey extends AuditBase {
     @JoinColumn(name = "default_widget_config_id")
     private WidgetConfig defaultWidgetConfig;
 
-    @Column(name = "default_prompt_profile_id")
-    private Long defaultPromptProfileId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "default_prompt_profile_id")
+    private PromptProfile defaultPromptProfileId;
 
     /**
      * 운영 메모
