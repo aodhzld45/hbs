@@ -39,7 +39,7 @@ public class PromptProfileResponse {
 
     // 상태/감사 필드(읽기 전용)
     private Integer version;
-    private PromptStatus promptStatus;    // DRAFT/ACTIVE/ARCHIVED
+    private PromptStatus status;    // DRAFT/ACTIVE/ARCHIVED
     private String useTf;
     private String delTf;
     private String regAdm;
@@ -71,7 +71,7 @@ public class PromptProfileResponse {
                 .policiesJson(e.getPoliciesJson())
 
                 .version(e.getVersion())
-                .promptStatus(e.getStatus())
+                .status(e.getStatus())
                 .useTf(e.getUseTf())
                 .delTf(e.getDelTf())
                 .regAdm(e.getRegAdm())

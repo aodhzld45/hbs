@@ -41,8 +41,6 @@ public interface PromptProfileRepository extends JpaRepository<PromptProfile, Lo
                    OR LOWER(p.name) LIKE LOWER(CONCAT('%', :kw, '%'))
                    OR LOWER(COALESCE(p.purpose, '')) LIKE LOWER(CONCAT('%', :kw, '%'))
                    OR LOWER(p.model) LIKE LOWER(CONCAT('%', :kw, '%'))
-                   OR LOWER(COALESCE(p.systemTpl, '')) LIKE LOWER(CONCAT('%', :kw, '%'))
-                   OR LOWER(COALESCE(p.guardrailTpl, '')) LIKE LOWER(CONCAT('%', :kw, '%'))
               )
            """)
     Page<PromptProfile> search(

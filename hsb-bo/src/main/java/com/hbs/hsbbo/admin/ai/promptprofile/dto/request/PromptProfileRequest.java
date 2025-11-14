@@ -59,7 +59,7 @@ public class PromptProfileRequest {
 
     // 상태/버전
     private Integer version;              // null이면 엔티티 @PrePersist 기본값
-    private PromptStatus promptStatus;    // DRAFT/ACTIVE/ARCHIVED
+    private PromptStatus status;    // DRAFT/ACTIVE/ARCHIVED
     private String useTf;                 // "Y"/"N" (null 허용: 기본값 처리)
     private String delTf;                 // "N" 고정 권장
 
