@@ -22,6 +22,9 @@ public class PromptProfileRequest {
     @NotBlank @Size(max = 100)
     private String name;
 
+    // 프롬프트 프로필 생성과 동시에 연결할 SiteKey ID
+    private Long linkedSiteKeyId;
+
     @Size(max = 40)
     private String purpose; // support/sales/faq/portfolio
 
