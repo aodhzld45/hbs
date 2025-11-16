@@ -101,7 +101,7 @@ Spring Boot + OpenAPI 기반의 자동 API 문서입니다.
 
 1. **SiteKey 발급**: 도메인 화이트리스트, 플랜/상태 관리 (ACTIVE/SUSPENDED/REVOKED)
 2. **Widget 설정**: 테마/버블/컬러/위치/환영문구 등 브랜딩 옵션 저장
-3. **Prompt Profile**: 시스템/가드레일 프롬프트 + 모델 파라미터(temperature, maxTokens)
+3. **Prompt Profile**: 시스템/가드레일 프롬프트 + 모델 파라미터(temperature, maxTokens) - 테넌트 ID 식별
 4. **JS SDK 임베드**: `hsbs-chat.js` 스니펫로 위젯 로드
 5. **요청 처리**: `/api/ai/complete` → 응답 저장/로깅
 6. **쿼터/요금 관리**: 일일/월간 호출 수, 토큰 비용(KRW 환산) 추적
