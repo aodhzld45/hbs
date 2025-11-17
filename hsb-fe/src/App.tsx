@@ -34,6 +34,10 @@ import BoardManager from './pages/Admin/Board/BoardManager';
 import BoardWrite from './pages/Admin/Board/BoardWrite';
 import BoardDetail from "./pages/Admin/Board/BoardDetail";
 
+// 사용자 메뉴 Url 가드
+import { UserMenuProvider } from './context/UserMenuContext';
+import UserRouteGuard from './components/Route/UserRouteGuard';
+import ComingSoonPage from './components/Common/ComingSoonPage'; // 혹시 404용으로도 쓸 거면
 
 // 사용자 페이지 imports
 import MainPage from './pages/MainPage';
@@ -64,66 +68,67 @@ function App() {
     <AuthProvider>
       <PermissionProvider>
         <Router>
-          <Routes>
-            {/* 사용자 공용 라우트 */}
-            <Route path="/" element={<MainPage />} />
-            <Route path="/:boardType/board-list" element={<BoardList />} />
-            <Route path="/:boardType/board-detail/:id" element={<UserBoardDetail />} />
-            <Route path="/:fileType/:contentType/list" element={<ContentsList />} />
-            <Route path="/:fileType/:contentType/detail/:fileId" element={<ContentDetail />} />
-            <Route path="/contact" element={<ContactForm />} />
-            <Route path="/test" element={<TestPage />} />
-            <Route path="/test/2depth" element={<SqlProblemTestPage />} />
-            <Route path="/test/kis" element={<KisPage />} />
-            <Route path="/test/ai" element={<AIPlayground />} />
+          <UserMenuProvider>
+            <Routes>
+              {/* 사용자 보호 라우트 가드 */}
+              <Route element={<UserRouteGuard />}>
+                <Route path="/" element={<MainPage />} />
+                <Route path="/:boardType/board-list" element={<BoardList />} />
+                <Route path="/:boardType/board-detail/:id" element={<UserBoardDetail />} />
+                <Route path="/:fileType/:contentType/list" element={<ContentsList />} />
+                <Route path="/:fileType/:contentType/detail/:fileId" element={<ContentDetail />} />
+                <Route path="/contact" element={<ContactForm />} />
+                <Route path="/test" element={<TestPage />} />
+                <Route path="/test/2depth" element={<SqlProblemTestPage />} />
+                <Route path="/test/kis" element={<KisPage />} />
+                <Route path="/test/ai" element={<AIPlayground />} />
+              </Route>  
 
-            {/* 관리자 공통 페이지 */}
-
-
-            {/* 관리자 공용 라우트 (로그인 페이지) */}
-            <Route path="/admin/login" element={<AdminLogin />} />
-            
-            {/* 관리자 보호 라우트 */}
-            <Route element={<PrivateRoute />}>
-              <Route path="/admin/index" element={<AdminDashboard />} />
-              <Route path="/admin/page-manager" element={<PageManager />} />
-
-              <Route path="/admin/content-manager" element={<ContentManager />} />
-              <Route path="/admin/content-manager/:fileId" element={<ContentManagerDetail />} />
-
-              <Route path="/admin/ai/site-keys" element={<AdminSiteKeys />} />
-              <Route path="/admin/ai/widget-configs" element={<AdminWidgetConfig />} />
-
-              <Route path="/admin/sql-manager" element={<SqlProblemManager />} />
-              <Route path="/admin/sql-manager/:id" element={<SqlProblemDetail />} />
-
-              <Route path="/admin/admin-manager" element={<AdminList />} />
-              <Route path="/admin/auth-management" element={<AdminAuthManagement />} />
-              <Route path="/admin/admin-create" element={<AdminCreate />} />
-              <Route path="/admin/profile" element={<AdminProfile />} />
-
-              <Route path="/admin/admin-menu" element={<AdminMenu />} />
-              <Route path="/admin/log-manager" element={<AdminLogManager />} />
-
-              <Route path="/admin/user-menu-manager" element={<UserMenuManager />} />
-
-              <Route path="/admin/code-manager" element={<CodeManager />} />
+              {/* 관리자 공용 라우트 (로그인 페이지) */}
+              <Route path="/admin/login" element={<AdminLogin />} />
               
-              <Route path="/admin/board/:boardType" element={<BoardManager />} />
-              <Route path="/admin/board/:boardType/write" element={<BoardWrite />} />
-              <Route path="/admin/board/:boardType/edit/:id" element={<BoardWrite />} />
-              <Route path="/admin/board/:boardType/detail/:id" element={<BoardDetail />} />
+              {/* 관리자 보호 라우트 가드 */}
+              <Route element={<PrivateRoute />}>
+                <Route path="/admin/index" element={<AdminDashboard />} />
+                <Route path="/admin/page-manager" element={<PageManager />} />
 
-              <Route path="/admin/contact" element={<ContactManager />} />
-              <Route path="/admin/contact/detail/:id" element={<ContactDetail />} />
+                <Route path="/admin/content-manager" element={<ContentManager />} />
+                <Route path="/admin/content-manager/:fileId" element={<ContentManagerDetail />} />
 
-              <Route path="/admin/cors-origins" element={<CorsOriginPage />} />
+                <Route path="/admin/ai/site-keys" element={<AdminSiteKeys />} />
+                <Route path="/admin/ai/widget-configs" element={<AdminWidgetConfig />} />
 
-              <Route path='/admin/main/popup-banner-manager' element={<PopupBannerManager />} />
-            </Route>
-            
-            <Route path="/admin/hbs/:fileId" element={<ContentManagerDetail />} />
-          </Routes>
+                <Route path="/admin/sql-manager" element={<SqlProblemManager />} />
+                <Route path="/admin/sql-manager/:id" element={<SqlProblemDetail />} />
+
+                <Route path="/admin/admin-manager" element={<AdminList />} />
+                <Route path="/admin/auth-management" element={<AdminAuthManagement />} />
+                <Route path="/admin/admin-create" element={<AdminCreate />} />
+                <Route path="/admin/profile" element={<AdminProfile />} />
+
+                <Route path="/admin/admin-menu" element={<AdminMenu />} />
+                <Route path="/admin/log-manager" element={<AdminLogManager />} />
+
+                <Route path="/admin/user-menu-manager" element={<UserMenuManager />} />
+
+                <Route path="/admin/code-manager" element={<CodeManager />} />
+                
+                <Route path="/admin/board/:boardType" element={<BoardManager />} />
+                <Route path="/admin/board/:boardType/write" element={<BoardWrite />} />
+                <Route path="/admin/board/:boardType/edit/:id" element={<BoardWrite />} />
+                <Route path="/admin/board/:boardType/detail/:id" element={<BoardDetail />} />
+
+                <Route path="/admin/contact" element={<ContactManager />} />
+                <Route path="/admin/contact/detail/:id" element={<ContactDetail />} />
+
+                <Route path="/admin/cors-origins" element={<CorsOriginPage />} />
+
+                <Route path='/admin/main/popup-banner-manager' element={<PopupBannerManager />} />
+              </Route>
+              
+              <Route path="/admin/hbs/:fileId" element={<ContentManagerDetail />} />
+            </Routes>
+          </UserMenuProvider>
         </Router>
       </PermissionProvider>
     </AuthProvider>
