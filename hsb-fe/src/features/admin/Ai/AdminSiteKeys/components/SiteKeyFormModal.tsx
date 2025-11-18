@@ -41,27 +41,31 @@ export default function SiteKeyFormModal({ open, mode, initial, onClose, onSubmi
   const toList = (s: string) => s.split("\n").map(v => v.trim()).filter(Boolean);
 
   const handleSubmit = async () => {
-    if (isCreate) {
-      const payload: CreateRequest = {
-        siteKey: siteKey.trim(),
-        status,
-        planCode: planCode?.trim() || undefined,
-        dailyCallLimit, dailyTokenLimit, monthlyTokenLimit, rateLimitRps,
-        allowedDomains: toList(allowedDomains),
-        notes: notes?.trim() || undefined,
-      };
-      await onSubmit(payload);
-    } else {
-      const payload: UpdateRequest = {
-        status,
-        planCode: planCode?.trim() || undefined,
-        dailyCallLimit, dailyTokenLimit, monthlyTokenLimit, rateLimitRps,
-        allowedDomains: toList(allowedDomains),
-        notes: notes?.trim() || undefined,
-      };
-      await onSubmit(payload);
+    // 공통 payload 구성
+    const base = {
+      status,
+      planCode: planCode?.trim() || undefined,
+      dailyCallLimit, dailyTokenLimit, monthlyTokenLimit, rateLimitRps,
+      allowedDomains: toList(allowedDomains),
+      notes: notes?.trim() || undefined,
+    };
+
+    try {
+      if (isCreate) {
+        const payload: CreateRequest = { siteKey: siteKey.trim(), ...base };
+        await onSubmit(payload); 
+      } else {
+        const payload: UpdateRequest = { ...base };
+        await onSubmit(payload);
+      }
+
+      alert("사이트키가 성공적으로 저장되었습니다.");
+      onClose();
+    } catch (e: any) {
+      alert(e?.message ?? "요청 처리 중 오류가 발생했습니다.");
     }
-    onClose();
+
+
   };
 
   return (

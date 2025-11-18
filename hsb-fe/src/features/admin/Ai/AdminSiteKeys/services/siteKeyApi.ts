@@ -1,6 +1,5 @@
-import api from "../../../../../services/api";
+import api, { okOrThrow } from "../../../../../services/api";
 import {
-  ApiError,
   CreateRequest,
   ListQuery,
   PagedResponse,
@@ -11,17 +10,6 @@ import {
   UpdateRequest,
 } from "../types/siteKey";
 
-
-// handle API responses and errors Helper
-const okOrThrow = async <T>(p: Promise<{ data: T }>) => { 
-  try {
-    const res = await p;
-    return res.data;
-  } catch (err: any) {
-    const apiErr: ApiError | undefined = err?.response?.data;
-    throw new Error(apiErr?.message || err?.message || "API Error");
-  }
-};
 
 // 사이트키 목록 조회 API 요청
 export const fetchSiteKeyList = async (

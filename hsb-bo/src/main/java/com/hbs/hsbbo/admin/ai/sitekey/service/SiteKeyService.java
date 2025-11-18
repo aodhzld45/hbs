@@ -36,9 +36,9 @@ public class SiteKeyService {
     public SiteKeyResponse create(SiteKeyCreateRequest req, String actor) {
         // 1) 기본 유효성(서버단) + 중복 검사
         String key = req.getSiteKey() == null ? null : req.getSiteKey().trim();
-        if (key == null || key.isEmpty()) throw new BadRequestException("siteKey is required");
+        if (key == null || key.isEmpty()) throw new BadRequestException("사이트키는 필수입니다.");
         if (siteKeyRepository.existsBySiteKey(key)) {
-            throw new ConflictException("siteKey already exists: " + key);
+            throw new ConflictException("사이트키가 이미 존재합니다.: " + key);
         }
 
         // 2) 도메인 정제/검증
@@ -58,7 +58,7 @@ public class SiteKeyService {
     @Transactional
     public SiteKeyResponse update(Long id, SiteKeyUpdateRequest req, String actor) {
         SiteKey entity = siteKeyRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("siteKey not found: id=" + id));
+                .orElseThrow(() -> new NotFoundException("사이트키를 찾을 수 없습니다, 번호= " + id));
 
         // allowedDomains 업데이트가 들어오면 정제/검증
         if (req.getAllowedDomains() != null) {
@@ -77,14 +77,14 @@ public class SiteKeyService {
     @Transactional
     public SiteKeyResponse changeStatus(Long id, SiteKeyStatusRequest req, String actor) {
         Status st = Status.parseOrDefault(req.getStatus(), null);
-        if (st == null) throw new BadRequestException("invalid status: " + req.getStatus());
+        if (st == null) throw new BadRequestException("유효한 상태가 아닙니다 : " + req.getStatus());
 
         int updated = siteKeyRepository.updateStatus(id, st, actor);
-        if (updated == 0) throw new NotFoundException("siteKey not found: id=" + id);
+        if (updated == 0) throw new NotFoundException("사이트키를 찾을 수 없습니다, 번호= " + id);
 
         // 변경 후 엔티티 조회
         SiteKey entity = siteKeyRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("siteKey not found: id=" + id));
+                .orElseThrow(() -> new NotFoundException("사이트키를 찾을 수 없습니다, 번호= " + id));
         if (req.getNotes() != null && !req.getNotes().isBlank()) {
             entity.setNotes(trimOrNull(req.getNotes())); // 필요시 상태 변경 사유 기록
         }
@@ -120,14 +120,14 @@ public class SiteKeyService {
     @Transactional(readOnly = true)
     public SiteKeyResponse get(Long id) {
         SiteKey e = siteKeyRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("siteKey not found: id=" + id));
+                .orElseThrow(() -> new NotFoundException("사이트키를 찾을 수 없습니다, 번호= " + id));
         return SiteKeyMapper.toResponse(e);
     }
 
     @Transactional(readOnly = true)
     public SiteKeyResponse getBySiteKey(String siteKey) {
         SiteKey e = siteKeyRepository.findBySiteKey(siteKey)
-                .orElseThrow(() -> new NotFoundException("siteKey not found: " + siteKey));
+                .orElseThrow(() -> new NotFoundException("사이트키를 찾을 수 없습니다." + siteKey));
         return SiteKeyMapper.toResponse(e);
     }
 
@@ -215,15 +215,16 @@ public class SiteKeyService {
     private void validateDomains(List<String> domains) {
         if (domains == null) return;
         // 기본 길이/갯수 제약(정책에 맞게 조정)
-        if (domains.size() > 200) throw new BadRequestException("too many allowed domains");
+        if (domains.size() > 20) throw new BadRequestException("허용 도메인이 너무 많습니다. 최대 20개까지 가능합니다.");
+
         for (String d : domains) {
-            if (d.length() > 255) throw new BadRequestException("domain too long: " + d);
+            if (d.length() > 255) throw new BadRequestException("도메인 길이가 너무 깁니다: " + d);
             // 간단 패턴: 와일드카드 또는 호스트
             if (d.startsWith("*.")) {
                 String rest = d.substring(2);
-                if (!isHostLike(rest)) throw new BadRequestException("invalid wildcard domain: " + d);
+                if (!isHostLike(rest)) throw new BadRequestException("와일드카드 도메인 형식이 올바르지 않습니다: " + d);
             } else {
-                if (!isHostLike(d)) throw new BadRequestException("invalid domain: " + d);
+                if (!isHostLike(d)) throw new BadRequestException("도메인 형식이 올바르지 않습니다: " + d);
             }
         }
     }

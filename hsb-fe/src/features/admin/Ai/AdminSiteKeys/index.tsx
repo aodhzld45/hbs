@@ -223,15 +223,39 @@ export default function AdminSiteKeys() {
                   </button>
                 </td>
                 <td className="p-2">
-                    <select
-                      defaultValue={row.status}
-                      onChange={(e) => { const v = e.target.value as Status; if (v) changeStatus(row.id, v, "changed via admin UI"); }}
-                      className="px-2 py-1 border rounded"
-                    >
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="SUSPENDED">SUSPENDED</option>
-                      <option value="REVOKED">REVOKED</option>
-                    </select>
+                  <select
+                    value={row.status} // 리스트 데이터 기준으로 표시
+                    onChange={(e) => {
+                      const next = e.target.value as Status;
+                      const prev = row.status;
+
+                      // 상태가 실제로 변경되지 않았으면 return
+                      if (!next || next === prev) return;
+
+                      // 변경 전 사용자 확인 + 사유 입력
+                      const reason = window.prompt(
+                        `상태를 ${prev} → ${next} 로 변경합니다.\n변경 사유를 입력해주세요. (선택 사항)`
+                      );
+
+                      // 취소(null)이면 변경 취소 → 다시 이전 값으로 되돌리기
+                      if (reason === null) {
+                        // onChange 시점에서 value는 이미 next로 바뀌었으니,
+                        // 렌더링은 row.status(prev)를 그대로 보고 다시 그려짐
+                        // (즉, 별도의 setState 없이도 load()/리스트 상태 기준으로 복원 가능)
+                        return;
+                      }
+
+                      // 공백만 입력했다면 notes는 undefined 처리
+                      const notes = reason.trim() || undefined;
+
+                      changeStatus(row.id, next, notes);
+                    }}
+                    className="px-2 py-1 border rounded"
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="SUSPENDED">SUSPENDED</option>
+                    <option value="REVOKED">REVOKED</option>
+                  </select>
                 </td>
                 <td className="px-4 py-2 text-sm">
                     <button className="text-blue-500 hover:underline mr-2" onClick={() => openEdit(row.id)}>수정</button>

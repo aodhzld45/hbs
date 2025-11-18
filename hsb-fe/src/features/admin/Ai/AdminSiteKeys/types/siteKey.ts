@@ -66,5 +66,3 @@ export type ListQuery = {
   size?: number;
   sort?: string; // "regDate,desc"
 };
-
-export type ApiError = { code: string; message: string };

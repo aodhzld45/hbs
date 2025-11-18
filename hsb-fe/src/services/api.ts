@@ -1,5 +1,5 @@
 // src/services/api.ts
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 
 // 환경변수 없으면 기본값을 '/api' 로 사용 (Apache 프록시)
 const RAW_BASE = (process.env.REACT_APP_API_BASE_URL || '/api').trim();
@@ -40,3 +40,15 @@ api.interceptors.request.use(
 );
 
 export default api;
+
+export type ApiError = { code: string; message: string };
+
+export const okOrThrow = async <T>(p: Promise<AxiosResponse<T>>): Promise<T> => {
+  try {
+    const res = await p;
+    return res.data;
+  } catch (err: any) {
+    const apiErr: ApiError | undefined = err?.response?.data;
+    throw new Error(apiErr?.message || err?.message || "API Error");
+  }
+};
