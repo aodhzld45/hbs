@@ -9,6 +9,7 @@ import com.hbs.hsbbo.admin.ai.promptprofile.repository.PromptProfileRepository;
 import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
 import com.hbs.hsbbo.admin.ai.sitekey.repository.SiteKeyRepository;
 import com.hbs.hsbbo.admin.ai.sitekey.service.SiteKeyService;
+import com.hbs.hsbbo.common.exception.CommonException.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -68,7 +69,8 @@ public class PromptProfileService {
     // 단건 조회
     @Transactional(readOnly = true)
     public PromptProfileResponse get(Long id) {
-        PromptProfile e = promptProfileRepository.findActiveById(id).orElseThrow();
+        PromptProfile e = promptProfileRepository.findActiveById(id)
+                .orElseThrow(() -> new NotFoundException("프롬프트 프로필을 찾을 수 없습니다. id=%d", id));
         return PromptProfileResponse.from(e);
     }
 
@@ -117,6 +119,9 @@ public class PromptProfileService {
     /** 사용 여부 토글 (use_tf) */
     public Long toggleUse(Long id, String actor) {
         PromptProfile e = promptProfileRepository.findById(id).orElseThrow();
+        if ("Y".equals(e.getDelTf())) {
+            throw new IllegalStateException("이미 삭제된 프로필은 사용 여부를 변경할 수 없습니다.");
+        }
         e.setUseTf("Y".equals(e.getUseTf()) ? "N" : "Y");
         e.setUpAdm(actor);
         return e.getId();
@@ -125,6 +130,9 @@ public class PromptProfileService {
     /** 소프트 삭제 (del_tf='Y') */
     public Long logicalDelete(Long id, String actor) {
         PromptProfile e = promptProfileRepository.findById(id).orElseThrow();
+        if ("Y".equals(e.getDelTf())) {
+            return e.getId(); // 이미 삭제된 경우 조용히 반환
+        }
         e.setDelTf("Y");
         e.setDelAdm(actor);
         return e.getId();
