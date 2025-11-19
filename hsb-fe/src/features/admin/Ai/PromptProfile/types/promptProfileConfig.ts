@@ -3,6 +3,9 @@ export type PromptStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
 export type PromptProfile = {
   id: number;
 
+  /* 이 프롬프트 설정을 연결할 SiteKey ID */
+  linkedSiteKeyId?: number | null;
+
   tenantId?: string | null;
   name: string;
   purpose?: string | null;        // support/sales/faq/portfolio
@@ -36,7 +39,7 @@ export type PromptProfile = {
 
 // 등록/수정 공용 Request
 export type PromptProfileRequest =
-  Omit<PromptProfile, 'id' | 'useTf' | 'delTf' | 'regDate' | 'upDate'>
+  Omit<PromptProfile, 'id'| 'delTf' | 'regDate' | 'upDate'>
 
 // 목록 응답
 export interface PromptProfileListResponse {
