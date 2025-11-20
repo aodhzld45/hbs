@@ -144,13 +144,11 @@ export default function PromptProfileTable({
       </div>
 
       {/* 페이징 */}
-      <div className="px-4 py-2 border-t bg-gray-50 flex justify-end">
         <Pagination
           currentPage={page}
           totalPages={totalCount}
           onPageChange={onChangePage}
         />
-      </div>
     </div>
   );
 }
