@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import AdminLayout from "../../../../components/Layout/AdminLayout";
-import Pagination from "../../../../components/Common/Pagination"; // 필요시 제거
 import { useAuth } from "../../../../context/AuthContext";
 
 import { fetchAdminMenus } from "../../../../services/Admin/adminMenuApi";
@@ -29,21 +28,35 @@ export default function AdminPromptProfile() {
   /** ── 공통 헤더/메뉴 처리 ───────────────────────────────────────────── */
   const location = useLocation();
   const { admin } = useAuth();
+  const [adminId, setAdminId] = useState<string | null>(admin?.id || null);
   const actorId = String(admin?.id ?? admin?.email ?? "system");
   const [currentMenuTitle, setCurrentMenuTitle] = useState<string | null>(null);
   const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
+  const [menuLoading, setMenuLoading] = useState(true);
+  const [menuError, setMenuError] = useState<string>("");
+
+  // ===== 메뉴 로딩 =====
+  const loadMenus = async () => {
+    try {
+      const data = await fetchAdminMenus();
+      setMenus(data);
+      const matched = data.find((m) => m.url === location.pathname);
+      setCurrentMenuTitle(matched ? matched.name : null);
+    } catch (e) {
+      console.error(e);
+      setMenuError("메뉴 목록을 불러오는데 실패했습니다.");
+    } finally {
+      setMenuLoading(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetchAdminMenus();
-        setMenus(res || []);
-      } catch (e) {
-        // 메뉴 로딩 실패 시는 콘솔만
-        console.error("admin menus load error", e);
-      }
-    })();
-  }, []);
+    loadMenus();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    setAdminId(admin?.id || null);
+  }, [admin?.id]);
 
   /** ── 리스트/검색 상태 ─────────────────────────────────────────────── */
   const [keyword, setKeyword] = useState("");
@@ -178,7 +191,7 @@ export default function AdminPromptProfile() {
   /** ── 렌더링 ───────────────────────────────────────────────────────── */
   return (
     <AdminLayout>
-      <div className="flex flex-col gap-4">
+      <div className="p-6">
         <h2 className="text-2xl font-bold mb-4">
           {currentMenuTitle}
         </h2>

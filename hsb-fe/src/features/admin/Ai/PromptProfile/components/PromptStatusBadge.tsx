@@ -1,17 +1,17 @@
 import React from "react";
-import type { PromptStatus } from "../types/promptProfileConfig";
+import type { Status } from "../types/promptProfileConfig";
 
 type Props = {
-  status: PromptStatus;
+  status: Status;
 };
 
-const statusLabel: Record<PromptStatus, string> = {
+const statusLabel: Record<Status, string> = {
   DRAFT: "DRAFT",
   ACTIVE: "ACTIVE",
   ARCHIVED: "ARCHIVED",
 };
 
-const statusClass: Record<PromptStatus, string> = {
+const statusClass: Record<Status, string> = {
   DRAFT: "bg-gray-100 text-gray-700 border border-gray-300",
   ACTIVE: "bg-emerald-100 text-emerald-700 border border-emerald-300",
   ARCHIVED: "bg-yellow-50 text-yellow-700 border border-yellow-300",

@@ -2,10 +2,10 @@ import React, { useEffect, useState, useMemo } from "react";
 import type {
   PromptProfile,
   PromptProfileRequest,
-  PromptStatus,
+  Status,
 } from "../types/promptProfileConfig";
 import type { SiteKeySummary } from "../../AdminSiteKeys/types/siteKey";
-import { fetchSiteKeyList } from "../../AdminSiteKeys/services/siteKeyApi";
+import { fetchSiteKeyList, fetchLinkedSiteKeys } from "../../AdminSiteKeys/services/siteKeyApi";
 
 type Props = {
   value?: PromptProfile | null; // 수정 시 전달, 신규는 undefined/null
@@ -33,7 +33,7 @@ const DEFAULT_FORM: PromptProfileRequest = {
   toolsJson: "",
   policiesJson: "",
   version: 1,
-  promptStatus: "DRAFT",
+  status: "DRAFT",
 
   // 연결할 사이트키
   linkedSiteKeyId: null,
@@ -47,6 +47,8 @@ export default function PromptProfileEditorForm({
   const [form, setForm] = useState<PromptProfileRequest>(DEFAULT_FORM);
   const [submitting, setSubmitting] = useState(false);
 
+  const [linkedTouched, setLinkedTouched] = useState(false);
+  
   // 사이트키 목록 상태
   const [siteKeys, setSiteKeys] = useState<SiteKeySummary[]>([]);
   const [loadingKeys, setLoadingKeys] = useState(false);
@@ -76,7 +78,7 @@ export default function PromptProfileEditorForm({
       toolsJson: value.toolsJson ?? "",
       policiesJson: value.policiesJson ?? "",
       version: value.version ?? 1,
-      promptStatus: value.promptStatus,
+      status: value.status,
       linkedSiteKeyId: value.linkedSiteKeyId ?? null,
     });
   }, [value]);
@@ -105,7 +107,42 @@ export default function PromptProfileEditorForm({
     })();
   }, []);
 
-    // Select 라벨 가독성 향상
+  // 수정 모드: 현재 프로필을 기본으로 쓰는 사이트키 자동 매핑
+  useEffect(() => {
+    // 1) 신규 모드면 스킵
+    if (!value?.id) return;
+
+    // 2) 사용자가 셀렉트 박스를 한 번이라도 건드렸으면 자동 매핑 안 함
+    if (linkedTouched) return;
+
+    // 3) 이미 form에 linkedSiteKeyId가 들어있으면 다시 건들지 않음
+    if (form.linkedSiteKeyId != null) return;
+
+    (async () => {
+      try {
+        const list = await fetchLinkedSiteKeys(value.id);
+
+        if (!Array.isArray(list) || list.length === 0) return;
+
+        // 우선순위: ACTIVE & delTf != 'Y' & useTf == 'Y' → 없으면 첫 번째
+        const best =
+          list.find(
+            (k: any) =>
+              k.status === "ACTIVE" && k.delTf !== "Y" && k.useTf === "Y",
+          ) ?? list[0];
+
+        setForm((prev) => ({
+          ...prev,
+          linkedSiteKeyId: best.id,
+        }));
+      } catch (e) {
+        console.warn("linked siteKeys load failed", e);
+      }
+    })();
+    // form.linkedSiteKeyId까지 넣어줘야 "이미 값 있는 경우 재실행 방지"가 정확히 동작
+  }, [value?.id, linkedTouched, form.linkedSiteKeyId]);
+
+ // Select 라벨 가독성 향상
  const siteKeyOptions = useMemo(
     () =>
     siteKeys.map((k) => ({
@@ -124,6 +161,15 @@ export default function PromptProfileEditorForm({
     >,
   ) => {
     const { name, value } = e.target;
+
+    if (name === "linkedSiteKeyId") {
+      setLinkedTouched(true);  // 사용자 직접 변경 플래그
+      setForm((prev) => ({
+        ...prev,
+        linkedSiteKeyId: value === "" ? null : Number(value),
+      }));
+      return;
+    }
 
     // 숫자(실수) 필드
     if (
@@ -154,10 +200,10 @@ export default function PromptProfileEditorForm({
       return;
     }
 
-    if (name === "promptStatus") {
+    if (name === "status") {
       setForm((prev) => ({
         ...prev,
-        promptStatus: value as PromptStatus,
+        status: value as Status,
       }));
       return;
     }
@@ -242,7 +288,7 @@ export default function PromptProfileEditorForm({
             />
           </div>
 
-          {/* 🔗 연결할 사이트키 셀렉트 */}
+          {/* 연결할 사이트키 셀렉트 */}
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
               연결할 사이트키
@@ -309,8 +355,8 @@ export default function PromptProfileEditorForm({
               상태
             </label>
             <select
-              name="promptStatus"
-              value={form.promptStatus}
+              name="status"
+              value={form.status}
               onChange={handleChange}
               className="w-full border rounded px-2 py-1 text-sm"
             >

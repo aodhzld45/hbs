@@ -1,4 +1,4 @@
-export type PromptStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+export type Status = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
 
 export type PromptProfile = {
   id: number;
@@ -29,7 +29,7 @@ export type PromptProfile = {
 
   // 상태/감사
   version: number;
-  promptStatus: PromptStatus;
+  status: Status;
 
   useTf?: 'Y' | 'N';
   delTf?: 'Y' | 'N';

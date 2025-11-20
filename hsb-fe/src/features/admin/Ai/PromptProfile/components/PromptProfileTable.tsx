@@ -101,7 +101,7 @@ export default function PromptProfileTable({
                   {row.model}
                 </td>
                 <td className="px-3 py-2">
-                  <PromptStatusBadge status={row.promptStatus} />
+                  <PromptStatusBadge status={row.status} />
                 </td>
                 <td className="px-3 py-2 text-center">
                   <button
