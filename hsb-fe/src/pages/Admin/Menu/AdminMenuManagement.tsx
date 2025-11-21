@@ -10,8 +10,7 @@ import {
   updateOrderSequence,
   deleteAdminMenu
 } from '../../../services/Admin/adminMenuApi';
-import AdminMenuCreateModal from '../../../components/Admin/Menu/AdminMenuCreateModal';
-import AdminMenuEditModal from '../../../components/Admin/Menu/AdminMenuEditModal';
+import AdminMenuModal from '../../../components/Admin/Menu/AdminMenuModal';
 
 import { flattenMenuTree } from '../../../utils/menuTreeFlattener';
 import { buildMenuTree } from '../../../utils/buildMenuTree';
@@ -21,8 +20,9 @@ const AdminMenuManagement: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
-  const [editingMenu, setEditingMenu] = useState<AdminMenu | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
+  //생성/수정을 하나의 상태로 통합
+  const [selectedMenu, setSelectedMenu] = useState<AdminMenu | null>(null);
+  const [showModal, setShowModal] = useState<boolean>(false);
 
   const loadMenus = async () => {
     try {
@@ -96,14 +96,22 @@ const AdminMenuManagement: React.FC = () => {
     }
   };
 
-  const handleSaveNewMenu = async (newMenu: AdminMenu) => {
+  // 생성 + 수정 통합 저장 핸들러
+  const handleSaveMenu = async (menu: AdminMenu) => {
     try {
-      await createAdminMenu(newMenu);
+      if (!menu.id || menu.id === 0) {
+        // 신규 등록
+        await createAdminMenu(menu);
+      } else {
+        // 수정
+        await updateAdminMenu(menu.id as number, menu);
+      }
       await loadMenus();
-      setShowCreateModal(false);
+      setShowModal(false);
+      setSelectedMenu(null);
     } catch (err) {
       console.error(err);
-      setError('메뉴 등록에 실패했습니다.');
+      setError(menu.id ? '메뉴 수정에 실패했습니다.' : '메뉴 등록에 실패했습니다.');
     }
   };
 
@@ -116,17 +124,6 @@ const AdminMenuManagement: React.FC = () => {
     } catch (err) {
       console.error(err);
       setError('메뉴 삭제에 실패했습니다.');
-    }
-  };
-
-  const handleUpdateMenu = async (updatedMenu: AdminMenu) => {
-    try {
-      await updateAdminMenu(updatedMenu.id as number, updatedMenu);
-      await loadMenus();
-      setEditingMenu(null);
-    } catch (err) {
-      console.error(err);
-      setError('메뉴 수정에 실패했습니다.');
     }
   };
 
@@ -155,7 +152,11 @@ const AdminMenuManagement: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold mb-6">관리자 메뉴 관리</h1>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              // 신규 등록 모드: 선택 메뉴 초기화 후 모달 오픈
+              setSelectedMenu(null);
+              setShowModal(true);
+            }}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             메뉴 등록
@@ -232,7 +233,11 @@ const AdminMenuManagement: React.FC = () => {
                     </td>
                     <td className="px-4 py-2 text-sm">
                       <button
-                        onClick={() => setEditingMenu(menu)}
+                        onClick={() => {
+                          // 수정 모드: 해당 메뉴를 선택 후 모달 오픈
+                          setSelectedMenu(menu);
+                          setShowModal(true);
+                        }}
                         className="text-blue-500 hover:underline mr-2"
                       >
                         수정
@@ -258,19 +263,15 @@ const AdminMenuManagement: React.FC = () => {
           </table>
         </div>
       </div>
-
-      {showCreateModal && (
-        <AdminMenuCreateModal
-          onSave={handleSaveNewMenu}
-          onCancel={() => setShowCreateModal(false)}
-        />
-      )}
-
-      {editingMenu && (
-        <AdminMenuEditModal
-          menu={editingMenu}
-          onSave={handleUpdateMenu}
-          onCancel={() => setEditingMenu(null)}
+      {/*  통합 모달: menu 없으면 신규, 있으면 수정 */}
+      {showModal && (
+        <AdminMenuModal
+          menu={selectedMenu ?? undefined}
+          onSave={handleSaveMenu}
+          onCancel={() => {
+            setShowModal(false);
+            setSelectedMenu(null);
+          }}
         />
       )}
     </AdminLayout>

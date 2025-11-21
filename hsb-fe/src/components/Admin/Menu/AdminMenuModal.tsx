@@ -1,23 +1,41 @@
-// src/components/Admin/AdminMenuEditModal.tsx
 import React, { useState } from 'react';
 import { AdminMenu } from '../../../types/Admin/AdminMenu';
 
-interface AdminMenuEditModalProps {
-  menu: AdminMenu;
-  onSave: (updatedMenu: AdminMenu) => void;
+interface AdminMenuModalProps {
+  /** 수정 시 전달, 신규 생성 시 undefined/null */
+  menu?: AdminMenu | null;
+  onSave: (menu: AdminMenu) => void;
   onCancel: () => void;
 }
 
-const AdminMenuEditModal: React.FC<AdminMenuEditModalProps> = ({ menu, onSave, onCancel }) => {
-  // 초기 상태는 props.menu를 복사하여 생성
-  const [editedMenu, setEditedMenu] = useState<AdminMenu>({ ...menu });
+const AdminMenuModal: React.FC<AdminMenuModalProps> = ({ menu, onSave, onCancel }) => {
+  const isEditMode = !!menu;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // 초기값: 수정이면 menu 복사, 신규면 디폴트 값
+  const [form, setForm] = useState<AdminMenu>(() =>
+    menu
+      ? { ...menu }
+      : {
+          id: 0,
+          name: '',
+          url: '',
+          orderSequence: 1,
+          depth: 1,
+          parentId: undefined,
+          description: '',
+          useTf: 'Y',
+          delTf: 'N',
+        }
+  );
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setEditedMenu((prev) => ({
+    setForm((prev) => ({
       ...prev,
       [name]:
-        name === 'depth' || name === 'orderSequence'
+        name === 'orderSequence' || name === 'depth'
           ? Number(value)
           : name === 'parentId'
           ? value === '' ? undefined : Number(value)
@@ -27,13 +45,15 @@ const AdminMenuEditModal: React.FC<AdminMenuEditModalProps> = ({ menu, onSave, o
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(editedMenu);
+    onSave(form);
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">메뉴 수정</h2>
+        <h2 className="text-xl font-bold mb-4">
+          {isEditMode ? '메뉴 수정' : '신규 메뉴 등록'}
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* 기본 정보 섹션 */}
@@ -52,7 +72,7 @@ const AdminMenuEditModal: React.FC<AdminMenuEditModalProps> = ({ menu, onSave, o
                 type="text"
                 name="name"
                 placeholder="예: 대시보드"
-                value={editedMenu.name}
+                value={form.name}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border rounded text-sm"
                 required
@@ -71,7 +91,7 @@ const AdminMenuEditModal: React.FC<AdminMenuEditModalProps> = ({ menu, onSave, o
                 type="text"
                 name="url"
                 placeholder="예: /admin/dashboard"
-                value={editedMenu.url}
+                value={form.url}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border rounded text-sm"
               />
@@ -83,7 +103,9 @@ const AdminMenuEditModal: React.FC<AdminMenuEditModalProps> = ({ menu, onSave, o
 
           {/* 계층/정렬 섹션 */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">계층 &amp; 정렬 정보</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">
+              계층 &amp; 정렬 정보
+            </h3>
 
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
@@ -99,7 +121,7 @@ const AdminMenuEditModal: React.FC<AdminMenuEditModalProps> = ({ menu, onSave, o
                   name="orderSequence"
                   min={1}
                   placeholder="예: 1"
-                  value={editedMenu.orderSequence}
+                  value={form.orderSequence}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border rounded text-sm"
                   required
@@ -122,7 +144,7 @@ const AdminMenuEditModal: React.FC<AdminMenuEditModalProps> = ({ menu, onSave, o
                   name="depth"
                   min={1}
                   placeholder="예: 1"
-                  value={editedMenu.depth}
+                  value={form.depth}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border rounded text-sm"
                   required
@@ -145,7 +167,7 @@ const AdminMenuEditModal: React.FC<AdminMenuEditModalProps> = ({ menu, onSave, o
                 type="text"
                 name="parentId"
                 placeholder="루트 메뉴면 비워두세요"
-                value={editedMenu.parentId ? editedMenu.parentId.toString() : ''}
+                value={form.parentId ? form.parentId.toString() : ''}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border rounded text-sm"
               />
@@ -167,7 +189,7 @@ const AdminMenuEditModal: React.FC<AdminMenuEditModalProps> = ({ menu, onSave, o
               id="description"
               name="description"
               placeholder="메뉴 용도나 비고 사항을 간단히 남길 수 있습니다."
-              value={editedMenu.description}
+              value={form.description}
               onChange={handleChange}
               className="w-full px-3 py-2 border rounded text-sm min-h-[70px]"
             />
@@ -186,7 +208,7 @@ const AdminMenuEditModal: React.FC<AdminMenuEditModalProps> = ({ menu, onSave, o
               type="submit"
               className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
             >
-              저장
+              {isEditMode ? '수정' : '등록'}
             </button>
           </div>
         </form>
@@ -195,4 +217,4 @@ const AdminMenuEditModal: React.FC<AdminMenuEditModalProps> = ({ menu, onSave, o
   );
 };
 
-export default AdminMenuEditModal;
+export default AdminMenuModal;
