@@ -6,27 +6,48 @@
 <body style="font-family: 'Malgun Gothic', sans-serif; background-color: #f9f9f9; padding: 20px;">
 <div style="background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 600px; margin: auto; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
 
+    <!-- 제목 -->
     <div style="font-size: 20px; font-weight: bold; color: #2c3e50; margin-bottom: 20px;">
         문의 답변 안내
     </div>
 
-    <div style="font-size: 14px; color: #333333; line-height: 1.6;">
+    <!-- 인삿말 / 본문 -->
+    <div style="font-size: 14px; color: #333333; line-height: 1.7;">
         안녕하세요
         <span style="font-weight: bold; color: #2c3e50;" th:text="${companyName}">회사명</span>의
         <span style="font-weight: bold; color: #2c3e50;" th:text="${contactName}">담당자</span>님,
         <br><br>
-        <span style="font-weight: bold; color: #2c3e50;" th:text="${title}">문의 제목</span>에 대해 아래와 같이 답변드립니다:
+        <span style="font-weight: bold; color: #2c3e50;" th:text="${title}">문의 제목</span>
+        에 대해 아래와 같이 답변드립니다.
+        <br><br>
 
-        <div style="background-color: #f3f3f3; border-left: 4px solid #4a90e2;
-                    padding: 15px; margin: 20px 0; font-style: italic; white-space: pre-line;"
-                    th:text="${replyContent}">
-            답변 내용이 여기에 표시됩니다.
+        <!-- 답변 박스 -->
+        <div style="
+            background-color: #f5f7fa;
+            border-left: 4px solid #4a90e2;
+            padding: 16px 18px;
+            margin: 20px 0;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #222222;
+            word-break: keep-all;
+        ">
+            <!-- replyContent 줄바꿈 → <br> 변환 -->
+            <div th:utext="${
+                    #strings.replace(
+                        #strings.replace(replyContent, '\r\n', '<br/>'),
+                        '\n', '<br/>'
+                    )
+                }">
+                답변 내용이 여기에 표시됩니다.
+            </div>
         </div>
 
         언제든지 추가 문의사항이 있으시면 연락주시기 바랍니다.<br>
         감사합니다.
     </div>
 
+    <!-- 푸터 -->
     <div style="font-size: 13px; color: #777777; margin-top: 30px; border-top: 1px solid #e0e0e0; padding-top: 20px;">
         HSBS 고객센터<br>
         이메일: aodhzld45@gmail.com<br>
