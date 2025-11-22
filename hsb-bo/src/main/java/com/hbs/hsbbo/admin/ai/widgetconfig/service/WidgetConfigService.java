@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -111,8 +112,10 @@ public class WidgetConfigService {
             savedPath = fileUtil.saveFile(basePath, iconFile); //  /files/contact/uuid.ext
         }
 
+        String name = normalizeName(req.getName());
+
         // 1) 이름 중복 방지(소프트삭제 제외)
-        if (widgetConfigRepository.existsByNameAndDelTf(req.getName(), "N"))
+        if (widgetConfigRepository.existsByNameAndDelTf(name, "N"))
             throw new IllegalArgumentException("이미 존재하는 이름입니다: " + req.getName());
 
         // 2) 위젯 엔티티 저장
@@ -142,9 +145,11 @@ public class WidgetConfigService {
         WidgetConfig e = widgetConfigRepository.findActiveById(id)
                 .orElseThrow(() -> new IllegalArgumentException("위젯을 찾을 수 없습니다. id=" + id));
 
+        String name = normalizeName(req.getName());
+
         // 이름 변경 시 중복 체크
-        if (!e.getName().equals(req.getName()) && widgetConfigRepository.existsByNameAndDelTf(req.getName(), "N"))
-            throw new IllegalArgumentException("이미 존재하는 이름입니다: " + req.getName());
+        if (!e.getName().equals(req.getName()) && widgetConfigRepository.existsByNameAndDelTf(name, "N"))
+            throw new IllegalArgumentException("이미 존재하는 이름입니다: " + name);
 
         // 기존 아이콘 경로 보관
         String oldIconUrl = e.getBubbleIconUrl();
@@ -279,8 +284,32 @@ public class WidgetConfigService {
         return PageRequest.of(page, size, Sort.by(Sort.Order.desc("regDate")));
     }
 
-    private String trim(String s) { return (s == null || s.isBlank()) ? null : s.trim(); }
-    private String normalize(String s) { return (s == null || s.isBlank()) ? null : s.trim(); }
+    private String trim(String s) {
+        return (s == null || s.isBlank()) ? null : s.trim();
+    }
+
+    private String normalizeName(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        String trimmed = s.trim();
+        return trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private String normalize(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        return s.trim();
+    }
+
+    // JSON 문자열용 (필요하면 앞뒤 공백만 제거 or 완전 그대로)
+    private String normalizeJson(String s) {
+        if (s == null || s.isBlank()) return null;
+        // 보통은 trim() 정도만, 아니면 정말 그대로 두는 게 안전
+        return s.trim();
+    }
+
     private String flag(String s) { return ("Y".equalsIgnoreCase(s)) ? "Y" : "N"; }
 
     private WidgetConfig.Position mapPosition(WidgetConfigRequest.Position p) {

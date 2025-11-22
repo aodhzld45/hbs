@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -76,12 +77,19 @@ public class PromptProfileService {
 
     // 등록(create)
     public Long create(PromptProfileRequest request, String actor) {
+
+        String name = normalizeName(request.getName());
+
+        // 1) 이름 중복 체크
+        if(promptProfileRepository.existsByNameAndDelTf(name, "N"))
+            throw new IllegalArgumentException("이미 존재하는 이름입니다: " + request.getName());
+        // 2) 프롬프트 프로필 엔티티 저장
         PromptProfile e = new PromptProfile();
         applyFromRequest(e, request, true);
         e.setRegAdm(actor);
         promptProfileRepository.save(e); // e.getId() 확보
 
-        // 3) 선택: 사이트키와 매핑 (linkedSiteKeyId가 있을 때만)
+        // 3) 사이트키와 매핑 (linkedSiteKeyId가 있을 때만)
         if (request.getLinkedSiteKeyId() != null) {
             SiteKey sk = siteKeyRepository.findByIdForUpdate(request.getLinkedSiteKeyId())
                     .orElseThrow(() -> new IllegalArgumentException("사이트키가 존재하지 않습니다. id=" + request.getLinkedSiteKeyId()));
@@ -91,12 +99,18 @@ public class PromptProfileService {
             sk.setUpAdm(actor);
             siteKeyRepository.save(sk);
         }
-        
+
         return e.getId();
     }
     
     // 수정(update)
     public Long update(Long id, PromptProfileRequest request, String actor) {
+        String name = normalizeName(request.getName());
+
+        // 1) 이름 중복 체크
+        if(promptProfileRepository.existsByNameAndDelTf(name, "N"))
+            throw new IllegalArgumentException("이미 존재하는 이름입니다: " + request.getName());
+
         PromptProfile e = promptProfileRepository.findById(id).orElseThrow();
         applyFromRequest(e, request, false);
         e.setUpAdm(actor);
@@ -170,10 +184,10 @@ public class PromptProfileService {
         e.setGuardrailTpl(dto.getGuardrailTpl());
 
         // JSON 컬럼들은 빈 문자열 → null
-        e.setStyleJson(normalize(dto.getStyleJson()));
-        e.setToolsJson(normalize(dto.getToolsJson()));
-        e.setPoliciesJson(normalize(dto.getPoliciesJson()));
-        e.setStopJson(normalize(dto.getStopJson()));
+        e.setStyleJson(normalizeJson(dto.getStyleJson()));
+        e.setToolsJson(normalizeJson(dto.getToolsJson()));
+        e.setPoliciesJson(normalizeJson(dto.getPoliciesJson()));
+        e.setStopJson(normalizeJson(dto.getStopJson()));
 
         // 상태/버전
         if (dto.getVersion() != null) {
@@ -201,9 +215,28 @@ public class PromptProfileService {
             }
         }
     }
+    private String normalizeName(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        String trimmed = s.trim();
+        return trimmed.toLowerCase(Locale.ROOT);
+    }
 
-    private String trim(String s) { return (s == null || s.isBlank()) ? null : s.trim(); }
-    private String normalize(String s) { return (s == null || s.isBlank()) ? null : s.trim(); }
+    private String normalize(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        return s.trim();
+    }
+
+    // JSON 문자열용 (필요하면 앞뒤 공백만 제거 or 완전 그대로)
+    private String normalizeJson(String s) {
+        if (s == null || s.isBlank()) return null;
+        // 보통은 trim() 정도만, 아니면 정말 그대로 두는 게 안전
+        return s.trim();
+    }
+
     private String flag(String s) { return ("Y".equalsIgnoreCase(s)) ? "Y" : "N"; }
 
 

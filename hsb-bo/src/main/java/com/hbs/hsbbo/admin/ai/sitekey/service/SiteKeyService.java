@@ -20,10 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,7 +32,7 @@ public class SiteKeyService {
     @Transactional
     public SiteKeyResponse create(SiteKeyCreateRequest req, String actor) {
         // 1) 기본 유효성(서버단) + 중복 검사
-        String key = req.getSiteKey() == null ? null : req.getSiteKey().trim();
+        String key = normalizeName(req.getSiteKey());
         if (key == null || key.isEmpty()) throw new BadRequestException("사이트키는 필수입니다.");
         if (siteKeyRepository.existsBySiteKey(key)) {
             throw new ConflictException("사이트키가 이미 존재합니다.: " + key);
@@ -239,6 +236,21 @@ public class SiteKeyService {
         return host.chars().allMatch(c ->
                 Character.isLetterOrDigit(c) || c == '-' || c == '.'
         );
+    }
+
+    private String normalizeName(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        String trimmed = s.trim();
+        return trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private String normalize(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        return s.trim();
     }
 
     private String trimOrNull(String s) {

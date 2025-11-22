@@ -19,6 +19,9 @@ public interface PromptProfileRepository extends JpaRepository<PromptProfile, Lo
            """)
     Optional<PromptProfile> findActiveById(@Param("id") Long id);
 
+    /** 이름 중복체크(소프트 삭제 제외) */
+    boolean existsByNameAndDelTf(String name, String delTf);
+
     /**
      * 키워드 + 필터 검색 + 페이징
      *
