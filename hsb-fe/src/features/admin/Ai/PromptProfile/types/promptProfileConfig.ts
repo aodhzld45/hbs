@@ -39,7 +39,7 @@ export type PromptProfile = {
 
 // 등록/수정 공용 Request
 export type PromptProfileRequest =
-  Omit<PromptProfile, 'id'| 'delTf' | 'regDate' | 'upDate'>
+  Omit<PromptProfile, 'id'| 'regDate' | 'upDate'>
 
 // 목록 응답
 export interface PromptProfileListResponse {

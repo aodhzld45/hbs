@@ -117,7 +117,7 @@ export default function PromptProfileTable({
                   </button>
                 </td>
                 <td className="px-3 py-2 text-xs text-gray-500">
-                  {row.regDate || "-"}
+                  {row.regDate?.replace("T"," ") ?? "-"}
                 </td>
                 <td className="px-3 py-2 text-center">
                   <div className="inline-flex gap-1">
