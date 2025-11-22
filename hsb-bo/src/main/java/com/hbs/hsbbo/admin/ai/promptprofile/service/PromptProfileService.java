@@ -164,14 +164,16 @@ public class PromptProfileService {
         e.setSeed(dto.getSeed());
         e.setFreqPenalty(dto.getFreqPenalty());
         e.setPresencePenalty(dto.getPresencePenalty());
-        e.setStopJson(dto.getStopJson());
 
         // 프롬프트 리소스
         e.setSystemTpl(dto.getSystemTpl());
         e.setGuardrailTpl(dto.getGuardrailTpl());
-        e.setStyleJson(dto.getStyleJson());
-        e.setToolsJson(dto.getToolsJson());
-        e.setPoliciesJson(dto.getPoliciesJson());
+
+        // JSON 컬럼들은 빈 문자열 → null
+        e.setStyleJson(normalize(dto.getStyleJson()));
+        e.setToolsJson(normalize(dto.getToolsJson()));
+        e.setPoliciesJson(normalize(dto.getPoliciesJson()));
+        e.setStopJson(normalize(dto.getStopJson()));
 
         // 상태/버전
         if (dto.getVersion() != null) {
