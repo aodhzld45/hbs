@@ -303,13 +303,6 @@ public class WidgetConfigService {
         return s.trim();
     }
 
-    // JSON 문자열용 (필요하면 앞뒤 공백만 제거 or 완전 그대로)
-    private String normalizeJson(String s) {
-        if (s == null || s.isBlank()) return null;
-        // 보통은 trim() 정도만, 아니면 정말 그대로 두는 게 안전
-        return s.trim();
-    }
-
     private String flag(String s) { return ("Y".equalsIgnoreCase(s)) ? "Y" : "N"; }
 
     private WidgetConfig.Position mapPosition(WidgetConfigRequest.Position p) {

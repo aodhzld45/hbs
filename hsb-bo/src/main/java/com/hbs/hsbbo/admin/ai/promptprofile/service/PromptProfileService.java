@@ -1,5 +1,7 @@
 package com.hbs.hsbbo.admin.ai.promptprofile.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hbs.hsbbo.admin.ai.promptprofile.domain.entity.PromptProfile;
 import com.hbs.hsbbo.admin.ai.promptprofile.domain.type.PromptStatus;
 import com.hbs.hsbbo.admin.ai.promptprofile.dto.request.PromptProfileRequest;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,7 @@ public class PromptProfileService {
     private final PromptProfileRepository promptProfileRepository;
     private final SiteKeyService siteKeyService;
     private final SiteKeyRepository siteKeyRepository;
+    private final ObjectMapper om;
 
     // 프롬프트 프로필 리스트 (페이징 + 키워드,모델 필터)
     @Transactional(readOnly = true)
@@ -184,10 +188,10 @@ public class PromptProfileService {
         e.setGuardrailTpl(dto.getGuardrailTpl());
 
         // JSON 컬럼들은 빈 문자열 → null
-        e.setStyleJson(normalizeJson(dto.getStyleJson()));
-        e.setToolsJson(normalizeJson(dto.getToolsJson()));
-        e.setPoliciesJson(normalizeJson(dto.getPoliciesJson()));
-        e.setStopJson(normalizeJson(dto.getStopJson()));
+        e.setStyleJson(writeOptions(dto.getStyleJson()));
+        e.setToolsJson(writeOptions(dto.getToolsJson()));
+        e.setPoliciesJson(writeOptions(dto.getPoliciesJson()));
+        e.setStopJson(writeOptions(dto.getStopJson()));
 
         // 상태/버전
         if (dto.getVersion() != null) {
@@ -230,15 +234,26 @@ public class PromptProfileService {
         return s.trim();
     }
 
-    // JSON 문자열용 (필요하면 앞뒤 공백만 제거 or 완전 그대로)
-    private String normalizeJson(String s) {
-        if (s == null || s.isBlank()) return null;
-        // 보통은 trim() 정도만, 아니면 정말 그대로 두는 게 안전
-        return s.trim();
+    // JSON 문자 직렬화용 지금은 주석처리 Map<String,Object> 시 사용 -> JSON.stringify()로 프론트에서 보내줄 때
+    // 백앤드 타입도 String이 아닌 Map으로 받음
+//    private String writeOptions(Map<String, Object> opt) {
+//        if (opt == null || opt.isEmpty()) return null;
+//        try { return om.writeValueAsString(opt); }
+//        catch (Exception e) { throw new RuntimeException("options 직렬화 실패", e); }
+//    }
+
+    private String writeOptions(String json) {
+        if (json == null) return null;
+        String trimmed = json.trim();
+        return trimmed.isEmpty() ? null : trimmed;  // "" → null
+    }
+
+    private Map<String, Object> readOptions(String json) {
+        if (json == null || json.isBlank()) return null;
+        try { return om.readValue(json, new TypeReference<>() {}); }
+        catch (Exception e) { throw new RuntimeException("options 파싱 실패", e); }
     }
 
     private String flag(String s) { return ("Y".equalsIgnoreCase(s)) ? "Y" : "N"; }
-
-
 
 }
