@@ -12,7 +12,10 @@ import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
 import com.hbs.hsbbo.admin.ai.sitekey.repository.SiteKeyRepository;
 import com.hbs.hsbbo.admin.ai.sitekey.service.SiteKeyService;
 import com.hbs.hsbbo.common.exception.CommonException.NotFoundException;
+import com.hbs.hsbbo.user.ai.dto.ChatRequest;
+import com.hbs.hsbbo.user.ai.dto.ChatWithPromptProfileRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +30,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class PromptProfileService {
 
     private final PromptProfileRepository promptProfileRepository;
@@ -155,6 +159,50 @@ public class PromptProfileService {
         e.setDelAdm(actor);
         return e.getId();
     }
+
+    // 실제 운영 OpenAPI Chat PromptProfile → ChatWithPromptProfileRequest 조립
+    public ChatWithPromptProfileRequest buildChatWithProfileRequest(
+            PromptProfile promptProfile,
+            ChatRequest userReq
+    ) {
+        if (userReq.getPrompt() == null || userReq.getPrompt().isBlank()) {
+            throw new IllegalArgumentException("사용자 질문 프롬프트는 필수 값 입니다");
+        }
+
+        return ChatWithPromptProfileRequest.builder()
+                // 메타
+                .promptProfileId(promptProfile.getId())
+                .promptProfileName(promptProfile.getName())
+                .promptProfileVersion(promptProfile.getVersion())
+                .tenantId(promptProfile.getTenantId())
+                .purpose(promptProfile.getPurpose())
+
+                // 유저 입력
+                .userPrompt(userReq.getPrompt())
+                .context(userReq.getContext())
+
+                // 모델/파라미터 (엔티티 기준)
+                .model(promptProfile.getModel())
+                .temperature(promptProfile.getTemperature())
+                .topP(promptProfile.getTopP())
+                .maxTokens(promptProfile.getMaxTokens())
+                .seed(promptProfile.getSeed())
+                .freqPenalty(promptProfile.getFreqPenalty())
+                .presencePenalty(promptProfile.getPresencePenalty())
+
+                // 프롬프트 리소스
+                .systemTpl(promptProfile.getSystemTpl())
+                .guardrailTpl(promptProfile.getGuardrailTpl())
+                .styleJson(promptProfile.getStyleJson())
+                .policiesJson(promptProfile.getPoliciesJson())
+
+                // JSON → List 조립
+                .stop(parseStopList(promptProfile.getStopJson()))
+                .tools(parseTools(promptProfile.getToolsJson()))
+                .build();
+    }
+
+
     // ---------------------------
     // 내부 헬퍼
     // ---------------------------
@@ -248,10 +296,25 @@ public class PromptProfileService {
         return trimmed.isEmpty() ? null : trimmed;  // "" → null
     }
 
-    private Map<String, Object> readOptions(String json) {
+    private List<Map<String, Object>> parseTools(String json) {
         if (json == null || json.isBlank()) return null;
-        try { return om.readValue(json, new TypeReference<>() {}); }
-        catch (Exception e) { throw new RuntimeException("options 파싱 실패", e); }
+        try {
+            return om.readValue(json, new TypeReference<List<Map<String, Object>>>() {});
+        } catch (Exception e) {
+            log.warn("[PromptProfile] toolsJson 파싱 실패. json={}", json, e);
+            return null;
+        }
+    }
+
+    private List<String> parseStopList(String json) {
+        if (json == null || json.isBlank()) return null;
+        try {
+            return om.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            // 운영에서는 "프로필 잘못 설정" 로그만 찍고, stop은 없는 걸로 진행
+            log.info("[PromptProfile] stopJson 파싱 실패. json={}", json, e);
+            return null;
+        }
     }
 
     private String flag(String s) { return ("Y".equalsIgnoreCase(s)) ? "Y" : "N"; }
