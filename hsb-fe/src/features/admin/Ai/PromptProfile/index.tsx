@@ -1,16 +1,16 @@
 // src/features/Admin/AiPromptProfile/index.tsx
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-
 import AdminLayout from "../../../../components/Layout/AdminLayout";
 import { useAuth } from "../../../../context/AuthContext";
-
 import { fetchAdminMenus } from "../../../../services/Admin/adminMenuApi";
 import type { AdminMenu } from "../../../../types/Admin/AdminMenu";
+import Pagination from "../../../../components/Common/Pagination"; // ← 공통 컴포넌트 경로에 맞게 조정
 
-import type {
-  PromptProfile,
-  PromptProfileRequest,
+import {
+  PromptProfileListResponse,
+  type PromptProfile,
+  type PromptProfileRequest,
 } from "./types/promptProfileConfig";
 import {
   fetchPromptProfileList,
@@ -66,11 +66,12 @@ export default function AdminPromptProfile() {
   const [size, setSize] = useState(20);
   const [sort, setSort] = useState("regDate,desc");
 
-  const [rows, setRows] = useState<PromptProfile[]>([]);
+  const [data, setData] = useState<PromptProfileListResponse | null>(null);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<unknown>(null);
   const [listError, setListError] = useState<string | null>(null);
 
   const loadList = async (overridePage?: number) => {
@@ -84,7 +85,7 @@ export default function AdminPromptProfile() {
         size,
         sort,
       );
-      setRows(res.items ?? []);
+      setData(res);
       setTotalCount(res.totalCount ?? 0);
       setTotalPages(res.totalPages ?? 0);
       if (overridePage !== undefined) {
@@ -98,6 +99,19 @@ export default function AdminPromptProfile() {
     }
   };
 
+    const refresh = useCallback(async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetchPromptProfileList(keyword, modelFilter, page, size, sort);
+        setData(res);
+      } catch (e) {
+        setError(e);
+      } finally {
+        setLoading(false);
+      }
+    }, [keyword, modelFilter, page, size, sort]);
+
   // 최초 로딩 + 필터 변경 시 재조회
   useEffect(() => {
     loadList(0);
@@ -107,10 +121,6 @@ export default function AdminPromptProfile() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     loadList(0);
-  };
-
-  const handleChangePage = (nextPage: number) => {
-    loadList(nextPage);
   };
 
   /** ── 모달/폼 상태 ─────────────────────────────────────────────────── */
@@ -267,15 +277,20 @@ export default function AdminPromptProfile() {
 
         {/* 목록 테이블 */}
         <PromptProfileTable
-          rows={rows}
+          data={data}
           loading={loading}
-          page={page}
-          size={size}
-          totalCount={totalCount}
-          onChangePage={handleChangePage}
           onClickEdit={openEdit}
           onClickDelete={handleDelete}
           onToggleUse={handleToggleUse}
+        />
+
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={(p) => { 
+            setPage(p);
+            void loadList(p);
+          }}
         />
 
         {/* ── 모달 (간단 구현) ───────────────────────────────────────── */}

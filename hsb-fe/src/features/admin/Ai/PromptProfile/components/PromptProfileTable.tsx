@@ -1,44 +1,27 @@
-// PromptProfileTable.tsx
 import React from "react";
-import type { PromptProfile } from "../types/promptProfileConfig";
+import type { PromptProfile, PromptProfileListResponse } from "../types/promptProfileConfig";
 import PromptStatusBadge from "./PromptStatusBadge";
-import Pagination from "../../../../../components/Common/Pagination"; // 프로젝트 경로에 맞게 조정
 
 type Props = {
-  rows: PromptProfile[];
+  data: PromptProfileListResponse | null;
   loading: boolean;
-  page: number;
-  size: number;
-  totalCount: number;
-
-  onChangePage: (page: number) => void;
   onClickEdit: (row: PromptProfile) => void;
   onClickDelete: (row: PromptProfile) => void;
   onToggleUse: (row: PromptProfile) => void;
 };
 
 export default function PromptProfileTable({
-  rows,
+  data,
   loading,
-  page,
-  size,
-  totalCount,
-  onChangePage,
   onClickEdit,
   onClickDelete,
   onToggleUse,
 }: Props) {
+  if (loading) return <div className="p-4">불러오는 중…</div>;
+  if (!data) return <div className="p-4">데이터가 없습니다.</div>;
+  
   return (
     <div className="border rounded-lg bg-white shadow-sm">
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
-        <h2 className="text-sm font-semibold text-gray-800">
-          프롬프트 프로필 목록
-        </h2>
-        {loading && (
-          <span className="text-xs text-gray-500">Loading...</span>
-        )}
-      </div>
-
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 border-b">
@@ -70,7 +53,7 @@ export default function PromptProfileTable({
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && !loading && (
+            {data.items.length === 0 && !loading && (
               <tr>
                 <td
                   colSpan={8}
@@ -81,7 +64,7 @@ export default function PromptProfileTable({
               </tr>
             )}
 
-            {rows.map((row) => (
+            {data.items.map((row) => (
               <tr key={row.id} className="border-b hover:bg-gray-50">
                 <td className="px-3 py-2 text-xs text-gray-500">{row.id}</td>
                 <td className="px-3 py-2 text-sm text-gray-900">
@@ -141,14 +124,10 @@ export default function PromptProfileTable({
             ))}
           </tbody>
         </table>
+        <div className="text-right text-xs text-gray-500 p-2">
+          총 {data.totalCount}건 / {data.totalPages} 페이지
+        </div>
       </div>
-
-      {/* 페이징 */}
-        <Pagination
-          currentPage={page}
-          totalPages={totalCount}
-          onPageChange={onChangePage}
-        />
     </div>
   );
 }
