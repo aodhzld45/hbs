@@ -138,7 +138,7 @@ public class PromptProfileService {
         return e.getId();
     }
 
-    /** 사용 여부 토글 (use_tf) */
+    // 사용 여부 토글 (use_tf)
     public Long toggleUse(Long id, String actor) {
         PromptProfile e = promptProfileRepository.findById(id).orElseThrow();
         if ("Y".equals(e.getDelTf())) {
@@ -149,7 +149,7 @@ public class PromptProfileService {
         return e.getId();
     }
 
-    /** 소프트 삭제 (del_tf='Y') */
+    // 소프트 삭제 (del_tf='Y')
     public Long logicalDelete(Long id, String actor) {
         PromptProfile e = promptProfileRepository.findById(id).orElseThrow();
         if ("Y".equals(e.getDelTf())) {
@@ -158,6 +158,31 @@ public class PromptProfileService {
         e.setDelTf("Y");
         e.setDelAdm(actor);
         return e.getId();
+    }
+    // 사이트키 검증 프로필 반환
+    @Transactional(readOnly = true)
+    public PromptProfile findDefaultProfileForSiteKeyOrThrow(String siteKey, String host) {
+        if (siteKey == null || siteKey.isBlank()) {
+            throw new IllegalArgumentException("사이트키가 비어 있습니다.");
+        }
+
+        // 도메인/상태 검증
+        SiteKey sk = siteKeyRepository.findBySiteKey(siteKey)
+                .orElseThrow(() -> new IllegalArgumentException("사이트키를 찾을 수 없습니다."));
+
+        if (!sk.isActive()) {
+            throw new IllegalStateException("비활성화된 사이트키 입니다. siteKey=" + siteKey);
+        }
+        if (host != null && !sk.isDomainAllowed(host)) {
+            throw new IllegalStateException("허용되지 않은 도메인입니다. host=" + host);
+        }
+
+        PromptProfile profile = sk.getDefaultPromptProfileId(); // 연관관계 전제
+        if (profile == null) {
+            throw new IllegalStateException("연결된 기본 프롬프트 프로필이 없습니다. siteKey=" + siteKey);
+        }
+        // 필요하면 status/useTf/delTf 검사
+        return profile;
     }
 
     // 실제 운영 OpenAPI Chat PromptProfile → ChatWithPromptProfileRequest 조립
@@ -197,11 +222,10 @@ public class PromptProfileService {
                 .policiesJson(promptProfile.getPoliciesJson())
 
                 // JSON → List 조립
-                .stop(parseStopList(promptProfile.getStopJson()))
-                .tools(parseTools(promptProfile.getToolsJson()))
+                .stop(parseStopJson(promptProfile.getStopJson()))
+                .tools(parseToolsJson(promptProfile.getToolsJson()))
                 .build();
     }
-
 
     // ---------------------------
     // 내부 헬퍼
@@ -284,11 +308,12 @@ public class PromptProfileService {
 
     // JSON 문자 직렬화용 지금은 주석처리 Map<String,Object> 시 사용 -> JSON.stringify()로 프론트에서 보내줄 때
     // 백앤드 타입도 String이 아닌 Map으로 받음
-//    private String writeOptions(Map<String, Object> opt) {
-//        if (opt == null || opt.isEmpty()) return null;
-//        try { return om.writeValueAsString(opt); }
-//        catch (Exception e) { throw new RuntimeException("options 직렬화 실패", e); }
-//    }
+
+/*    private String writeOptions(Map<String, Object> opt) {
+        if (opt == null || opt.isEmpty()) return null;
+        try { return om.writeValueAsString(opt); }
+        catch (Exception e) { throw new RuntimeException("options 직렬화 실패", e); }
+    }*/
 
     private String writeOptions(String json) {
         if (json == null) return null;
@@ -296,24 +321,23 @@ public class PromptProfileService {
         return trimmed.isEmpty() ? null : trimmed;  // "" → null
     }
 
-    private List<Map<String, Object>> parseTools(String json) {
-        if (json == null || json.isBlank()) return null;
+    /** stop_json → List<String> */
+    public List<String> parseStopJson(String stopJson) {
+        if (stopJson == null || stopJson.isBlank()) return null;
         try {
-            return om.readValue(json, new TypeReference<List<Map<String, Object>>>() {});
+            return om.readValue(stopJson, new TypeReference<List<String>>() {});
         } catch (Exception e) {
-            log.warn("[PromptProfile] toolsJson 파싱 실패. json={}", json, e);
-            return null;
+            throw new RuntimeException("stop_json 파싱 실패", e);
         }
     }
 
-    private List<String> parseStopList(String json) {
-        if (json == null || json.isBlank()) return null;
+    /** tools_json → List<Map<String,Object>> */
+    public List<Map<String,Object>> parseToolsJson(String toolsJson) {
+        if (toolsJson == null || toolsJson.isBlank()) return null;
         try {
-            return om.readValue(json, new TypeReference<List<String>>() {});
+            return om.readValue(toolsJson, new TypeReference<List<Map<String,Object>>>() {});
         } catch (Exception e) {
-            // 운영에서는 "프로필 잘못 설정" 로그만 찍고, stop은 없는 걸로 진행
-            log.info("[PromptProfile] stopJson 파싱 실패. json={}", json, e);
-            return null;
+            throw new RuntimeException("tools_json 파싱 실패", e);
         }
     }
 

@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.user.ai.dto;
 
+import com.hbs.hsbbo.admin.ai.promptprofile.domain.entity.PromptProfile;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -40,13 +41,48 @@ public class ChatWithPromptProfileRequest {
     private String systemTpl;     // 시스템 템플릿
     private String guardrailTpl;  // 가드레일 텍스트
     private String styleJson;     // 스타일 JSON (문자열)
+    private String toolsJson;
     private String policiesJson;  // 정책 JSON (문자열)
 
-    // ===== stop / tools (JSON 파싱 결과) =====
+    // 조립 결과 (OpenAI body에 직접 들어갈 값) stop / tools (JSON 파싱 결과) =====
     /** 예: ["\\nUser:", "\\nSystem:"] */
     private List<String> stop;
 
     // tools_json을 List<Map<String,Object>>로 파싱한 값 */
     private List<Map<String, Object>> tools;
+
+    public static ChatWithPromptProfileRequest fromProfile(
+            PromptProfile profile,
+            String userPrompt,
+            String context,
+            List<String> stop,
+            List<Map<String,Object>> tools
+    ){
+        return ChatWithPromptProfileRequest.builder()
+                .promptProfileId(profile.getId())
+                .promptProfileName(profile.getName())
+                .promptProfileVersion(profile.getVersion())
+
+                .model(profile.getModel())
+                .temperature(profile.getTemperature())
+                .topP(profile.getTopP())
+                .maxTokens(profile.getMaxTokens())
+                .seed(profile.getSeed())
+                .freqPenalty(profile.getFreqPenalty())
+                .presencePenalty(profile.getPresencePenalty())
+
+                .systemTpl(profile.getSystemTpl())
+                .guardrailTpl(profile.getGuardrailTpl())
+                .styleJson(profile.getStyleJson())
+                .toolsJson(profile.getToolsJson())
+                .policiesJson(profile.getPoliciesJson())
+
+                .stop(stop)
+                .tools(tools)
+
+                .context(context)
+                .userPrompt(userPrompt)
+                .build();
+    }
 
 }

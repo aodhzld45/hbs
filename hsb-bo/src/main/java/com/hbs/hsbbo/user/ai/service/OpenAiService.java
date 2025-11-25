@@ -2,6 +2,8 @@ package com.hbs.hsbbo.user.ai.service;
 
 import com.hbs.hsbbo.user.ai.dto.ChatRequest;
 import com.hbs.hsbbo.user.ai.dto.ChatResponse;
+import com.hbs.hsbbo.user.ai.dto.ChatWithPromptProfileRequest;
+import com.hbs.hsbbo.user.ai.dto.ChatWithPromptProfileResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -112,12 +114,146 @@ public class OpenAiService {
                 .timeout(Duration.ofSeconds(30));
     }
 
+    /**
+     * PromptProfile 기반으로 system/guardrail/style/policies를 조립해서
+     * OpenAI chat/completions를 호출하는 전용 메서드.
+     */
+    /**
+     * PromptProfile 기반으로 system/guardrail/style/policies를 조립해서
+     * OpenAI chat/completions를 호출하는 전용 메서드.
+     */
+    public Mono<ChatWithPromptProfileResponse> chatWithProfilePrompt(ChatWithPromptProfileRequest req) {
+        // 1) 모델 선택: req.model 없으면 defaultModel
+        String model = (req.getModel() == null || req.getModel().isBlank())
+                ? defaultModel
+                : req.getModel();
+
+        // 2) messages 구성
+        var messages = new java.util.ArrayList<Map<String, Object>>();
+
+        // 2-1) system 메시지: systemTpl + guardrailTpl + styleJson + policiesJson 합치기
+        StringBuilder systemBuf = new StringBuilder();
+
+        if (req.getSystemTpl() != null && !req.getSystemTpl().isBlank()) {
+            systemBuf.append(req.getSystemTpl().trim());
+        } else {
+            systemBuf.append("You are a helpful assistant.");
+        }
+
+        if (req.getGuardrailTpl() != null && !req.getGuardrailTpl().isBlank()) {
+            systemBuf.append("\n\n[Guardrail]\n").append(req.getGuardrailTpl().trim());
+        }
+
+        if (req.getStyleJson() != null && !req.getStyleJson().isBlank()) {
+            systemBuf.append("\n\n[Style JSON]\n").append(req.getStyleJson().trim());
+        }
+
+        if (req.getPoliciesJson() != null && !req.getPoliciesJson().isBlank()) {
+            systemBuf.append("\n\n[Policies JSON]\n").append(req.getPoliciesJson().trim());
+        }
+
+        messages.add(Map.of(
+                "role", "system",
+                "content", systemBuf.toString()
+        ));
+
+        // 2-2) context (옵션)
+        if (req.getContext() != null && !req.getContext().isBlank()) {
+            messages.add(Map.of(
+                    "role", "user",
+                    "content", "Context:\n" + req.getContext().trim()
+            ));
+        }
+
+        // 2-3) 실제 사용자 질문
+        messages.add(Map.of(
+                "role", "user",
+                "content", req.getUserPrompt() == null ? "" : req.getUserPrompt()
+        ));
+
+        // 3) OpenAI body 구성
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("model", model);
+        body.put("messages", messages);
+
+        // 3-1) 스칼라 파라미터
+        if (req.getTemperature() != null) {
+            body.put("temperature", req.getTemperature());
+        }
+        if (req.getTopP() != null) {
+            body.put("top_p", req.getTopP());
+        }
+        if (req.getMaxTokens() != null) {
+            body.put("max_tokens", req.getMaxTokens());
+        }
+        if (req.getFreqPenalty() != null) {
+            body.put("frequency_penalty", req.getFreqPenalty());
+        }
+        if (req.getPresencePenalty() != null) {
+            body.put("presence_penalty", req.getPresencePenalty());
+        }
+        if (req.getSeed() != null) {
+            body.put("seed", req.getSeed());
+        }
+
+        // 3-2) stop / tools
+        if (req.getStop() != null && !req.getStop().isEmpty()) {
+            body.put("stop", req.getStop());
+        }
+        if (req.getTools() != null && !req.getTools().isEmpty()) {
+            body.put("tools", req.getTools());
+        }
+
+        // 4) OpenAI 호출
+        return openAiWebClient.post()
+                .uri("/chat/completions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .retrieve()
+                .onStatus(s -> s.value() == 429, this::asTooManyRequests)
+                .onStatus(s -> s.is4xxClientError(), this::asClientError)
+                .onStatus(s -> s.is5xxServerError(), this::asServerError)
+                .bodyToMono(Map.class)
+                .map(res -> {
+                    var choices = (List<Map<String, Object>>) res.get("choices");
+                    String text = "";
+                    if (choices != null && !choices.isEmpty()) {
+                        var msg = (Map<String, Object>) choices.get(0).get("message");
+                        if (msg != null && msg.get("content") != null) {
+                            text = String.valueOf(msg.get("content"));
+                        }
+                    }
+                    var usage = (Map<String, Object>) res.get("usage");
+                    Integer promptT = usage == null ? null : toInt(usage.get("prompt_tokens"));
+                    Integer complT  = usage == null ? null : toInt(usage.get("completion_tokens"));
+                    Integer totalT  = usage == null ? null : toInt(usage.get("total_tokens"));
+                    String usedModel = (String) res.get("model");
+
+                    return ChatWithPromptProfileResponse.builder()
+                            .promptProfileId(req.getPromptProfileId())
+                            .promptProfileName(req.getPromptProfileName())
+                            .promptProfileVersion(req.getPromptProfileVersion())
+                            .model(usedModel == null ? model : usedModel)
+                            .text(text)
+                            .inputTokens(promptT)
+                            .outputTokens(complT)
+                            .totalTokens(totalT)
+                            .build();
+                })
+                .retryWhen(retrySpec())
+                .timeout(Duration.ofSeconds(30));
+    }
+
+    public ChatWithPromptProfileResponse chatWithProfilePromptBlocking(ChatWithPromptProfileRequest req) {
+        return chatWithProfilePrompt(req).block(Duration.ofSeconds(35));
+    }
+
     public ChatResponse chatBlocking(ChatRequest req) {
         return chat(req).block(Duration.ofSeconds(35));
     }
 
     // ---- helpers ----
-
     private Mono<? extends Throwable> asTooManyRequests(ClientResponse resp) {
         // Retry-After / x-ratelimit-* 헤더 확인 (있으면 로그로 남김)
         var h = resp.headers().asHttpHeaders();
