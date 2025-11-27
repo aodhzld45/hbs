@@ -40,6 +40,34 @@ const MainPage = () => {
 
   const [sections, setSections] = useState<PageSectionItem[]>([]); //  섹션 상태 추가
 
+  // 오늘 하루 팝업 및 배너 숨기기
+  const POPUP_HIDE_KEY = 'hsbs_popup_hide_date';
+
+  function isPopupHiddenToday(): boolean {
+    try {
+      const stored = localStorage.getItem(POPUP_HIDE_KEY);
+      const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD' 형식의 포맷
+      return stored === today;
+    } catch (e) {
+      console.error('localStorage 접근 실패', e);
+      return false;
+    }
+  }
+
+  const handleClosePopup = () => {
+    setIsPopupOpen(false);
+  };
+
+  const handleClosePopupToday = () => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      localStorage.setItem(POPUP_HIDE_KEY, today);
+    } catch (e) {
+      console.error('localStorage 저장 실패', e);
+    }
+    setIsPopupOpen(false);
+  };
+
   //  팝업배너 로딩 함수
   const loadPopupBanners = async () => {
     try {
@@ -53,6 +81,15 @@ const MainPage = () => {
         setPopupPopups(popupList);
         setIsPopupOpen(true);
       }
+
+      const hideToday = isPopupHiddenToday();
+
+      if (!hideToday && popupList.length > 0) {
+        setIsPopupOpen(true);
+      } else {
+        setIsPopupOpen(false);
+      }
+
     } catch (e) {
       console.error("팝업 로딩 실패", e);
     }
@@ -464,70 +501,93 @@ const MainPage = () => {
       )}
 
       {/* 메인 팝업 부분 */}
-      {isPopupOpen && popupPopups.length > 0 && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div
-            className="
-              bg-white dark:bg-gray-800
-              p-6 rounded-lg shadow relative
-              w-[80vw] h-[80vh]
-              max-w-5xl max-h-[90vh]
-              flex justify-center items-center
-            "
-          >
-            <button
-              className="
-                absolute top-4 right-4
-                w-12 h-12
-                text-gray-500 hover:text-gray-800
-                dark:text-gray-300 dark:hover:text-white
-                text-3xl font-bold flex items-center justify-center
-                z-10
-              "
-              onClick={() => setIsPopupOpen(false)}
-            >
-              ✕
-            </button>
+{isPopupOpen && popupPopups.length > 0 && (
+  <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+    <div
+      className="
+        bg-white dark:bg-gray-800
+        p-6 rounded-lg shadow relative
+        w-[80vw] h-[80vh]
+        max-w-5xl max-h-[90vh]
+        flex flex-col
+      "
+    >
+      {/* 상단 X 버튼 */}
+      <button
+        className="
+          absolute top-4 right-4
+          w-12 h-12
+          text-gray-500 hover:text-gray-800
+          dark:text-gray-300 dark:hover:text-white
+          text-3xl font-bold flex items-center justify-center
+          z-10
+        "
+        onClick={handleClosePopup}
+      >
+        ✕
+      </button>
 
-            <Swiper
-              modules={[Navigation, Pagination]}
-              spaceBetween={30}
-              slidesPerView={1}
-              navigation
-              pagination={{ clickable: true }}
-              className="w-full h-full"
-            >
-              {popupPopups.map((popup) => (
-                <SwiperSlide key={popup.id}>
-                  <div className="relative w-full h-full flex justify-center items-center">
-                    <img
-                      src={`${FILE_BASE_URL}${popup.filePath}`}
-                      alt={popup.title}
-                      className="max-w-full max-h-full object-contain rounded"
-                    />
-                    {popup.linkUrl && (
-                      <a
-                        href={popup.linkUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="
-                          absolute
-                          top-1/2 left-1/2
-                          -translate-x-1/2 -translate-y-1/2
-                          w-[80%] h-[80%]
-                          z-20
-                        "
-                      >
-                        <span className="sr-only">{popup.title}</span>
-                      </a>
-                    )}
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          </div>
-        </div>
-      )}
+      {/* 팝업 내용 영역 (Swiper) */}
+      <div className="flex-1 flex justify-center items-center">
+        <Swiper
+          modules={[Navigation, Pagination]}
+          spaceBetween={30}
+          slidesPerView={1}
+          navigation
+          pagination={{ clickable: true }}
+          className="w-full h-full"
+        >
+          {popupPopups.map((popup) => (
+            <SwiperSlide key={popup.id}>
+              <div className="relative w-full h-full flex justify-center items-center">
+                <img
+                  src={`${FILE_BASE_URL}${popup.filePath}`}
+                  alt={popup.title}
+                  className="max-w-full max-h-full object-contain rounded"
+                />
+                {popup.linkUrl && (
+                  <a
+                    href={popup.linkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="
+                      absolute
+                      top-1/2 left-1/2
+                      -translate-x-1/2 -translate-y-1/2
+                      w-[80%] h-[80%]
+                      z-20
+                    "
+                  >
+                    <span className="sr-only">{popup.title}</span>
+                  </a>
+                )}
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
+
+      {/* 하단 버튼 영역 */}
+      <div className="mt-4 flex justify-end gap-3">
+        <button
+          onClick={handleClosePopupToday}
+          className="text-xs md:text-sm px-3 py-1 border rounded-md text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          오늘 하루 보지 않기
+        </button>
+        <button
+          onClick={handleClosePopup}
+          className="text-xs md:text-sm px-3 py-1 border rounded-md text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
       </div>
     </Layout>
   );
