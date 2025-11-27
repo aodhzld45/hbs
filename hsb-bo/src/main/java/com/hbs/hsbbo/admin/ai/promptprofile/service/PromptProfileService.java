@@ -113,13 +113,20 @@ public class PromptProfileService {
     
     // 수정(update)
     public Long update(Long id, PromptProfileRequest request, String actor) {
-        String name = normalizeName(request.getName());
 
-        // 1) 이름 중복 체크
-        if(promptProfileRepository.existsByNameAndDelTf(name, "N"))
-            throw new IllegalArgumentException("이미 존재하는 이름입니다: " + request.getName());
+        PromptProfile e = promptProfileRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 프로필입니다. id=" + id));
 
-        PromptProfile e = promptProfileRepository.findById(id).orElseThrow();
+        String newName = normalizeName(request.getName());
+        String currentName = normalizeName(e.getName());
+
+        if (!newName.equals(currentName)) {
+            boolean exists = promptProfileRepository.existsByNameAndDelTf(newName, "N");
+            if (exists) {
+                throw new IllegalArgumentException("이미 존재하는 이름입니다: " + request.getName());
+            }
+        }
+
         applyFromRequest(e, request, false);
         e.setUpAdm(actor);
         // @Transactional 이므로 flush는 트랜잭션 종료 시점에
