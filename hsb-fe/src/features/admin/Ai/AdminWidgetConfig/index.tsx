@@ -14,14 +14,20 @@ import {
   fetchAdminMenus
 } from '../../../../services/Admin/adminMenuApi';
 import { AdminMenu } from '../../../../types/Admin/AdminMenu';
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 // 관리자 정보 불러오기
 import AdminLayout from "../../../../components/Layout/AdminLayout";
 import { useAuth } from "../../../../context/AuthContext";
 
 export default function AdminWidgetConfig() {
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // URL ?editId=3 이면 3, 없으면 null
+    const editIdParam = searchParams.get('editId');
+    const selectedId: number | null =
+      editIdParam != null ? Number(editIdParam) : null;
+
     // 공통 헤더/메뉴 관련
     const location = useLocation();
     const { admin } = useAuth();
@@ -61,11 +67,25 @@ export default function AdminWidgetConfig() {
 
   // 상세 훅 (선택된 경우만)
   const detail = useWidgetConfigDetail(selectedId ?? undefined);
+ 
+  const openCreate = () => {
+    const next = new URLSearchParams(searchParams);
+    next.set('editId', '0');              // 신규는 0으로 약속
+    setSearchParams(next, { replace: false });
+  };
 
-  const openCreate = () => setSelectedId(0);
-  const openEdit = (id: number) => setSelectedId(id);
-  const closeEditor = () => setSelectedId(null);
+  const openEdit = (id: number) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('editId', String(id));
+    setSearchParams(next, { replace: false });
+  };  
 
+  const closeEditor = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('editId');                // 편집 모드 종료
+    setSearchParams(next, { replace: true });
+  };
+  
   const handleSubmit = async (data: WidgetConfigRequest, iconFile?: File | null) => {
     try {
       const isCreate = !selectedId || selectedId === 0;

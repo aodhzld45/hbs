@@ -251,8 +251,15 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview 
         <h3 className="font-semibold">문구/라벨</h3>
         <input className="border rounded px-3 py-2 w-full" placeholder="패널 타이틀"
                value={form.panelTitle || ''} onChange={(e) => update('panelTitle', e.target.value)} />
-        <input className="border rounded px-3 py-2 w-full" placeholder="환영 문구"
-               value={form.welcomeText || ''} onChange={(e) => update('welcomeText', e.target.value)} />
+
+        <textarea
+          className="border rounded px-3 py-2 w-full min-h-[80px]"
+          placeholder="환영 문구 (여러 줄 입력 가능)"
+          value={form.welcomeText || ''}
+          onChange={(e) => update('welcomeText', e.target.value)}
+        />
+
+
         <input className="border rounded px-3 py-2 w-full" placeholder="입력 placeholder"
                value={form.inputPlaceholder || ''} onChange={(e) => update('inputPlaceholder', e.target.value)} />
         <input className="border rounded px-3 py-2 w-full" placeholder="보내기 버튼 라벨"
