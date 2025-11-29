@@ -38,7 +38,9 @@ export type WidgetConfig = {
   closeOnEsc: 'Y' | 'N';
   closeOnOutsideClick: 'Y' | 'N';
 
-  options?: Record<string, unknown>;
+  options?: Record<string, null>;
+  welcomeQuickRepliesJson?: string | null;
+
   notes?: string;
 
   useTf?: string;
@@ -46,6 +48,13 @@ export type WidgetConfig = {
   regDate?: string;
   upDate?: string;
 }
+
+export type QuickReplyRow = {
+  id: number;        // React key용 로컬 id
+  label: string;
+  payload: string;
+  order: number;
+};
 
 export type WidgetConfigRequest = Omit<WidgetConfig, 'id'|'useTf'|'delTf'|'regDate'|'upDate'>;
 

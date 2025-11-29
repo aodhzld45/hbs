@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import type { WidgetConfig, WidgetConfigRequest } from '../types/widgetConfig';
+import type { WidgetConfig, WidgetConfigRequest, QuickReplyRow } from '../types/widgetConfig';
 
 import { fetchSiteKeyList, fetchLinkedSiteKeys } from '../../AdminSiteKeys/services/siteKeyApi'; 
 import type { SiteKeySummary } from '../../AdminSiteKeys/types/siteKey';
+import { useQuickReplies } from '../hooks/useQuickReplies';
 
 import ColorPickerField from './ColorPickerField';  // 재사용 가능한 컬러 피커 컴포넌트
-
 
 type Props = {
   value?: WidgetConfig | null;      // id === 0(신규)일 때는 undefined/null 전달
@@ -31,13 +31,25 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview 
     linkedSiteKeyId: null,
   });
 
+  // 퀵리플라이 훅: value에서 내려온 welcomeQuickRepliesJson을 초기값으로 사용
+  const {
+    rows: quickReplies,
+    add: addQuickReply,
+    update: updateQuickReply,
+    remove: removeQuickReply,
+    move: moveQuickReply,
+    toJsonOrNull: quickRepliesToJson,
+  } = useQuickReplies({
+    initialJson: value?.welcomeQuickRepliesJson,
+  });
+
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [iconPreviewUrl, setIconPreviewUrl] = useState<string | null>(null);
   const [iconError, setIconError] = useState<string | null>(null);
 
   const [linkedTouched, setLinkedTouched] = useState(false);
 
-    // 사이트키 목록 상태
+  // 사이트키 목록 상태
   const [siteKeys, setSiteKeys] = useState<SiteKeySummary[]>([]);
   const [loadingKeys, setLoadingKeys] = useState(false);
   const [keysError, setKeysError] = useState<string | null>(null);
@@ -55,7 +67,7 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview 
     setIconFile(null);
     setIconPreviewUrl(rest?.bubbleIconUrl || null);
     setIconError(null);
-    
+
     // 미리보기 패널 초기값 설정
     onChangePreview?.({
       ...rest,
@@ -179,8 +191,16 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview 
   // 제출
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // 멀티파트로 보낼 수 있도록 부모에 iconFile까지 전달
-    onSubmit(form, iconFile);
+
+    // 퀵리플라이 배열 → JSON 문자열 (없으면 null)
+    const welcomeQuickRepliesJson = quickRepliesToJson();
+
+    const payload: WidgetConfigRequest = {
+      ...form,
+      welcomeQuickRepliesJson,
+    };
+
+    onSubmit(payload, iconFile);
   }
 
   return (
@@ -259,6 +279,86 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview 
           onChange={(e) => update('welcomeText', e.target.value)}
         />
 
+          {/* 초기 추천 질문(퀵리플라이) - 행 기반 UI */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">초기 추천 질문(퀵리플라이)</span>
+            <button
+              type="button"
+              className="px-2 py-1 text-xs border rounded"
+              onClick={addQuickReply}
+            >
+              + 항목 추가
+            </button>
+          </div>
+
+          {quickReplies.length === 0 && (
+            <p className="text-xs text-gray-500">
+              &quot;+ 항목 추가&quot;를 눌러 추천 질문 버튼을 등록하세요.
+            </p>
+          )}
+
+          <div className="space-y-2">
+            {quickReplies.map((row, idx) => (
+              <div
+                key={row.id}
+                className="border rounded p-2 space-y-1 bg-gray-50"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600">
+                    #{idx + 1} 순서(order): {row.order}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      className="px-1 text-xs border rounded"
+                      onClick={() => moveQuickReply(row.id, -1)}
+                      disabled={idx === 0}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="px-1 text-xs border rounded"
+                      onClick={() => moveQuickReply(row.id, 1)}
+                      disabled={idx === quickReplies.length - 1}
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      className="px-1 text-xs border rounded text-red-500"
+                      onClick={() => removeQuickReply(row.id)}
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </div>
+
+                <input
+                  className="w-full border rounded px-2 py-1 text-xs"
+                  placeholder="버튼 라벨 (예: 포트폴리오 전체 요약)"
+                  value={row.label}
+                  onChange={(e) =>
+                    updateQuickReply(row.id, { label: e.target.value })
+                  }
+                />
+                <input
+                  className="w-full border rounded px-2 py-1 text-xs"
+                  placeholder="클릭 시 보낼 질문 문장"
+                  value={row.payload}
+                  onChange={(e) =>
+                    updateQuickReply(row.id, { payload: e.target.value })
+                  }
+                />
+              </div>
+            ))}
+          </div>
+
+          <p className="text-xs text-gray-500">
+            위젯 최초 오픈 시, 위 항목들이 순서대로 버튼으로 표시되고 클릭 시 해당 질문이 입력·전송됩니다.
+          </p>
+        </div>
 
         <input className="border rounded px-3 py-2 w-full" placeholder="입력 placeholder"
                value={form.inputPlaceholder || ''} onChange={(e) => update('inputPlaceholder', e.target.value)} />
