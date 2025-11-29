@@ -71,6 +71,16 @@ public class WidgetConfigRequest {
     // 확장 옵션(JSON)
     private Map<String, Object> options;
 
+    /**
+     * 환영 퀵리플라이 JSON
+     * - Admin 화면의 textarea에서 그대로 들어오는 문자열
+     * - 예) [
+     *   { "label": "포트폴리오 전체 요약", "payload": "..." },
+     *   { "label": "AI 챗봇 SaaS 구조", "payload": "..." }
+     * ]
+     */
+    private String welcomeQuickRepliesJson;
+
     // 운영 메모
     private String notes;
 }

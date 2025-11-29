@@ -6,6 +6,7 @@ import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
 import com.hbs.hsbbo.admin.ai.sitekey.repository.SiteKeyRepository;
 import com.hbs.hsbbo.admin.ai.sitekey.service.SiteKeyService;
 import com.hbs.hsbbo.admin.ai.widgetconfig.domain.entity.WidgetConfig;
+import com.hbs.hsbbo.admin.ai.widgetconfig.dto.WelcomeQuickReplyOption;
 import com.hbs.hsbbo.admin.ai.widgetconfig.dto.request.WidgetConfigRequest;
 import com.hbs.hsbbo.admin.ai.widgetconfig.dto.response.WidgetConfigListResponse;
 import com.hbs.hsbbo.admin.ai.widgetconfig.dto.response.WidgetConfigResponse;
@@ -267,8 +268,12 @@ public class WidgetConfigService {
         e.setCloseOnEsc(flag(r.getCloseOnEsc()));
         e.setCloseOnOutsideClick(flag(r.getCloseOnOutsideClick()));
 
-        // 확장 옵션(JSON)
-        e.setOptionsJson(writeOptions(r.getOptions()));
+        // 확장 옵션(JSON) – 기본 options + 환영 퀵리플라이 병합
+        Map<String, Object> mergedOptions = mergeOptions(
+                r.getOptions(),
+                r.getWelcomeQuickRepliesJson()
+        );
+        e.setOptionsJson(writeOptions(mergedOptions));
 
         // 메모
         e.setNotes(trim(r.getNotes()));
@@ -320,10 +325,42 @@ public class WidgetConfigService {
     }
 
     private Map<String, Object> readOptions(String json) {
-        if (json == null || json.isBlank()) return null;
-        try { return om.readValue(json, new TypeReference<>() {}); }
-        catch (Exception e) { throw new RuntimeException("options 파싱 실패", e); }
+        if (json == null || json.isBlank()) {
+            return new java.util.HashMap<>();
+        }
+        try {
+            return om.readValue(json, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            throw new RuntimeException("options 파싱 실패", e);
+        }
     }
 
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> mergeOptions(Map<String, Object> baseOpt, String welcomeQuickRepliesJson) {
+        // 1) 기본 options (null이면 빈 Map으로 시작)
+        Map<String, Object> opt = (baseOpt != null)
+                ? new java.util.HashMap<>(baseOpt)
+                : new java.util.HashMap<>();
+
+        // 2) 환영 퀵리플라이 JSON이 비어 있으면, 키 제거 or 유지 선택
+        if (welcomeQuickRepliesJson == null || welcomeQuickRepliesJson.isBlank()) {
+            // 기존 값도 지우고 싶으면:
+            // opt.remove("welcomeQuickReplies");
+            return opt;
+        }
+
+        // 3) JSON 문자열 → List<WelcomeQuickReplyOption> 파싱
+        try {
+            List<WelcomeQuickReplyOption> list = om.readValue(
+                    welcomeQuickRepliesJson.trim(),
+                    new TypeReference<List<WelcomeQuickReplyOption>>() {}
+            );
+            opt.put("welcomeQuickReplies", list);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("welcomeQuickRepliesJson 형식이 잘못되었습니다.", e);
+        }
+
+        return opt;
+    }
 
 }

@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.ai.widgetconfig.dto.response;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hbs.hsbbo.admin.ai.widgetconfig.domain.entity.WidgetConfig;
 import lombok.*;
 
@@ -13,6 +14,9 @@ import java.util.Map;
 @ToString
 @Builder
 public class WidgetConfigResponse {
+
+    private static final ObjectMapper OM = new ObjectMapper();
+
     private Long id;
     private String name;
 
@@ -57,6 +61,9 @@ public class WidgetConfigResponse {
     // 확장 옵션(JSON 디코딩)
     private Map<String, Object> options;
 
+    // 환영 퀵리플라이 JSON (Admin에서 textarea에 그대로 보여줄 용도)
+    private String welcomeQuickRepliesJson;
+
     // 운영 메모 & 감사 필드(읽기 전용)
     private String notes;
     private String useTf;
@@ -66,6 +73,22 @@ public class WidgetConfigResponse {
 
     // 엔티티 → 응답 매핑 (options는 서비스에서 파싱하여 주입)
     public static WidgetConfigResponse from(WidgetConfig e, Map<String, Object> options) {
+
+        // options에서 welcomeQuickReplies만 뽑아서 JSON 문자열로 변환
+        String welcomeQuickRepliesJson = null;
+        if (options != null) {
+            Object raw = options.get("welcomeQuickReplies");
+            if (raw != null) {
+                try {
+                    ObjectMapper om = new ObjectMapper();
+                    // raw(Map/List)를 그대로 JSON String으로 직렬화
+                    welcomeQuickRepliesJson = om.writeValueAsString(raw);
+                } catch (Exception ignore) {
+                    // 형식이 이상해도 전체 흐름은 막지 않음 (로그만 남겨도 됨)
+                }
+            }
+        }
+
         return WidgetConfigResponse.builder()
                 .id(e.getId())
                 .name(e.getName())
@@ -104,6 +127,7 @@ public class WidgetConfigResponse {
                 .closeOnOutsideClick(e.getCloseOnOutsideClick())
 
                 .options(options)
+                .welcomeQuickRepliesJson(welcomeQuickRepliesJson)
 
                 .notes(e.getNotes())
                 .useTf(e.getUseTf())
