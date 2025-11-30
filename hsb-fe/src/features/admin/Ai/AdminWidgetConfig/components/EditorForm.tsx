@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import type { WidgetConfig, WidgetConfigRequest, QuickReplyRow } from '../types/widgetConfig';
+import type { WidgetConfig, WidgetConfigRequest } from '../types/widgetConfig';
 
 import { fetchSiteKeyList, fetchLinkedSiteKeys } from '../../AdminSiteKeys/services/siteKeyApi'; 
 import type { SiteKeySummary } from '../../AdminSiteKeys/types/siteKey';
@@ -205,288 +205,291 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview 
 
   return (
     <form
-      className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      className="flex flex-col max-h-[80vh] lg:max-h-[70vh]"
       onSubmit={handleSubmit}
     >
-      {/* 기본 섹션 */}
-      <section className="space-y-3">
-        <h3 className="font-semibold">기본</h3>
-        <input
-          className="border rounded px-3 py-2 w-full"
-          placeholder="설정 이름"
-          value={form.name}
-          onChange={(e) => update('name', e.target.value)}
-        />
-        <div className="grid grid-cols-3 gap-2">
-          <label className="text-sm self-center">위치</label>
-          <select
-            className="col-span-2 border rounded px-2 py-2"
-            value={form.position}
-            onChange={(e) => update('position', e.target.value as 'left' | 'right')}
-          >
-            <option value="right">right</option>
-            <option value="left">left</option>
-          </select>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          <label className="text-sm self-center">연결 사이트키</label>
-          <select
-            className="col-span-2 border rounded px-2 py-2"
-            value={form.linkedSiteKeyId ?? ''} // '' = 미선택
-            onChange={(e) => {
-              setLinkedTouched(true); // 사용자가 직접 변경 → 자동 세팅 방지
-              update('linkedSiteKeyId', e.target.value ? Number(e.target.value) : null);
-            }}
-            disabled={loadingKeys || !!keysError}
-          >
-            <option value="">(선택 없음)</option>
-            {siteKeyOptions.map((opt) => (
-              <option key={opt.value} value={opt.value} disabled={opt.disabled}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          {loadingKeys && (
-            <span className="col-span-3 text-xs text-gray-500">사이트키 불러오는 중…</span>
-          )}
-          {keysError && <span className="col-span-3 text-xs text-red-500">{keysError}</span>}
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          <label className="text-sm self-center">offsetX</label>
-          <input type="number" className="col-span-2 border rounded px-2 py-1"
-                 value={form.offsetX ?? 0} onChange={(e) => update('offsetX', +e.target.value)} />
-          <label className="text-sm self-center">offsetY</label>
-          <input type="number" className="col-span-2 border rounded px-2 py-1"
-                 value={form.offsetY ?? 0} onChange={(e) => update('offsetY', +e.target.value)} />
-          <label className="text-sm self-center">panelWidthPx</label>
-          <input type="number" className="col-span-2 border rounded px-2 py-1"
-                 value={form.panelWidthPx ?? 360} onChange={(e) => update('panelWidthPx', +e.target.value)} />
-        </div>
-      </section>
-
-      {/* 문구/라벨 섹션 */}
-      <section className="space-y-3">
-        <h3 className="font-semibold">문구/라벨</h3>
-        <input className="border rounded px-3 py-2 w-full" placeholder="패널 타이틀"
-               value={form.panelTitle || ''} onChange={(e) => update('panelTitle', e.target.value)} />
-
-        <textarea
-          className="border rounded px-3 py-2 w-full min-h-[80px]"
-          placeholder="환영 문구 (여러 줄 입력 가능)"
-          value={form.welcomeText || ''}
-          onChange={(e) => update('welcomeText', e.target.value)}
-        />
-
-          {/* 초기 추천 질문(퀵리플라이) - 행 기반 UI */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">초기 추천 질문(퀵리플라이)</span>
-            <button
-              type="button"
-              className="px-2 py-1 text-xs border rounded"
-              onClick={addQuickReply}
-            >
-              + 항목 추가
-            </button>
-          </div>
-
-          {quickReplies.length === 0 && (
-            <p className="text-xs text-gray-500">
-              &quot;+ 항목 추가&quot;를 눌러 추천 질문 버튼을 등록하세요.
-            </p>
-          )}
-
-          <div className="space-y-2">
-            {quickReplies.map((row, idx) => (
-              <div
-                key={row.id}
-                className="border rounded p-2 space-y-1 bg-gray-50"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-600">
-                    #{idx + 1} 순서(order): {row.order}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      className="px-1 text-xs border rounded"
-                      onClick={() => moveQuickReply(row.id, -1)}
-                      disabled={idx === 0}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      className="px-1 text-xs border rounded"
-                      onClick={() => moveQuickReply(row.id, 1)}
-                      disabled={idx === quickReplies.length - 1}
-                    >
-                      ↓
-                    </button>
-                    <button
-                      type="button"
-                      className="px-1 text-xs border rounded text-red-500"
-                      onClick={() => removeQuickReply(row.id)}
-                    >
-                      삭제
-                    </button>
-                  </div>
-                </div>
-
-                <input
-                  className="w-full border rounded px-2 py-1 text-xs"
-                  placeholder="버튼 라벨 (예: 포트폴리오 전체 요약)"
-                  value={row.label}
-                  onChange={(e) =>
-                    updateQuickReply(row.id, { label: e.target.value })
-                  }
-                />
-                <input
-                  className="w-full border rounded px-2 py-1 text-xs"
-                  placeholder="클릭 시 보낼 질문 문장"
-                  value={row.payload}
-                  onChange={(e) =>
-                    updateQuickReply(row.id, { payload: e.target.value })
-                  }
-                />
-              </div>
-            ))}
-          </div>
-
-          <p className="text-xs text-gray-500">
-            위젯 최초 오픈 시, 위 항목들이 순서대로 버튼으로 표시되고 클릭 시 해당 질문이 입력·전송됩니다.
-          </p>
-        </div>
-
-        <input className="border rounded px-3 py-2 w-full" placeholder="입력 placeholder"
-               value={form.inputPlaceholder || ''} onChange={(e) => update('inputPlaceholder', e.target.value)} />
-        <input className="border rounded px-3 py-2 w-full" placeholder="보내기 버튼 라벨"
-               value={form.sendButtonLabel || ''} onChange={(e) => update('sendButtonLabel', e.target.value)} />
-      </section>
-
-      {/* 색상 섹션 */}
-      <section className="space-y-3">
-        <h3 className="font-semibold">브랜딩 색상</h3>
-        {([
-          ['primaryColor', 'Primary'],
-          ['panelBgColor', 'Panel BG'],
-          ['panelTextColor', 'Panel Text'],
-          ['bubbleBgColor', 'Bubble BG'],
-          ['bubbleFgColor', 'Bubble Text'],
-          ['headerBgColor', 'Header BG'],
-          ['headerBorderColor', 'Header Border'],
-          ['inputBgColor', 'Input BG'],
-          ['inputTextColor', 'Input Text'],
-        ] as const).map(([key, label]) => (
-          <ColorPickerField
-            key={key}
-            label={label}
-            value={(form as any)[key] || ''}
-            onChange={(next) => update(key as any, next)}
-            name={key}
-          />
-        ))}
-      </section>
-
-      {/* 아이콘/로고 섹션 */}
-      <section className="space-y-3">
-        <h3 className="font-semibold">아이콘/로고</h3>
-
-        <div className="grid grid-cols-3 gap-2">
-          <label className="text-sm self-center">이모지</label>
+      <div className="flex-1 overflow-y-auto space-y-6 p-4 lg:p-6">
+        {/* 기본 섹션 */}
+        <section className="space-y-3">
+          <h3 className="font-semibold">기본</h3>
           <input
-            className="col-span-2 border rounded px-2 py-1"
-            value={form.bubbleIconEmoji || ''}
-            onChange={(e) => update('bubbleIconEmoji', e.target.value)}
-            placeholder="예: 💬"
+            className="border rounded px-3 py-2 w-full"
+            placeholder="설정 이름"
+            value={form.name}
+            onChange={(e) => update('name', e.target.value)}
           />
-        </div>
+          <div className="grid grid-cols-3 gap-2">
+            <label className="text-sm self-center">위치</label>
+            <select
+              className="col-span-2 border rounded px-2 py-2"
+              value={form.position}
+              onChange={(e) => update('position', e.target.value as 'left' | 'right')}
+            >
+              <option value="right">right</option>
+              <option value="left">left</option>
+            </select>
+          </div>
 
-        {/* 기존 URL 표시 + 제거 */}
-        <div className="grid grid-cols-3 gap-2 items-start">
-          <label className="text-sm self-center">현재 아이콘 URL</label>
-          <div className="col-span-2 flex items-center gap-2">
-            <input
-              className="flex-1 border rounded px-2 py-1 text-xs"
-              value={form.bubbleIconUrl || ''}
-              onChange={(e) => update('bubbleIconUrl', e.target.value)}
-              placeholder="/files/ai_widget/icon/uuid.png"
-            />
-            {!!form.bubbleIconUrl && (
+          <div className="grid grid-cols-3 gap-2">
+            <label className="text-sm self-center">연결 사이트키</label>
+            <select
+              className="col-span-2 border rounded px-2 py-2"
+              value={form.linkedSiteKeyId ?? ''} // '' = 미선택
+              onChange={(e) => {
+                setLinkedTouched(true); // 사용자가 직접 변경 → 자동 세팅 방지
+                update('linkedSiteKeyId', e.target.value ? Number(e.target.value) : null);
+              }}
+              disabled={loadingKeys || !!keysError}
+            >
+              <option value="">(선택 없음)</option>
+              {siteKeyOptions.map((opt) => (
+                <option key={opt.value} value={opt.value} disabled={opt.disabled}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            {loadingKeys && (
+              <span className="col-span-3 text-xs text-gray-500">사이트키 불러오는 중…</span>
+            )}
+            {keysError && <span className="col-span-3 text-xs text-red-500">{keysError}</span>}
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <label className="text-sm self-center">offsetX</label>
+            <input type="number" className="col-span-2 border rounded px-2 py-1"
+                  value={form.offsetX ?? 0} onChange={(e) => update('offsetX', +e.target.value)} />
+            <label className="text-sm self-center">offsetY</label>
+            <input type="number" className="col-span-2 border rounded px-2 py-1"
+                  value={form.offsetY ?? 0} onChange={(e) => update('offsetY', +e.target.value)} />
+            <label className="text-sm self-center">panelWidthPx</label>
+            <input type="number" className="col-span-2 border rounded px-2 py-1"
+                  value={form.panelWidthPx ?? 360} onChange={(e) => update('panelWidthPx', +e.target.value)} />
+          </div>
+        </section>
+
+        {/* 문구/라벨 섹션 */}
+        <section className="space-y-3">
+          <h3 className="font-semibold">문구/라벨</h3>
+          <input className="border rounded px-3 py-2 w-full" placeholder="패널 타이틀"
+                value={form.panelTitle || ''} onChange={(e) => update('panelTitle', e.target.value)} />
+
+          <textarea
+            className="border rounded px-3 py-2 w-full min-h-[80px]"
+            placeholder="환영 문구 (여러 줄 입력 가능)"
+            value={form.welcomeText || ''}
+            onChange={(e) => update('welcomeText', e.target.value)}
+          />
+
+            {/* 초기 추천 질문(퀵리플라이) - 행 기반 UI */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">초기 추천 질문(퀵리플라이)</span>
               <button
                 type="button"
                 className="px-2 py-1 text-xs border rounded"
-                onClick={clearIconUrl}
-                title="아이콘 제거(이모지 사용)"
+                onClick={addQuickReply}
               >
-                제거
+                + 항목 추가
               </button>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* 파일 업로드 → 서버에서 URL로 저장 */}
-        <div className="grid grid-cols-3 gap-2 items-start">
-          <label className="text-sm self-center">아이콘 파일</label>
-          <div className="col-span-2 space-y-2">
-            <input type="file" accept="image/*" onChange={handleIconChange} />
-            {iconError && <div className="text-xs text-red-500">{iconError}</div>}
-
-            {(iconPreviewUrl || form.bubbleIconUrl) && (
-              <div className="flex items-center gap-3">
-                <img
-                  src={iconPreviewUrl || form.bubbleIconUrl || ''}
-                  alt="icon preview"
-                  className="w-10 h-10 object-contain border rounded"
-                />
-                {iconPreviewUrl && (
-                  <span className="text-xs text-gray-500">
-                    (미리보기: 저장 시 업로드됨)
-                  </span>
-                )}
-              </div>
-            )}
-
-            {!iconPreviewUrl && !form.bubbleIconUrl && (
+            {quickReplies.length === 0 && (
               <p className="text-xs text-gray-500">
-                아이콘 파일을 선택하면 이모지보다 아이콘이 우선 표시됩니다.
+                &quot;+ 항목 추가&quot;를 눌러 추천 질문 버튼을 등록하세요.
               </p>
             )}
+
+            <div className="space-y-2">
+              {quickReplies.map((row, idx) => (
+                <div
+                  key={row.id}
+                  className="border rounded p-2 space-y-1 bg-gray-50"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">
+                      #{idx + 1} 순서(order): {row.order}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        className="px-1 text-xs border rounded"
+                        onClick={() => moveQuickReply(row.id, -1)}
+                        disabled={idx === 0}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        className="px-1 text-xs border rounded"
+                        onClick={() => moveQuickReply(row.id, 1)}
+                        disabled={idx === quickReplies.length - 1}
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        className="px-1 text-xs border rounded text-red-500"
+                        onClick={() => removeQuickReply(row.id)}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+
+                  <input
+                    className="w-full border rounded px-2 py-1 text-xs"
+                    placeholder="버튼 라벨 (예: 포트폴리오 전체 요약)"
+                    value={row.label}
+                    onChange={(e) =>
+                      updateQuickReply(row.id, { label: e.target.value })
+                    }
+                  />
+                  <input
+                    className="w-full border rounded px-2 py-1 text-xs"
+                    placeholder="클릭 시 보낼 질문 문장"
+                    value={row.payload}
+                    onChange={(e) =>
+                      updateQuickReply(row.id, { payload: e.target.value })
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-gray-500">
+              위젯 최초 오픈 시, 위 항목들이 순서대로 버튼으로 표시되고 클릭 시 해당 질문이 입력·전송됩니다.
+            </p>
           </div>
-        </div>
-      </section>
 
-      {/* 동작 섹션 */}
-      <section className="space-y-3">
-        <h3 className="font-semibold">동작</h3>
-        {([
-          ['openOnLoad', '로드 시 자동 열기'],
-          ['greetOncePerOpen', '열릴 때 환영 1회만'],
-          ['closeOnEsc', 'ESC로 닫기'],
-          ['closeOnOutsideClick', '바깥 클릭으로 닫기'],
-        ] as const).map(([key, label]) => (
-          <label key={key} className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={(form as any)[key] === 'Y'}
-              onChange={(e) => update(key as any, e.target.checked ? 'Y' : 'N')}
+          <input className="border rounded px-3 py-2 w-full" placeholder="입력 placeholder"
+                value={form.inputPlaceholder || ''} onChange={(e) => update('inputPlaceholder', e.target.value)} />
+          <input className="border rounded px-3 py-2 w-full" placeholder="보내기 버튼 라벨"
+                value={form.sendButtonLabel || ''} onChange={(e) => update('sendButtonLabel', e.target.value)} />
+        </section>
+
+        {/* 색상 섹션 */}
+        <section className="space-y-3">
+          <h3 className="font-semibold">브랜딩 색상</h3>
+          {([
+            ['primaryColor', 'Primary'],
+            ['panelBgColor', 'Panel BG'],
+            ['panelTextColor', 'Panel Text'],
+            ['bubbleBgColor', 'Bubble BG'],
+            ['bubbleFgColor', 'Bubble Text'],
+            ['headerBgColor', 'Header BG'],
+            ['headerBorderColor', 'Header Border'],
+            ['inputBgColor', 'Input BG'],
+            ['inputTextColor', 'Input Text'],
+          ] as const).map(([key, label]) => (
+            <ColorPickerField
+              key={key}
+              label={label}
+              value={(form as any)[key] || ''}
+              onChange={(next) => update(key as any, next)}
+              name={key}
             />
-            <span className="text-sm">{label}</span>
-          </label>
-        ))}
-        <div className="grid grid-cols-3 gap-2">
-          <label className="text-sm self-center">openDelayMs</label>
-          <input type="number" className="col-span-2 border rounded px-2 py-1"
-                 value={form.openDelayMs ?? 0} onChange={(e) => update('openDelayMs', +e.target.value)} />
-        </div>
-      </section>
+          ))}
+        </section>
 
-      <div className="lg:col-span-2 flex justify-end gap-2 pt-2">
+        {/* 아이콘/로고 섹션 */}
+        <section className="space-y-3">
+          <h3 className="font-semibold">아이콘/로고</h3>
+
+          <div className="grid grid-cols-3 gap-2">
+            <label className="text-sm self-center">이모지</label>
+            <input
+              className="col-span-2 border rounded px-2 py-1"
+              value={form.bubbleIconEmoji || ''}
+              onChange={(e) => update('bubbleIconEmoji', e.target.value)}
+              placeholder="예: 💬"
+            />
+          </div>
+
+          {/* 기존 URL 표시 + 제거 */}
+          <div className="grid grid-cols-3 gap-2 items-start">
+            <label className="text-sm self-center">현재 아이콘 URL</label>
+            <div className="col-span-2 flex items-center gap-2">
+              <input
+                className="flex-1 border rounded px-2 py-1 text-xs"
+                value={form.bubbleIconUrl || ''}
+                onChange={(e) => update('bubbleIconUrl', e.target.value)}
+                placeholder="/files/ai_widget/icon/uuid.png"
+              />
+              {!!form.bubbleIconUrl && (
+                <button
+                  type="button"
+                  className="px-2 py-1 text-xs border rounded"
+                  onClick={clearIconUrl}
+                  title="아이콘 제거(이모지 사용)"
+                >
+                  제거
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 파일 업로드 → 서버에서 URL로 저장 */}
+          <div className="grid grid-cols-3 gap-2 items-start">
+            <label className="text-sm self-center">아이콘 파일</label>
+            <div className="col-span-2 space-y-2">
+              <input type="file" accept="image/*" onChange={handleIconChange} />
+              {iconError && <div className="text-xs text-red-500">{iconError}</div>}
+
+              {(iconPreviewUrl || form.bubbleIconUrl) && (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={iconPreviewUrl || form.bubbleIconUrl || ''}
+                    alt="icon preview"
+                    className="w-10 h-10 object-contain border rounded"
+                  />
+                  {iconPreviewUrl && (
+                    <span className="text-xs text-gray-500">
+                      (미리보기: 저장 시 업로드됨)
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {!iconPreviewUrl && !form.bubbleIconUrl && (
+                <p className="text-xs text-gray-500">
+                  아이콘 파일을 선택하면 이모지보다 아이콘이 우선 표시됩니다.
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* 동작 섹션 */}
+        <section className="space-y-3">
+          <h3 className="font-semibold">동작</h3>
+          {([
+            ['openOnLoad', '로드 시 자동 열기'],
+            ['greetOncePerOpen', '열릴 때 환영 1회만'],
+            ['closeOnEsc', 'ESC로 닫기'],
+            ['closeOnOutsideClick', '바깥 클릭으로 닫기'],
+          ] as const).map(([key, label]) => (
+            <label key={key} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={(form as any)[key] === 'Y'}
+                onChange={(e) => update(key as any, e.target.checked ? 'Y' : 'N')}
+              />
+              <span className="text-sm">{label}</span>
+            </label>
+          ))}
+          <div className="grid grid-cols-3 gap-2">
+            <label className="text-sm self-center">openDelayMs</label>
+            <input type="number" className="col-span-2 border rounded px-2 py-1"
+                  value={form.openDelayMs ?? 0} onChange={(e) => update('openDelayMs', +e.target.value)} />
+          </div>
+        </section>
+      </div>
+
+      <div className="sticky lg:col-span-2 flex justify-center gap-2 pt-2">
         <button type="button" className="px-3 py-2 border rounded" onClick={onCancel}>취소</button>
         <button type="submit" className="px-3 py-2 bg-blue-600 text-white rounded">저장</button>
       </div>
+
     </form>
   );
 }

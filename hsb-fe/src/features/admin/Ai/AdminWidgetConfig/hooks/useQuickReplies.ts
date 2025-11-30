@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { QuickReplyRow } from '../types/widgetConfig';
 
 
@@ -61,18 +61,29 @@ export function useQuickReplies(opts?: UseQuickRepliesOptions) {
   }
 
   /** 비어있는 행 제거 후, 백엔드로 보낼 JSON 문자열 생성 */
-  function toJsonOrNull(): string | null {
-    const effective = rows
-      .map((r, idx) => ({
-        label: r.label.trim(),
-        payload: r.payload.trim(),
-        order: r.order ?? idx + 1,
-      }))
-      .filter((r) => r.label || r.payload);
+  const toJsonOrNull = useCallback((): string | null => {
+    if (!rows || rows.length === 0) {
+      // 행이 하나도 없으면 null 리턴
+      return null;
+    }
 
-    if (!effective.length) return null;
-    return JSON.stringify(effective);
-  }
+    const arr = rows
+      .slice()
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map(r => ({
+        id: r.id ?? null,
+        label: r.label ?? '',
+        payload: r.payload ?? '',
+        order: r.order ?? 0,
+      }));
+
+    return JSON.stringify(arr);
+  }, [rows]);
+
+
+
+
+
 
   return {
     rows,

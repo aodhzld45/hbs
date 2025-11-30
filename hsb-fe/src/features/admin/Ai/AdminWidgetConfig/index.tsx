@@ -147,7 +147,7 @@ export default function AdminWidgetConfig() {
   }, [detail.data, selectedId]);
 
   return (
-    <AdminLayout>
+  <AdminLayout>
     <div className="p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">위젯 설정</h2>
