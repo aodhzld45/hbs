@@ -344,8 +344,8 @@ public class WidgetConfigService {
 
         // 2) 환영 퀵리플라이 JSON이 비어 있으면, 키 제거 or 유지 선택
         if (welcomeQuickRepliesJson == null || welcomeQuickRepliesJson.isBlank()) {
-            // 기존 값도 지우고 싶으면:
-            // opt.remove("welcomeQuickReplies");
+            // 기존 값도 지우고 싶으면
+            opt.remove("welcomeQuickReplies");
             return opt;
         }
 
@@ -355,6 +355,25 @@ public class WidgetConfigService {
                     welcomeQuickRepliesJson.trim(),
                     new TypeReference<List<WelcomeQuickReplyOption>>() {}
             );
+
+            // id 자동 채번 처리 ===
+            // 3-1) 이미 존재하는 id 중 최댓값 찾기
+            long maxId = 0L;
+            for (WelcomeQuickReplyOption item : list) {
+                Long id = Long.valueOf(item.getId());
+                if (id != null && id > maxId) {
+                    maxId = id;
+                }
+            }
+
+            // 3-2) id가 null인 항목에 새 id 부여
+            for (WelcomeQuickReplyOption item : list) {
+                if (item.getId() == null) {
+                    item.setId(String.valueOf(++maxId));   // 1,2,3,... 순차 id
+                }
+            }
+
+            // 4) options에 저장
             opt.put("welcomeQuickReplies", list);
         } catch (Exception e) {
             throw new IllegalArgumentException("welcomeQuickRepliesJson 형식이 잘못되었습니다.", e);
