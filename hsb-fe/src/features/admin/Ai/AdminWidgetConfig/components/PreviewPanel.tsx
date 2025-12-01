@@ -8,12 +8,12 @@ export default function PreviewPanel({ cfg }: Props) {
   // ===== CSS 변수 세팅(상위에서 내려준 값만 사용) =====
   const style: React.CSSProperties = {
     ['--hsbs-primary' as any]: cfg.primaryColor || '#2563eb',
-    ['--hsbs-panel-bg' as any]: cfg.panelBgColor || '#ffffff',
-    ['--hsbs-panel-fg' as any]: cfg.panelTextColor || '#111827',
-    ['--hsbs-header-bg' as any]: cfg.headerBgColor || '#f9fafb',
-    ['--hsbs-header-border' as any]: cfg.headerBorderColor || '#e5e7eb',
-    ['--hsbs-input-bg' as any]: cfg.inputBgColor || '#f3f4f6',
-    ['--hsbs-input-fg' as any]: cfg.inputTextColor || '#111827',
+    ['--hsbs-panel-bg' as any]: cfg.panelBgColor || '#111827',
+    ['--hsbs-panel-fg' as any]: cfg.panelTextColor || '#e5e7eb',
+    ['--hsbs-header-bg' as any]: cfg.headerBgColor || '#0b0f1a',
+    ['--hsbs-header-border' as any]: cfg.headerBorderColor || '#14e1ff',
+    ['--hsbs-input-bg' as any]: cfg.inputBgColor || '#000000',
+    ['--hsbs-input-fg' as any]: cfg.inputTextColor || '#e5e7eb',
     ['--hsbs-bubble-bg' as any]: cfg.bubbleBgColor || (cfg.primaryColor || '#2563eb'),
     ['--hsbs-bubble-fg' as any]: cfg.bubbleFgColor || '#ffffff',
   };
@@ -61,32 +61,39 @@ export default function PreviewPanel({ cfg }: Props) {
         ) : emoji ? (
           <span className="text-xl leading-none select-none">{emoji}</span>
         ) : (
-          <span className="text-sm font-semibold text-gray-700 select-none">{initial ?? 'H'}</span>
+          <span className="text-sm font-semibold text-gray-700 select-none">
+            {initial ?? 'H'}
+          </span>
         )}
       </div>
     );
   };
 
-  // ===== 패널 폭/오프셋 적용(미리보기 용) =====
-  const panelWidthPx = cfg.panelWidthPx ?? 340;
+  // ===== 패널 폭/높이 적용(미리보기 용) =====
+  const panelWidthPx = cfg.panelWidthPx ?? 360;
+  const panelHeightPx = 420; // 고정 높이 안에서만 스크롤 되도록
 
   return (
     <div className="border rounded p-3">
       <div className="text-sm mb-2">미리보기</div>
 
-      <div
-        style={style}
-        className="relative rounded-lg border shadow bg-[var(--hsbs-panel-bg)] text-[var(--hsbs-panel-fg)]"
-      >
-        {/* 미리보기용 크기 */}
-        <div style={{ width: panelWidthPx, height: 520 }}>
+      {/* 패널 + 버블을 같이 감싸는 래퍼 */}
+      <div style={style} className="inline-block">
+        {/* 실제 패널 - 여기서 relative 추가 */}
+        <div
+          className="relative rounded-2xl shadow-lg border overflow-hidden bg-[var(--hsbs-panel-bg)] text-[var(--hsbs-panel-fg)] flex flex-col"
+          style={{ width: panelWidthPx, height: panelHeightPx }}
+        >
           {/* 헤더 */}
           <div
-            className="p-2 border-b flex items-center gap-2"
-            style={{ background: 'var(--hsbs-header-bg)', borderColor: 'var(--hsbs-header-border)' }}
+            className="flex items-center gap-2 px-4 py-3 border-b"
+            style={{
+              background: 'var(--hsbs-header-bg)',
+              borderColor: 'var(--hsbs-header-border)',
+            }}
           >
             <CircleAvatar
-              size={28}
+              size={32}
               img={logoImg}
               imgOk={logoImgOk}
               onImgError={() => setLogoImgOk(false)}
@@ -94,17 +101,29 @@ export default function PreviewPanel({ cfg }: Props) {
               title="브랜드 로고"
               className="bg-[var(--hsbs-panel-bg)]"
             />
-            <div className="truncate text-sm font-medium">{title}</div>
+            <div className="truncate text-base font-semibold">{title}</div>
           </div>
 
-          {/* 웰컴 영역 */}
-          <div className="p-3 text-sm opacity-90 whitespace-pre-wrap">{welcome}</div>
+          {/* 본문(웰컴 메시지 영역) - 여기만 스크롤 */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 text-sm whitespace-pre-wrap">
+            {welcome}
+          </div>
 
-          {/* 입력창 */}
-          <div className="absolute left-0 right-0 bottom-20 px-3">
+          {/* 푸터(입력창 + 버튼) - 오른쪽 padding 을 버블만큼 확보 */}
+          <div
+            className="px-4 py-3 border-t pr-20"
+            style={{
+              background: 'var(--hsbs-header-bg)',
+              borderColor: 'var(--hsbs-header-border)',
+            }}
+          >
             <div
-              className="flex items-center gap-2 border rounded-lg px-2 py-2"
-              style={{ background: 'var(--hsbs-input-bg)', color: 'var(--hsbs-input-fg)' }}
+              className="flex items-center gap-2 rounded-xl px-3 py-2 border"
+              style={{
+                background: 'var(--hsbs-input-bg)',
+                borderColor: 'var(--hsbs-header-border)',
+                color: 'var(--hsbs-input-fg)',
+              }}
             >
               <input
                 className="flex-1 bg-transparent outline-none text-sm placeholder:opacity-60"
@@ -113,8 +132,12 @@ export default function PreviewPanel({ cfg }: Props) {
               />
               <button
                 type="button"
-                className="px-3 py-1 text-sm rounded-md border shadow-sm disabled:opacity-70"
-                style={{ background: 'var(--hsbs-primary)', color: '#fff' }}
+                className="px-3 py-1.5 text-sm rounded-md shadow-sm disabled:opacity-70 border"
+                style={{
+                  background: 'var(--hsbs-primary)',
+                  color: '#fff',
+                  borderColor: 'transparent',
+                }}
                 disabled
               >
                 {sendLabel}
@@ -122,35 +145,36 @@ export default function PreviewPanel({ cfg }: Props) {
             </div>
           </div>
 
-          {/* 버블 버튼 */}
-          <div className="absolute right-4 bottom-4">
-            <button
-              className="w-14 h-14 rounded-full shadow border flex items-center justify-center"
-              style={{ background: 'var(--hsbs-bubble-bg)', color: 'var(--hsbs-bubble-fg)' }}
-              aria-label="Bubble"
-              type="button"
-              disabled
-            >
-              <div className="w-9 h-9">
-                <CircleAvatar
-                  size={36}
-                  img={bubbleImg}
-                  imgOk={bubbleImgOk}
-                  onImgError={() => setBubbleImgOk(false)}
-                  emoji={bubbleEmoji}
-                  title="채팅 아이콘"
-                  className="border-0 shadow-none bg-transparent"
-                />
-              </div>
-            </button>
-          </div>
+          {/* 버블 버튼 - 패널 안쪽, 푸터 위에 겹쳐서 항상 노출 */}
+          <button
+            className="absolute right-4 bottom-4 w-14 h-14 rounded-full shadow-lg border flex items-center justify-center"
+            style={{
+              background: 'var(--hsbs-bubble-bg)',
+              color: 'var(--hsbs-bubble-fg)',
+            }}
+            aria-label="Bubble"
+            type="button"
+            disabled
+          >
+            <div className="w-10 h-10">
+              <CircleAvatar
+                size={40}
+                img={bubbleImg}
+                imgOk={bubbleImgOk}
+                onImgError={() => setBubbleImgOk(false)}
+                emoji={bubbleEmoji}
+                title="채팅 아이콘"
+                className="border-0 shadow-none bg-transparent"
+              />
+            </div>
+          </button>
         </div>
       </div>
 
-      {/* 위치 오프셋 가이드(미리보기 툴팁) */}
+      {/* 위치 오프셋 가이드 */}
       <p className="mt-2 text-xs text-gray-500">
-        * 실제 배치: position <b>{cfg.position ?? 'right'}</b>, offsetX <b>{cfg.offsetX ?? 20}</b>, offsetY{' '}
-        <b>{cfg.offsetY ?? 20}</b>
+        * 실제 배치: position <b>{cfg.position ?? 'right'}</b>, offsetX{' '}
+        <b>{cfg.offsetX ?? 20}</b>, offsetY <b>{cfg.offsetY ?? 20}</b>
       </p>
     </div>
   );
