@@ -136,6 +136,53 @@
 > 사이트키별로 PDF/엑셀/문서를 업로드하면,  
 > 챗봇이 그 **공식 문서 내용을 찾아서 답**할 수 있도록 RAG 기반 지식 베이스를 제공.
 
+## 에상 요청값
+<pre>
+// POST /api/brain/chat  (Spring → FastAPI)
+{
+  "tenantId": "hsbs",             // 필수: 다테넌트 구분
+  "siteKey": "SK_123456",         // 어떤 위젯/사이트에서 온 건지
+  "promptProfileId": 10,          // 사용할 프롬프트 프로필
+  "widgetConfigId": 5,            // (옵션) 위젯의 스타일/톤 참조용
+
+  "conversationId": "uuid-...",   // 대화 세션 ID (없으면 Brain이 생성)
+  "messages": [
+    { "role": "system", "content": "..." },     // HSBS가 PromptProfile 기반으로 이미 합성 가능
+    { "role": "user",   "content": "사용자 질문" },
+    { "role": "assistant", "content": "이전 답변", "meta": {...} }
+  ],
+
+  "options": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.7,
+    "topP": 0.95,
+    "maxTokens": 1024,
+    "stop": ["</END>"]
+  },
+
+  "policies": {
+    // PromptProfile.policiesJson 그대로 or 파싱한 형태
+  },
+
+  "tools": [
+    // PromptProfile.toolsJson 에서 정의된 도메인 툴 목록 (RAG, 검색 등)
+  ],
+
+  "rag": {
+    "enabled": true,
+    "docIds": [/* 특정 문서 제한 시 */],
+    "topK": 5
+  },
+
+  "meta": {
+    "userIp": "1.2.3.4",
+    "userAgent": "Chrome/...",
+    "locale": "ko-KR",
+    "channel": "widget"  // web / mobile / internal 등
+  }
+}
+</pre>
+
 ### 2-1. `ai_knowledge_base` — 지식 베이스 단위
 
 | 컬럼 | 설명 |
