@@ -1,6 +1,12 @@
 package com.hbs.hsbbo.admin.ai.brain.dto.response;
 
+import com.hbs.hsbbo.admin.ai.brain.dto.model.response.BrainRagResult;
+import com.hbs.hsbbo.admin.ai.brain.dto.model.response.BrainSafety;
+import com.hbs.hsbbo.admin.ai.brain.dto.model.response.BrainToolCallResult;
+import com.hbs.hsbbo.admin.ai.brain.dto.model.response.BrainUsage;
 import lombok.*;
+
+import java.util.List;
 
 @Getter
 @Setter
