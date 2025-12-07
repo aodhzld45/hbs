@@ -25,7 +25,7 @@ public class BrainConfig {
     @Bean
     public BrainClient brainClient(WebClient brainWebClient) {
         if (!props.isEnabled()) {
-            return req -> { throw new IllegalStateException("Brain disabled"); };
+            return req -> { throw new IllegalStateException("Brain 연동이 disabled 상태입니다. hsbs.brain.enabled 값을 확인하세요."); };
         }
         return new FastApiBrainClient(brainWebClient, props);
     }
