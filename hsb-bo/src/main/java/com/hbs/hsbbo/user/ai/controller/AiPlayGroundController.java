@@ -1,5 +1,12 @@
 package com.hbs.hsbbo.user.ai.controller;
 
+import com.hbs.hsbbo.admin.ai.brain.client.BrainClient;
+import com.hbs.hsbbo.admin.ai.brain.dto.model.request.BrainMessage;
+import com.hbs.hsbbo.admin.ai.brain.dto.model.request.BrainMeta;
+import com.hbs.hsbbo.admin.ai.brain.dto.model.request.BrainOptions;
+import com.hbs.hsbbo.admin.ai.brain.dto.model.response.BrainUsage;
+import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainChatRequest;
+import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainChatResponse;
 import com.hbs.hsbbo.admin.ai.promptprofile.domain.entity.PromptProfile;
 import com.hbs.hsbbo.admin.ai.promptprofile.service.PromptProfileService;
 import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
@@ -22,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -35,6 +43,7 @@ public class AiPlayGroundController {
     private final SiteKeyService siteKeyService;
     private final WidgetConfigService widgetConfigService;
     private final PromptProfileService promptProfileService;
+    private final BrainClient brainClient;
 
     //  HEAD /api/ai/ping : 유효 키면 204, 없거나 무효면 401/403
     @RequestMapping(value = "/ping", method = {RequestMethod.GET, RequestMethod.HEAD})
@@ -309,6 +318,160 @@ public class AiPlayGroundController {
         //      - X-DailyReq-Remaining : 실제 적용된 기준(사이트키 or IP)의 남은 횟수
         //      - X-IP-Daily-Remaining : IP 기준 카운터(미사용 시 -1)
         //      - X-SiteKey-Daily-Remaining : SiteKey 기준 카운터(미사용 시 -1)
+        return ResponseEntity.ok()
+                .header("X-DailyReq-Remaining", effectiveRemaining)
+                .header("X-IP-Daily-Remaining", ipRemainingHeader)
+                .header("X-SiteKey-Daily-Remaining", skRemainingHeader)
+                .body(response);
+    }
+
+    //  POST /api/ai/complete4
+    //  Brain(FastAPI) 경유하는 버전
+    @PostMapping("/complete4")
+    @CrossOrigin(
+            origins = "*",
+            allowedHeaders = { "Content-Type", "Authorization", "X-HSBS-Site-Key" }
+    )
+    public ResponseEntity<ChatWithPromptProfileResponse> complete4(
+            @RequestBody ChatRequest userReq,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestHeader(value = "X-HSBS-Site-Key", required = false) String siteKey,
+            HttpServletRequest http
+    ) {
+        // ── 0. 기본 요청 검증 ─────────────────────────────────────────────
+        if (userReq.getPrompt() == null || userReq.getPrompt().isBlank()) {
+            throw new IllegalArgumentException("챗 프롬프트는 필수 입니다.");
+        }
+
+        // ── 1. 요청자 IP 추출 (X-Forwarded-For 우선) ─────────────────────
+        String ip = Optional.ofNullable(http.getHeader("X-Forwarded-For"))
+                .map(v -> v.split(",", 2)[0].trim())
+                .filter(s -> !s.isBlank())
+                .orElse(http.getRemoteAddr());
+
+        // ── 2. 관리자 여부 (JWT 존재 시) ─────────────────────────────────
+        boolean isAdmin = (authHeader != null && authHeader.startsWith("Bearer "));
+
+        // ── 3. siteKey 필수 검증 ─────────────────────────────────────────
+        if (siteKey == null || siteKey.isBlank()) {
+            throw new CommonException.UnauthorizedException("사이트키를 찾을 수 없습니다.");
+        }
+
+        // ── 4. 클라이언트 호스트 추출 (Origin/Referer 기반) ─────────────
+        String host = extractClientHost(http);
+
+        // ── 5. SiteKey + 도메인 검증 및 엔티티 조회 ─────────────────────
+        SiteKey keyInfo = siteKeyService.assertActiveAndDomainAllowed(siteKey, host);
+
+        // ── 6~7. 쿼터 체크 (complete3와 동일) ────────────────────────────
+        Integer siteDailyLimit = keyInfo.getDailyCallLimit();
+        final int DEFAULT_FREE_IP_LIMIT = 10;
+
+        String ipCounterKey  = "ip:" + ip;
+        String skCounterKey  = "sk:" + keyInfo.getSiteKey();
+
+        String ipRemainingHeader   = "-1";
+        String skRemainingHeader   = "-1";
+        String effectiveRemaining  = "-1";
+
+        if (!isAdmin) {
+            boolean hasSiteLimit = (siteDailyLimit != null && siteDailyLimit > 0);
+
+            if (hasSiteLimit) {
+                boolean ok = dailyQuotaSupport.tryConsume(skCounterKey, siteDailyLimit);
+                if (!ok) {
+                    return ResponseEntity.status(429)
+                            .header("X-SiteKey-Daily-Remaining", "0")
+                            .header("X-IP-Daily-Remaining", "-1")
+                            .header("X-DailyReq-Remaining", "0")
+                            .body(ChatWithPromptProfileResponse.builder()
+                                    .model(null)
+                                    .text("해당 사이트키의 일일 호출 한도를 초과했습니다. 내일 다시 시도해 주세요.")
+                                    .build());
+                }
+                int skRemain = dailyQuotaSupport.remaining(skCounterKey, siteDailyLimit);
+                skRemainingHeader  = String.valueOf(skRemain);
+                effectiveRemaining = skRemainingHeader;
+            } else {
+                boolean ok = dailyQuotaSupport.tryConsume(ipCounterKey, DEFAULT_FREE_IP_LIMIT);
+                if (!ok) {
+                    return ResponseEntity.status(429)
+                            .header("X-IP-Daily-Remaining", "0")
+                            .header("X-SiteKey-Daily-Remaining", "-1")
+                            .header("X-DailyReq-Remaining", "0")
+                            .body(ChatWithPromptProfileResponse.builder()
+                                    .model(null)
+                                    .text("무료 사용 한도를 초과했습니다. 내일 다시 시도해 주세요.")
+                                    .build());
+                }
+                int ipRemain = dailyQuotaSupport.remaining(ipCounterKey, DEFAULT_FREE_IP_LIMIT);
+                ipRemainingHeader  = String.valueOf(ipRemain);
+                effectiveRemaining = ipRemainingHeader;
+            }
+        }
+
+        // ── 8. SiteKey에 연결된 기본 PromptProfile 조회 ─────────────────
+        PromptProfile profile =
+                promptProfileService.findDefaultProfileForSiteKeyOrThrow(siteKey, host);
+
+        // ── 9. PromptProfile + 사용자 입력 → ChatWithPromptProfileRequest 조립 ─
+        ChatWithPromptProfileRequest ppReq =
+                promptProfileService.buildChatWithProfileRequest(profile, userReq);
+
+        // ── 10. ChatWithPromptProfileRequest → BrainChatRequest 매핑 ───────
+        BrainMessage userMsg = BrainMessage.builder()
+                .role("user")
+                .content(ppReq.getUserPrompt())
+                .build();
+
+        BrainOptions options = BrainOptions.builder()
+                .model(ppReq.getModel())
+                .temperature(ppReq.getTemperature() == null ? null : ppReq.getTemperature().doubleValue())
+                .topP(ppReq.getTopP() == null ? null : ppReq.getTopP().doubleValue())
+                .maxTokens(ppReq.getMaxTokens())
+                .build();
+
+        BrainMeta meta = BrainMeta.builder()
+                .userIp(ip)
+                .userAgent(http.getHeader("User-Agent"))
+                .locale(null)         // 필요하면 userReq에서 locale 뽑아서 세팅
+                .channel("widget")    // SaaS 위젯 채널
+                .build();
+
+        BrainChatRequest brainReq = BrainChatRequest.builder()
+                .tenantId("hsbs")                  // TODO: 실제 tenantId 사용 시 교체
+                .siteKey(keyInfo.getSiteKey())
+                .promptProfileId(profile.getId())
+                .widgetConfigId(null)              // TODO: 위젯 설정 연동 시 세팅
+                .conversationId(null)              // TODO: 프론트에서 전달 시 매핑
+                .messages(List.of(userMsg))
+                .options(options)
+                .meta(meta)
+                .build();
+
+        // ── 11. FastAPI Brain 호출 ──────────────────────────────────────
+        BrainChatResponse brainRes = brainClient.chat(brainReq);
+
+        // ── 12. Brain 응답 → 기존 ChatWithPromptProfileResponse 로 매핑 ─────
+        BrainUsage usage = brainRes.getUsage();   // 아직 null일 수 있음 (Brain v1 더미)
+
+        ChatWithPromptProfileResponse response =
+                ChatWithPromptProfileResponse.builder()
+                        .promptProfileId(profile.getId())
+                        .promptProfileName(profile.getName())
+                        .promptProfileVersion(profile.getVersion())
+                        .model(
+                                usage != null && usage.getModel() != null
+                                        ? usage.getModel()
+                                        : (ppReq.getModel() != null ? ppReq.getModel() : "gpt-4o-mini")
+                        )
+                        .text(brainRes.getAnswer())
+                        .inputTokens(usage == null ? null : usage.getPromptTokens())
+                        .outputTokens(usage == null ? null : usage.getCompletionTokens())
+                        .totalTokens(usage == null ? null : usage.getTotalTokens())
+                        .build();
+
+        // ── 13. 기존과 동일하게 쿼터 헤더 세팅 후 응답 ───────────────────
         return ResponseEntity.ok()
                 .header("X-DailyReq-Remaining", effectiveRemaining)
                 .header("X-IP-Daily-Remaining", ipRemainingHeader)
