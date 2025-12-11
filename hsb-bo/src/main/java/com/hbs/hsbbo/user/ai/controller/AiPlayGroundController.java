@@ -29,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -419,10 +420,54 @@ public class AiPlayGroundController {
                 promptProfileService.buildChatWithProfileRequest(profile, userReq);
 
         // ── 10. ChatWithPromptProfileRequest → BrainChatRequest 매핑 ───────
-        BrainMessage userMsg = BrainMessage.builder()
-                .role("user")
-                .content(ppReq.getUserPrompt())
-                .build();
+        List<BrainMessage> brainMessages = new ArrayList<>();
+
+        // 10-1) PromptProfile 기반 system 메시지
+        StringBuilder systemBuf = new StringBuilder();
+
+        if (ppReq.getSystemTpl() != null && !ppReq.getSystemTpl().isBlank()) {
+            systemBuf.append(ppReq.getSystemTpl().trim());
+        } else {
+            systemBuf.append("You are a helpful assistant.");
+        }
+
+        if (ppReq.getGuardrailTpl() != null && !ppReq.getGuardrailTpl().isBlank()) {
+            systemBuf.append("\n\n[Guardrail]\n").append(ppReq.getGuardrailTpl().trim());
+        }
+
+        if (ppReq.getStyleJson() != null && !ppReq.getStyleJson().isBlank()) {
+            systemBuf.append("\n\n[Style JSON]\n").append(ppReq.getStyleJson().trim());
+        }
+
+        if (ppReq.getPoliciesJson() != null && !ppReq.getPoliciesJson().isBlank()) {
+            systemBuf.append("\n\n[Policies JSON]\n").append(ppReq.getPoliciesJson().trim());
+        }
+
+        // system 메시지 추가
+        brainMessages.add(
+                BrainMessage.builder()
+                        .role("system")
+                        .content(systemBuf.toString())
+                        .build()
+        );
+
+        // 10-2) context 있으면 별도 user 메시지로
+        if (ppReq.getContext() != null && !ppReq.getContext().isBlank()) {
+            brainMessages.add(
+                    BrainMessage.builder()
+                            .role("user")
+                            .content("Context:\n" + ppReq.getContext().trim())
+                            .build()
+            );
+        }
+
+        // 10-3) 실제 사용자 질문
+        brainMessages.add(
+                BrainMessage.builder()
+                        .role("user")
+                        .content(ppReq.getUserPrompt())
+                        .build()
+        );
 
         BrainOptions options = BrainOptions.builder()
                 .model(ppReq.getModel())
@@ -444,7 +489,7 @@ public class AiPlayGroundController {
                 .promptProfileId(profile.getId())
                 .widgetConfigId(null)              // TODO: 위젯 설정 연동 시 세팅
                 .conversationId(null)              // TODO: 프론트에서 전달 시 매핑
-                .messages(List.of(userMsg))
+                .messages(brainMessages)
                 .options(options)
                 .meta(meta)
                 .build();
