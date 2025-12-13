@@ -70,7 +70,7 @@ public class UsageLog extends AuditBase {
     private Integer totalTokens;
 
     @Column(name = "latency_ms")
-    private Integer latencyMs;           // 응답까지 걸린 시간(ms)
+    private Long latencyMs;           // 응답까지 걸린 시간(ms)
 
     // ============= 클라이언트 / 환경 정보 =============
 

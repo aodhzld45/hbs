@@ -2,6 +2,7 @@ package com.hbs.hsbbo.admin.ai.widgetconfig.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hbs.hsbbo.admin.ai.promptprofile.domain.entity.PromptProfile;
 import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
 import com.hbs.hsbbo.admin.ai.sitekey.repository.SiteKeyRepository;
 import com.hbs.hsbbo.admin.ai.sitekey.service.SiteKeyService;
@@ -223,6 +224,32 @@ public class WidgetConfigService {
         e.setDelTf("Y");
         e.setDelAdm(actor);
         return e.getId();
+    }
+
+    // 사이트키 검증 위젯 반환
+    @Transactional(readOnly = true)
+    public WidgetConfig findDefaultWidgetForSiteKeyOrThrow(String siteKey, String host) {
+        if (siteKey == null || siteKey.isBlank()) {
+            throw new IllegalArgumentException("사이트키가 비어 있습니다.");
+        }
+
+        // 도메인/상태 검증
+        SiteKey sk = siteKeyRepository.findBySiteKey(siteKey)
+                .orElseThrow(() -> new IllegalArgumentException("사이트키를 찾을 수 없습니다."));
+
+        if (!sk.isActive()) {
+            throw new IllegalStateException("비활성화된 사이트키 입니다. siteKey=" + siteKey);
+        }
+        if (host != null && !sk.isDomainAllowed(host)) {
+            throw new IllegalStateException("허용되지 않은 도메인입니다. host=" + host);
+        }
+
+        WidgetConfig widgetConfig = sk.getDefaultWidgetConfig(); // 연관관계 전제
+        if (widgetConfig == null) {
+            throw new IllegalStateException("연결된 기본 위젯 설정이 없습니다. siteKey=" + siteKey);
+        }
+        // 필요하면 status/useTf/delTf 검사
+        return widgetConfig;
     }
 
     // ---------------------------
