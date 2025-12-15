@@ -11,7 +11,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 public class UsageStatsItem {
-    private String bucket;
+    private String bucketLabel;     // YYYY-MM-DD / YYYY-Www / YYYY-MM 같은 라벨
 
     private LocalDate startDate;    // 버킷 시작일
     private LocalDate endDate;      // 버킷 종료일
@@ -22,7 +22,7 @@ public class UsageStatsItem {
 
     private Long totalPromptTokens;
     private Long totalCompletionTokens;
-    private Long totalTokens;
+    private Long totalTokens; // 합계 토큰 수 (null → 0 처리)
 
-    private Long avgLatencyMs;
+    private Double avgLatencyMs; // 평균 latency (ms) – 소수점 허용
 }
