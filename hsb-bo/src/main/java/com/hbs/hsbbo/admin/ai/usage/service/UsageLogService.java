@@ -6,6 +6,7 @@ import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainChatResponse;
 import com.hbs.hsbbo.admin.ai.promptprofile.domain.entity.PromptProfile;
 import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
 import com.hbs.hsbbo.admin.ai.usage.domain.entity.UsageLog;
+import com.hbs.hsbbo.admin.ai.usage.domain.type.UsageErrorCode;
 import com.hbs.hsbbo.admin.ai.usage.repository.UsageLogRepository;
 import com.hbs.hsbbo.admin.ai.widgetconfig.domain.entity.WidgetConfig;
 import lombok.RequiredArgsConstructor;
@@ -75,6 +76,70 @@ public class UsageLogService {
 
         usageLogRepository.save(log);
     }
+
+    @Transactional
+    public void logBrainChatError(
+            String tenantId,
+            SiteKey siteKey,
+            PromptProfile profile,
+            WidgetConfig widgetConfig,
+            String channel,
+            String userPrompt,
+            String clientHost,
+            String userIp,
+            String userAgent,
+            UsageErrorCode errorCode,     // enum
+            Integer httpStatus,           // null이면 enum 기본값 사용
+            String quotaType,             // "SITE_KEY" / "IP" / null
+            Integer quotaRemaining,       // 남은 횟수
+            String errorMessage           // 커스텀 메시지 (DB error_message)
+    ) {
+        if (errorCode == null) {
+            errorCode = UsageErrorCode.INTERNAL_ERROR;
+        }
+
+        int status = (httpStatus != null)
+                ? httpStatus
+                : errorCode.getDefaultHttpStatus();
+
+        UsageLog log = UsageLog.builder()
+                .tenantId(tenantId)
+                .siteKey(siteKey)
+                .siteKeyValue(siteKey != null ? siteKey.getSiteKey() : null)
+                .promptProfile(profile)
+                .widgetConfig(widgetConfig)
+                .conversationId(null)
+                .channel(channel != null ? channel : "widget")
+
+                .requestText(truncate(userPrompt, 1000))
+                .answerText(null)
+
+                .model(null)
+                .promptTokens(null)
+                .completionTokens(null)
+                .totalTokens(null)
+                .latencyMs(null)
+
+                .userIp(userIp)
+                .userAgent(truncate(userAgent, 255))
+                .clientHost(truncate(clientHost, 255))
+
+                .httpStatus(status)
+                .successTf("N")
+                .errorCode(errorCode.name())           // enum NAME 저장
+                .errorMessage(truncate(errorMessage, 500))
+                .quotaType(quotaType)
+                .quotaRemaining(quotaRemaining)
+
+                .ragUsedTf("N")
+                .ragSourceCount(null)
+                .toolUsedTf("N")
+                .build();
+
+        usageLogRepository.save(log);
+    }
+
+
 
     private String truncate(String s, int max) {
         if (s == null) return null;

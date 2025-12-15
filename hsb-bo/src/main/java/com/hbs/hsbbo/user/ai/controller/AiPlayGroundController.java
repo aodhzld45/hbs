@@ -11,6 +11,7 @@ import com.hbs.hsbbo.admin.ai.promptprofile.domain.entity.PromptProfile;
 import com.hbs.hsbbo.admin.ai.promptprofile.service.PromptProfileService;
 import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
 import com.hbs.hsbbo.admin.ai.sitekey.service.SiteKeyService;
+import com.hbs.hsbbo.admin.ai.usage.domain.type.UsageErrorCode;
 import com.hbs.hsbbo.admin.ai.usage.service.UsageLogService;
 import com.hbs.hsbbo.admin.ai.widgetconfig.domain.entity.WidgetConfig;
 import com.hbs.hsbbo.admin.ai.widgetconfig.dto.response.WidgetConfigResponse;
@@ -27,6 +28,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -342,32 +344,34 @@ public class AiPlayGroundController {
             @RequestHeader(value = "X-HSBS-Site-Key", required = false) String siteKey,
             HttpServletRequest http
     ) {
-        // 0. 기본 요청 검증 ─────────────────────────────────────────────
+        // 0. 기본 요청 검증
         if (userReq.getPrompt() == null || userReq.getPrompt().isBlank()) {
-            throw new IllegalArgumentException("챗 프롬프트는 필수 입니다.");
+            // 이 케이스는 로그 남기지 않고 바로 400만 리턴 (너무 많아질 수 있어서)
+            throw new CommonException.BadRequestException("챗 프롬프트는 필수 입니다.");
         }
 
-        // 1. 요청자 IP 추출 (X-Forwarded-For 우선) ─────────────────────
+        // 1. 요청자 IP 추출 (X-Forwarded-For 우선)
         String ip = Optional.ofNullable(http.getHeader("X-Forwarded-For"))
                 .map(v -> v.split(",", 2)[0].trim())
                 .filter(s -> !s.isBlank())
                 .orElse(http.getRemoteAddr());
 
-        // 2. 관리자 여부 (JWT 존재 시) ─────────────────────────────────
+        // 2. 관리자 여부 (JWT 존재 시)
         boolean isAdmin = (authHeader != null && authHeader.startsWith("Bearer "));
 
-        // 3. siteKey 필수 검증 ─────────────────────────────────────────
+        // 3. siteKey 필수 검증
         if (siteKey == null || siteKey.isBlank()) {
+            // 여기서는 아직 tenant/siteKey 엔티티를 모름 → 로그도 굳이 안 남겨도 됨
             throw new CommonException.UnauthorizedException("사이트키를 찾을 수 없습니다.");
         }
 
-        // 4. 클라이언트 호스트 추출 (Origin/Referer 기반) ─────────────
+        // 4. 클라이언트 호스트 추출 (Origin/Referer 기반)
         String host = extractClientHost(http);
 
-        // 5. SiteKey + 도메인 검증 및 엔티티 조회 ─────────────────────
+        // 5. SiteKey + 도메인 검증 및 엔티티 조회
         SiteKey keyInfo = siteKeyService.assertActiveAndDomainAllowed(siteKey, host);
 
-        // 6~7. 쿼터 체크 (complete3와 동일) ────────────────────────────
+        // 6~7. 쿼터 체크 (complete3와 동일)
         Integer siteDailyLimit = keyInfo.getDailyCallLimit();
         final int DEFAULT_FREE_IP_LIMIT = 10;
 
@@ -384,6 +388,7 @@ public class AiPlayGroundController {
             if (hasSiteLimit) {
                 boolean ok = dailyQuotaSupport.tryConsume(skCounterKey, siteDailyLimit);
                 if (!ok) {
+                    // 쿼터 초과 → 여기서는 그냥 바로 429 리턴 (필요하면 에러 로그도 남길 수 있음)
                     return ResponseEntity.status(429)
                             .header("X-SiteKey-Daily-Remaining", "0")
                             .header("X-IP-Daily-Remaining", "-1")
@@ -422,7 +427,7 @@ public class AiPlayGroundController {
         WidgetConfig widgetConfig =
                 widgetConfigService.findDefaultWidgetForSiteKeyOrThrow(siteKey, host);
 
-        // 9. PromptProfile + 사용자 입력 → ChatWithPromptProfileRequest 조립 ─
+        // 9. PromptProfile + 사용자 입력 → ChatWithPromptProfileRequest 조립
         ChatWithPromptProfileRequest ppReq =
                 promptProfileService.buildChatWithProfileRequest(profile, userReq);
 
@@ -501,69 +506,124 @@ public class AiPlayGroundController {
                 .meta(meta)
                 .build();
 
-        // 11. FastAPI Brain 호출 ──────────────────────────────────────
-        BrainChatResponse brainRes = brainClient.chat(brainReq);
+        // 11. FastAPI Brain 호출 + 로그 저장
+        try {
+            BrainChatResponse brainRes = brainClient.chat(brainReq);
 
-        // 12. Brain 응답 → 기존 ChatWithPromptProfileResponse 로 매핑 ─────
-        BrainUsage usage = brainRes.getUsage();   // 아직 null일 수 있음 (Brain v1 더미)
+            // 12. Brain 응답 → 기존 ChatWithPromptProfileResponse 로 매핑
+            BrainUsage usage = brainRes.getUsage();   // v1에서 usage 세팅됨
 
-        ChatWithPromptProfileResponse response =
-                ChatWithPromptProfileResponse.builder()
-                        .promptProfileId(profile.getId())
-                        .promptProfileName(profile.getName())
-                        .promptProfileVersion(profile.getVersion())
-                        .model(
-                                usage != null && usage.getModel() != null
-                                        ? usage.getModel()
-                                        : (ppReq.getModel() != null ? ppReq.getModel() : "gpt-4o-mini")
-                        )
-                        .text(brainRes.getAnswer())
-                        .inputTokens(usage == null ? null : usage.getPromptTokens())
-                        .outputTokens(usage == null ? null : usage.getCompletionTokens())
-                        .totalTokens(usage == null ? null : usage.getTotalTokens())
-                        .build();
+            ChatWithPromptProfileResponse response =
+                    ChatWithPromptProfileResponse.builder()
+                            .promptProfileId(profile.getId())
+                            .promptProfileName(profile.getName())
+                            .promptProfileVersion(profile.getVersion())
+                            .model(
+                                    usage != null && usage.getModel() != null
+                                            ? usage.getModel()
+                                            : (ppReq.getModel() != null ? ppReq.getModel() : "gpt-4o-mini")
+                            )
+                            .text(brainRes.getAnswer())
+                            .inputTokens(usage == null ? null : usage.getPromptTokens())
+                            .outputTokens(usage == null ? null : usage.getCompletionTokens())
+                            .totalTokens(usage == null ? null : usage.getTotalTokens())
+                            .build();
 
-        // 12-1. 쿼터 타입/남은 횟수 계산 (로그용)
-        String quotaType = null;
-        Integer quotaRemainingInt = null;
-        boolean hasSiteLimit = (siteDailyLimit != null && siteDailyLimit > 0);
+            // 12-1. 쿼터 타입/남은 횟수 계산 (로그용)
+            String quotaType = null;
+            Integer quotaRemainingInt = null;
+            boolean hasSiteLimit = (siteDailyLimit != null && siteDailyLimit > 0);
 
-        if (!isAdmin) {
-            if (hasSiteLimit) {
-                quotaType = "SITE_KEY";
-                quotaRemainingInt =
-                        ("-1".equals(skRemainingHeader) ? null : Integer.valueOf(skRemainingHeader));
-            } else {
-                quotaType = "IP";
-                quotaRemainingInt =
-                        ("-1".equals(ipRemainingHeader) ? null : Integer.valueOf(ipRemainingHeader));
+            if (!isAdmin) {
+                if (hasSiteLimit) {
+                    quotaType = "SITE_KEY";
+                    quotaRemainingInt =
+                            ("-1".equals(skRemainingHeader) ? null : Integer.valueOf(skRemainingHeader));
+                } else {
+                    quotaType = "IP";
+                    quotaRemainingInt =
+                            ("-1".equals(ipRemainingHeader) ? null : Integer.valueOf(ipRemainingHeader));
+                }
             }
+
+            // 12-2. 사용 로그 저장 (성공 케이스)
+            usageLogService.logBrainChatSuccess(
+                    profile.getTenantId(),
+                    keyInfo,                     // SiteKey
+                    profile,                     // PromptProfile
+                    widgetConfig,                // WidgetConfig
+                    "widget",                    // channel
+                    userReq.getPrompt(),         // 원본 사용자 질문
+                    brainReq,
+                    brainRes,
+                    host,                        // clientHost
+                    ip,
+                    http.getHeader("User-Agent"),
+                    200,                         // httpStatus (성공)
+                    quotaType,
+                    quotaRemainingInt
+            );
+
+            // 13. 기존과 동일하게 쿼터 헤더 세팅 후 응답
+            return ResponseEntity.ok()
+                    .header("X-DailyReq-Remaining", effectiveRemaining)
+                    .header("X-IP-Daily-Remaining", ipRemainingHeader)
+                    .header("X-SiteKey-Daily-Remaining", skRemainingHeader)
+                    .body(response);
+
+        } catch (Exception e) {
+            // 실패 케이스: INTERNAL_ERROR 로 로그 저장
+            String ua = http.getHeader("User-Agent");
+
+            String quotaType = null;
+            Integer quotaRemainingInt = null;
+            boolean hasSiteLimit = (siteDailyLimit != null && siteDailyLimit > 0);
+
+            if (!isAdmin) {
+                if (hasSiteLimit) {
+                    quotaType = "SITE_KEY";
+                    quotaRemainingInt =
+                            ("-1".equals(skRemainingHeader) ? null : Integer.valueOf(skRemainingHeader));
+                } else {
+                    quotaType = "IP";
+                    quotaRemainingInt =
+                            ("-1".equals(ipRemainingHeader) ? null : Integer.valueOf(ipRemainingHeader));
+                }
+            }
+
+            usageLogService.logBrainChatError(
+                    profile.getTenantId(),
+                    keyInfo,
+                    profile,
+                    widgetConfig,
+                    "widget",
+                    userReq.getPrompt(),
+                    host,
+                    ip,
+                    ua,
+                    UsageErrorCode.INTERNAL_ERROR,
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    quotaType,
+                    quotaRemainingInt,
+                    e.getMessage()
+            );
+
+            // 클라이언트 응답
+            ChatWithPromptProfileResponse errorRes =
+                    ChatWithPromptProfileResponse.builder()
+                            .promptProfileId(profile.getId())
+                            .promptProfileName(profile.getName())
+                            .promptProfileVersion(profile.getVersion())
+                            .model(ppReq.getModel())
+                            .text("Brain 호출 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.")
+                            .build();
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .header("X-DailyReq-Remaining", effectiveRemaining)
+                    .header("X-IP-Daily-Remaining", ipRemainingHeader)
+                    .header("X-SiteKey-Daily-Remaining", skRemainingHeader)
+                    .body(errorRes);
         }
-
-        // 12-2. 사용 로그 저장 (성공 케이스)
-        usageLogService.logBrainChatSuccess(
-                profile.getTenantId(),
-                keyInfo,                     // SiteKey
-                profile,                     // PromptProfile
-                widgetConfig,                // WidgetConfig
-                "widget",                    // channel
-                userReq.getPrompt(),         // 원본 사용자 질문
-                brainReq,
-                brainRes,
-                host,                        // clientHost
-                ip,
-                http.getHeader("User-Agent"),
-                200,                // httpStatus (성공)
-                quotaType,
-                quotaRemainingInt
-        );
-
-        // 13. 기존과 동일하게 쿼터 헤더 세팅 후 응답
-        return ResponseEntity.ok()
-                .header("X-DailyReq-Remaining", effectiveRemaining)
-                .header("X-IP-Daily-Remaining", ipRemainingHeader)
-                .header("X-SiteKey-Daily-Remaining", skRemainingHeader)
-                .body(response);
     }
 
     /* =========================
