@@ -50,7 +50,9 @@ public interface UsageStatsRepository extends JpaRepository<UsageLog, Long> {
           AND u.reg_date <  :to
           AND (:siteKeyId IS NULL OR u.site_key_id = :siteKeyId)
           AND (:channel IS NULL OR u.channel = :channel)
-        GROUP BY bucketDate
+        GROUP BY 
+            bucketDate,
+            bucketLabel
         ORDER BY bucketDate DESC
         """,
             nativeQuery = true)
