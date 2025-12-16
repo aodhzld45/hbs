@@ -54,6 +54,7 @@ import AIPlayground from './features/user/OpenAI/AIPlayground';
 import AdminSiteKeys from './features/admin/Ai/AdminSiteKeys';
 import AdminWidgetConfig from './features/admin/Ai/AdminWidgetConfig';
 import AdminPromptProfile from './features/admin/Ai/PromptProfile';
+import AdminUsageStats from './features/admin/Ai/AdminUsageStats';
 
 import TestPage from './pages/User/TestPage';
 import SqlProblemTestPage from './features/admin/SqlProblem/SqlProblemTestPage';
@@ -101,6 +102,7 @@ function App() {
                 <Route path="/admin/ai/site-keys" element={<AdminSiteKeys />} />
                 <Route path="/admin/ai/widget-configs" element={<AdminWidgetConfig />} />
                 <Route path="/admin/ai/prompt-profiles" element={<AdminPromptProfile />} />
+                <Route path="/admin/ai/usage-stats" element={<AdminUsageStats />} />
 
                 <Route path="/admin/sql-manager" element={<SqlProblemManager />} />
                 <Route path="/admin/sql-manager/:id" element={<SqlProblemDetail />} />
