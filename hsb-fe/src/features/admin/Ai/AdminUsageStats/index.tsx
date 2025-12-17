@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import useUsageStats from './hooks/useUsageStats';
 import FiltersBar, {SiteKeyOption} from './components/FiltersBar';
 import SummaryCard from './components/SummaryCard';
+import UsageChart from './components/UsageChart';
 
 // 공통 메뉴 목록 불러오기
 import {
@@ -82,6 +83,11 @@ export default function AdminUsageStats() {
         loading={loading}
         error={error}
        /> 
+      <UsageChart
+        items={items}
+        period={filters.period}
+        loading={loading}
+      />
    
     </div>    
     </AdminLayout>
