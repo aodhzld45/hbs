@@ -3,6 +3,7 @@ import useUsageStats from './hooks/useUsageStats';
 import FiltersBar, {SiteKeyOption} from './components/FiltersBar';
 import SummaryCard from './components/SummaryCard';
 import UsageChart from './components/UsageChart';
+import UsageTable from './components/UsageTable';
 
 // 공통 메뉴 목록 불러오기
 import {
@@ -60,6 +61,8 @@ export default function AdminUsageStats() {
     size,
     setPage,
     setSize,
+    totalCount,
+    totalPages,
   } = useUsageStats();
 
 
@@ -88,6 +91,19 @@ export default function AdminUsageStats() {
         period={filters.period}
         loading={loading}
       />
+      <UsageTable
+          items={items}
+          period={filters.period}
+          loading={loading}
+          error={error}
+          page={page}
+          size={size}
+          totalCount={totalCount}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onSizeChange={setSize}
+        />
+
    
     </div>    
     </AdminLayout>
