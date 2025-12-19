@@ -70,6 +70,7 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
       className={`
         h-full bg-gray-100 border-r transition-all duration-300
         fixed top-0 left-0 z-50 md:static md:z-auto
+        shrink-0
         ${isOpen ? 'w-64' : 'w-0 overflow-hidden'}
       `}
     >
