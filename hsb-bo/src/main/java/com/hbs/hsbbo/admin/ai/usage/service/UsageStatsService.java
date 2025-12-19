@@ -6,9 +6,14 @@ import com.hbs.hsbbo.admin.ai.usage.dto.request.UsageStatsRequest;
 import com.hbs.hsbbo.admin.ai.usage.dto.response.UsageStatsItem;
 import com.hbs.hsbbo.admin.ai.usage.dto.response.UsageStatsListResponse;
 import com.hbs.hsbbo.admin.ai.usage.repository.UsageStatsRepository;
+import com.hbs.hsbbo.common.util.ExcelUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,63 +39,84 @@ public class UsageStatsService {
         Period periodEnum =
                 (req.getPeriod() != null ? req.getPeriod() : Period.DAILY);
 
-        // 2) 단일 쿼리 호출 (enum.name() 으로 넘김)
-        List<UsageStatsProjection> rows = usageStatsRepository.findStats(
+        // 2) Pageable
+        int page = Math.max(req.getPage(), 0);
+        int size = req.getSize() > 0 ? req.getSize() : 20;
+        Pageable pageable = PageRequest.of(page, size);
+
+        // 3) DB 페이징 쿼리 호출
+        Page<UsageStatsProjection> result = usageStatsRepository.findStatsPaged(
                 req.getTenantId(),
-                periodEnum.name(),        // 'DAILY' / 'WEEKLY' / 'MONTHLY'
+                periodEnum.name(),
                 from,
                 to,
                 req.getSiteKeyId(),
-                req.getChannel()
+                req.getChannel(),
+                pageable
         );
 
-        // 3) 자바 레벨 페이징
-        int page = Math.max(req.getPage(), 0);
-        int size = req.getSize() > 0 ? req.getSize() : 20;
-
-        int totalCount = rows.size();
-        int totalPages = (int) Math.ceil((double) totalCount / size);
-
-        int fromIndex = page * size;
-        if (fromIndex >= totalCount) {
-            return UsageStatsListResponse.of(List.of(), totalCount, totalPages);
-        }
-        int toIndex = Math.min(fromIndex + size, totalCount);
-
-        List<UsageStatsItem> items = rows.subList(fromIndex, toIndex).stream()
-                .map(p -> toItem(p, periodEnum))
+        // 4) Projection → Item 변환
+        List<UsageStatsItem> items = result.getContent().stream()
+                .map(p -> UsageStatsItem.from(p, periodEnum))
                 .toList();
-
-        return UsageStatsListResponse.of(items, totalCount, totalPages);
+        return  UsageStatsListResponse.of(
+                items,
+                result.getTotalElements(),
+                result.getTotalPages()
+        );
     }
 
-    private UsageStatsItem toItem(UsageStatsProjection p, Period period) {
-        LocalDate start = p.getBucketDate();
-        LocalDate end;
+    // 엑셀 다운로드
+    public byte[] exportUsageStatsExcel(UsageStatsRequest req) {
+        // 1) getUsageStats(req) 재사용해도 되고, DB조회만 별도로 해도 됨
+        UsageStatsListResponse res = getUsageStats(req);
+        List<UsageStatsItem> items = res.getItems();
 
-        switch (period) {
-            case WEEKLY  -> end = start.plusDays(6); // 월~일
-            case MONTHLY -> end = start.withDayOfMonth(start.lengthOfMonth());
-            case DAILY   -> end = start;
-            default      -> throw new IllegalArgumentException("지원되지 않는 기간 조회입니다: " +  period);
+        List<String> headers = List.of(
+                "버킷 라벨",
+                "시작일",
+                "종료일",
+                "총 호출",
+                "성공",
+                "실패",
+                "성공률(%)",
+                "입력 토큰",
+                "출력 토큰",
+                "총 토큰",
+                "평균 응답(ms)",
+                "호출당 평균 토큰"
+        );
+
+
+        InputStream is = ExcelUtil.generateExcel(
+                "AI 사용 통계(" + (req.getPeriod() == null ? "DAILY" : req.getPeriod().name()) + ")",
+                items,
+                headers,
+                List.of(
+                        it -> safe(it.getBucketLabel()),
+                        it -> safe(it.getStartDate()),
+                        it -> safe(it.getEndDate()),
+                        it -> String.valueOf(nvl(it.getTotalCalls())),
+                        it -> String.valueOf(nvl(it.getSuccessCalls())),
+                        it -> String.valueOf(nvl(it.getFailCalls())),
+                        it -> String.valueOf(nvlD(it.getSuccessRate())), // UsageStatsItem에 추가했다면
+                        it -> String.valueOf(nvl(it.getTotalPromptTokens())),
+                        it -> String.valueOf(nvl(it.getTotalCompletionTokens())),
+                        it -> String.valueOf(nvl(it.getTotalTokens())),
+                        it -> String.valueOf(nvlD(it.getAvgLatencyMs())),
+                        it -> String.valueOf(nvlD(it.getAvgTokensPerCall()))
+                )
+        );
+
+        try {
+            return is.readAllBytes();
+        } catch (Exception e) {
+            throw new RuntimeException("UsageStats 엑셀 다운로드에 실패하였습니다.", e);
         }
-
-        return UsageStatsItem.builder()
-                .bucketLabel(p.getBucketLabel())
-                .startDate(start)
-                .endDate(end)
-                .totalCalls(nz(p.getTotalCalls()))
-                .successCalls(nz(p.getSuccessCalls()))
-                .failCalls(nz(p.getFailCalls()))
-                .totalPromptTokens(nz(p.getTotalPromptTokens()))
-                .totalCompletionTokens(nz(p.getTotalCompletionTokens()))
-                .totalTokens(nz(p.getTotalTokens()))
-                .avgLatencyMs(p.getAvgLatencyMs() == null ? 0.0 : p.getAvgLatencyMs())
-                .build();
     }
 
-    private Long nz(Long v) {
-        return v == null ? 0L : v;
-    }
+    private static String safe(Object v) { return v == null ? "" : String.valueOf(v); }
+    private static long nvl(Long v) { return v == null ? 0L : v; }
+    private static double nvlD(Double v) { return v == null ? 0.0 : v; }
 
 }
