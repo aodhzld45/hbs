@@ -267,6 +267,7 @@ public class PromptProfileService {
         e.setGuardrailTpl(dto.getGuardrailTpl());
 
         // JSON 컬럼들은 빈 문자열 → null
+        e.setWelcomeBlocksJson(writeOptions(dto.getWelcomeBlocksJson()));
         e.setStyleJson(writeOptions(dto.getStyleJson()));
         e.setToolsJson(writeOptions(dto.getToolsJson()));
         e.setPoliciesJson(writeOptions(dto.getPoliciesJson()));

@@ -72,6 +72,10 @@ public class PromptProfile extends AuditBase {
     @Column(name = "guardrail_tpl", columnDefinition = "MEDIUMTEXT")
     private String guardrailTpl;
 
+    @Lob
+    @Column(name = "welcome_blocks_json", columnDefinition = "json")
+    private String welcomeBlocksJson;
+
     /** 스타일 기본값(JSON) — {"lang":"ko","tone":"formal","length":"short","emoji":"N"} */
     @Column(name = "style_json", columnDefinition = "json")
     private String styleJson;

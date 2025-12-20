@@ -56,6 +56,7 @@ public class PromptProfileRequest {
     // 프롬프트 리소스들
     private String systemTpl;
     private String guardrailTpl;
+    private String welcomeBlocksJson;
     private String styleJson;
     private String toolsJson;
     private String policiesJson;
