@@ -51,9 +51,6 @@ public class PromptProfileController {
             HttpServletRequest request
 
     ){
-        log.info("contentType={}", request.getContentType());
-        log.info("files size={}", files == null ? 0 : files.size());
-
         Long id = promptProfileService.create(body, files, actor);
 
         return ResponseEntity.created(URI.create("/api/ai/prompt-profiles/" + id)).body(id);
@@ -69,8 +66,6 @@ public class PromptProfileController {
             HttpServletRequest request
 
     ) {
-        log.info("contentType={}", request.getContentType());
-        log.info("files size={}", files == null ? 0 : files.size());
 
         Long updateId = promptProfileService.update(id, body, files, actor);
         return ResponseEntity.ok(updateId);
