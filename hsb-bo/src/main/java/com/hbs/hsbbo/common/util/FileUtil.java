@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Locale;
 import java.util.UUID;
 
 @Component
@@ -113,13 +114,44 @@ public class FileUtil {
         return Paths.get(fileStorageProperties.getUploadPath(), "banner");
     }
 
-    /*
-    * 확장자 반환
-    */
-    
+
     public String getExtension(String name) {
         return name != null && name.contains(".")
                 ? name.substring(name.lastIndexOf('.') + 1)
                 : "";
+    }
+
+    // 파일 key 추출
+    public String extractFileKey(String originalFilename) {
+        if (originalFilename == null || originalFilename.isBlank()) {
+            throw new IllegalArgumentException("업로드 파일의 originalFilename이 비어있습니다.");
+        }
+
+        // 경로 포함될 가능성(브라우저/OS)에 대비해 마지막 슬래시만 취함
+        String name = originalFilename;
+        int slash = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
+        if (slash >= 0) name = name.substring(slash + 1);
+
+        name = name.trim();
+        if (name.isEmpty()) throw new IllegalArgumentException("업로드 파일명이 올바르지 않습니다.");
+
+        // 확장자 제거: hero.png -> hero
+        int dot = name.lastIndexOf('.');
+        if (dot > 0) name = name.substring(0, dot);
+
+        name = name.trim();
+        if (name.isEmpty()) throw new IllegalArgumentException("업로드 파일 key를 추출할 수 없습니다.");
+
+        // 키 정규화: 공백/대문자 방지(선택)
+        name = name.toLowerCase(Locale.ROOT);
+
+        // 안전 문자만 허용(권장): hero, card1, cover_image 등
+        // 필요 없으면 이 검증은 빼도 됩니다.
+        if (!name.matches("^[a-z0-9_-]{1,50}$")) {
+            throw new IllegalArgumentException("파일 key 형식이 올바르지 않습니다. key=" + name +
+                    " (허용: a-z, 0-9, _, -, 길이 1~50)");
+        }
+
+        return name;
     }
 }

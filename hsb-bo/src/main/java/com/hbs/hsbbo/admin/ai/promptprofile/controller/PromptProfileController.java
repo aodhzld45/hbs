@@ -4,14 +4,20 @@ import com.hbs.hsbbo.admin.ai.promptprofile.dto.request.PromptProfileRequest;
 import com.hbs.hsbbo.admin.ai.promptprofile.dto.response.PromptProfileListResponse;
 import com.hbs.hsbbo.admin.ai.promptprofile.dto.response.PromptProfileResponse;
 import com.hbs.hsbbo.admin.ai.promptprofile.service.PromptProfileService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
+@Slf4j
 @RequestMapping("/api/ai/prompt-profiles")
 @RequiredArgsConstructor
 public class PromptProfileController {
@@ -37,24 +43,36 @@ public class PromptProfileController {
     }
 
     // 등록
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> create(
-            @Valid @RequestBody PromptProfileRequest request,
-            @RequestParam String actor
+            @Valid @RequestPart("body") PromptProfileRequest body,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files,
+            @RequestParam("actor") String actor,
+            HttpServletRequest request
+
     ){
-        Long id = promptProfileService.create(request, actor);
+        log.info("contentType={}", request.getContentType());
+        log.info("files size={}", files == null ? 0 : files.size());
+
+        Long id = promptProfileService.create(body, files, actor);
+
         return ResponseEntity.created(URI.create("/api/ai/prompt-profiles/" + id)).body(id);
     }
 
     // 수정
-    @PutMapping(path = "/{id}")
+    @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> update(
             @PathVariable Long id,
-            @Valid @RequestBody PromptProfileRequest request,
-            @RequestParam String actor
+            @Valid @RequestPart("body") PromptProfileRequest body,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files,
+            @RequestParam("actor") String actor,
+            HttpServletRequest request
 
     ) {
-        Long updateId = promptProfileService.update(id, request, actor);
+        log.info("contentType={}", request.getContentType());
+        log.info("files size={}", files == null ? 0 : files.size());
+
+        Long updateId = promptProfileService.update(id, body, files, actor);
         return ResponseEntity.ok(updateId);
     }
 

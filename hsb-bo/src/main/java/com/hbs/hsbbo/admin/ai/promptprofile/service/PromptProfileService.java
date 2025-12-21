@@ -1,7 +1,10 @@
 package com.hbs.hsbbo.admin.ai.promptprofile.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hbs.hsbbo.admin.ai.promptprofile.domain.entity.PromptProfile;
 import com.hbs.hsbbo.admin.ai.promptprofile.domain.type.PromptStatus;
 import com.hbs.hsbbo.admin.ai.promptprofile.dto.request.PromptProfileRequest;
@@ -12,6 +15,7 @@ import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
 import com.hbs.hsbbo.admin.ai.sitekey.repository.SiteKeyRepository;
 import com.hbs.hsbbo.admin.ai.sitekey.service.SiteKeyService;
 import com.hbs.hsbbo.common.exception.CommonException.NotFoundException;
+import com.hbs.hsbbo.common.util.FileUtil;
 import com.hbs.hsbbo.user.ai.dto.ChatRequest;
 import com.hbs.hsbbo.user.ai.dto.ChatWithPromptProfileRequest;
 import lombok.RequiredArgsConstructor;
@@ -22,9 +26,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Iterator;
 import java.util.Map;
 
 @Service
@@ -36,6 +44,7 @@ public class PromptProfileService {
     private final PromptProfileRepository promptProfileRepository;
     private final SiteKeyService siteKeyService;
     private final SiteKeyRepository siteKeyRepository;
+    private final FileUtil fileUtil;
     private final ObjectMapper om;
 
     // 프롬프트 프로필 리스트 (페이징 + 키워드,모델 필터)
@@ -84,7 +93,28 @@ public class PromptProfileService {
     }
 
     // 등록(create)
-    public Long create(PromptProfileRequest request, String actor) {
+    public Long create(PromptProfileRequest request, List<MultipartFile> files, String actor) {
+
+        // 0) 첨부파일 처리
+        Map<String, String> saved = new HashMap<>();
+        Path basePath = fileUtil.resolveContactPath("promptProfile");
+
+        String savedPath = null;
+
+        if (files != null) {
+            for (MultipartFile f : files) {
+                if(f == null || f.isEmpty()) continue;
+                String key = fileUtil.extractFileKey(f.getOriginalFilename());
+                savedPath = fileUtil.saveFile(basePath, f);
+                saved.put(key, savedPath);
+            }
+        }
+
+        // welcomeBlockJson 치환
+        String welcomeJson = request.getWelcomeBlocksJson();
+        String patched = patchWelcomeBlocksJson(welcomeJson, saved);
+
+        request.setWelcomeBlocksJson(patched);
 
         String name = normalizeName(request.getName());
 
@@ -112,11 +142,34 @@ public class PromptProfileService {
     }
     
     // 수정(update)
-    public Long update(Long id, PromptProfileRequest request, String actor) {
+    public Long update(Long id, PromptProfileRequest request, List<MultipartFile> files, String actor) {
 
         PromptProfile e = promptProfileRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 프로필입니다. id=" + id));
 
+        // 0) 첨부파일 처리
+        Map<String, String> saved = new HashMap<>();
+        Path basePath = fileUtil.resolveContactPath("promptProfile");
+
+        String savedPath = null;
+
+        if (files != null) {
+            for (MultipartFile f : files) {
+                if (f == null || f.isEmpty()) continue;
+                String key = fileUtil.extractFileKey(f.getOriginalFilename());
+                savedPath = fileUtil.saveFile(basePath, f);
+                saved.put(key, savedPath);
+            }
+        }
+
+        // 1) welcomeBlocksJson 치환 (files 있을 때만 의미 있음)
+        if (!saved.isEmpty()) {
+            String welcomeJson = request.getWelcomeBlocksJson();
+            String patched = patchWelcomeBlocksJson(welcomeJson, saved);
+            request.setWelcomeBlocksJson(patched);
+        }
+
+        // 2) 이름 중복 체크 (create와 동일 룰)
         String newName = normalizeName(request.getName());
         String currentName = normalizeName(e.getName());
 
@@ -127,11 +180,12 @@ public class PromptProfileService {
             }
         }
 
+        // 3) 엔티티 반영
         applyFromRequest(e, request, false);
         e.setUpAdm(actor);
-        // @Transactional 이므로 flush는 트랜잭션 종료 시점에
-        
-        // 사이트키 매핑: linkedSiteKeyId가 넘어오면 해당 SiteKey에 이 프롬프트 프로필을 기본으로 설정
+        promptProfileRepository.save(e); // e.getId() 확보
+
+        // 4) 사이트키 매핑: linkedSiteKeyId가 넘어오면 해당 SiteKey에 이 프롬프트 프로필을 기본으로 설정
         if (request.getLinkedSiteKeyId() != null) {
             SiteKey sk = siteKeyRepository.findByIdForUpdate(request.getLinkedSiteKeyId())
                     .orElseThrow(() -> new IllegalArgumentException("사이트키가 존재하지 않습니다. id=" + request.getLinkedSiteKeyId()));
@@ -250,7 +304,7 @@ public class PromptProfileService {
     private void applyFromRequest(PromptProfile e, PromptProfileRequest dto, boolean isCreate) {
         // 기본 식별/태깅
         e.setTenantId(normalize(dto.getTenantId()));
-        e.setName(dto.getName());         // @NotBlank 이므로 그대로
+        e.setName(normalizeName(dto.getName()));
         e.setPurpose(dto.getPurpose());
 
         // 모델/파라미터
@@ -266,12 +320,32 @@ public class PromptProfileService {
         e.setSystemTpl(dto.getSystemTpl());
         e.setGuardrailTpl(dto.getGuardrailTpl());
 
-        // JSON 컬럼들은 빈 문자열 → null
-        e.setWelcomeBlocksJson(writeOptions(dto.getWelcomeBlocksJson()));
-        e.setStyleJson(writeOptions(dto.getStyleJson()));
-        e.setToolsJson(writeOptions(dto.getToolsJson()));
-        e.setPoliciesJson(writeOptions(dto.getPoliciesJson()));
-        e.setStopJson(writeOptions(dto.getStopJson()));
+        // JSON 컬럼들
+        // create: 항상 반영(빈 문자열이면 null)
+        // update: 전달된 경우(dto 필드가 null이 아닌 경우)에만 반영, 빈 문자열이면 null로 초기화
+        if (isCreate) {
+            e.setWelcomeBlocksJson(writeOptions(dto.getWelcomeBlocksJson()));
+            e.setStyleJson(writeOptions(dto.getStyleJson()));
+            e.setToolsJson(writeOptions(dto.getToolsJson()));
+            e.setPoliciesJson(writeOptions(dto.getPoliciesJson()));
+            e.setStopJson(writeOptions(dto.getStopJson()));
+        } else {
+            if (dto.getWelcomeBlocksJson() != null) {
+                e.setWelcomeBlocksJson(writeOptions(dto.getWelcomeBlocksJson()));
+            }
+            if (dto.getStyleJson() != null) {
+                e.setStyleJson(writeOptions(dto.getStyleJson()));
+            }
+            if (dto.getToolsJson() != null) {
+                e.setToolsJson(writeOptions(dto.getToolsJson()));
+            }
+            if (dto.getPoliciesJson() != null) {
+                e.setPoliciesJson(writeOptions(dto.getPoliciesJson()));
+            }
+            if (dto.getStopJson() != null) {
+                e.setStopJson(writeOptions(dto.getStopJson()));
+            }
+        }
 
         // 상태/버전
         if (dto.getVersion() != null) {
@@ -314,15 +388,6 @@ public class PromptProfileService {
         return s.trim();
     }
 
-    // JSON 문자 직렬화용 지금은 주석처리 Map<String,Object> 시 사용 -> JSON.stringify()로 프론트에서 보내줄 때
-    // 백앤드 타입도 String이 아닌 Map으로 받음
-
-/*    private String writeOptions(Map<String, Object> opt) {
-        if (opt == null || opt.isEmpty()) return null;
-        try { return om.writeValueAsString(opt); }
-        catch (Exception e) { throw new RuntimeException("options 직렬화 실패", e); }
-    }*/
-
     private String writeOptions(String json) {
         if (json == null) return null;
         String trimmed = json.trim();
@@ -346,6 +411,72 @@ public class PromptProfileService {
             return om.readValue(toolsJson, new TypeReference<List<Map<String,Object>>>() {});
         } catch (Exception e) {
             throw new RuntimeException("tools_json 파싱 실패", e);
+        }
+    }
+
+    // welcomeBlocksJson imageRef Path 치환
+    private String patchWelcomeBlocksJson(String welcomeJson, Map<String, String> saved) {
+        if (welcomeJson == null || welcomeJson.isBlank()) return welcomeJson;
+        if (saved == null || saved.isEmpty()) return welcomeJson;
+
+        try {
+            JsonNode root = om.readTree(welcomeJson);
+            patchNodeRecursive(root, saved);
+            return om.writeValueAsString(root);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("welcomeBlocksJson JSON 파싱/치환 실패", e);
+        }
+    }
+
+    private void patchNodeRecursive(JsonNode node, Map<String, String> saved) {
+        if (node == null) return;
+
+        if (node.isObject()) {
+            ObjectNode obj = (ObjectNode) node;
+
+            // 1) imageRef: "file:key" 치환
+            JsonNode imageRef = obj.get("imageRef");
+            if (imageRef != null && imageRef.isTextual()) {
+                String ref = imageRef.asText("").trim();
+                if (ref.startsWith("file:")) {
+                    String key = ref.substring("file:".length()).trim();
+                    String path = saved.get(key);
+                    if (path != null && !path.isBlank()) {
+                        // imagePath overwrite or set
+                        obj.put("imagePath", path);
+                        // imageRef 제거
+                        obj.remove("imageRef");
+                    }
+                }
+            }
+
+            // 2) (옵션) imagePath 자체가 "file:key" 로 들어오는 경우도 지원
+            JsonNode imagePath = obj.get("imagePath");
+            if (imagePath != null && imagePath.isTextual()) {
+                String v = imagePath.asText("").trim();
+                if (v.startsWith("file:")) {
+                    String key = v.substring("file:".length()).trim();
+                    String path = saved.get(key);
+                    if (path != null && !path.isBlank()) {
+                        obj.put("imagePath", path);
+                    }
+                }
+            }
+
+            // 3) 재귀 탐색 (모든 필드)
+            Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
+            while (it.hasNext()) {
+                Map.Entry<String, JsonNode> entry = it.next();
+                patchNodeRecursive(entry.getValue(), saved);
+            }
+            return;
+        }
+
+        if (node.isArray()) {
+            ArrayNode arr = (ArrayNode) node;
+            for (int i = 0; i < arr.size(); i++) {
+                patchNodeRecursive(arr.get(i), saved);
+            }
         }
     }
 

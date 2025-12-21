@@ -67,6 +67,7 @@ public class PromptProfileResponse {
 
                 .systemTpl(e.getSystemTpl())
                 .guardrailTpl(e.getGuardrailTpl())
+                .welcomeBlocksJson(e.getWelcomeBlocksJson())
                 .styleJson(e.getStyleJson())
                 .toolsJson(e.getToolsJson())
                 .policiesJson(e.getPoliciesJson())

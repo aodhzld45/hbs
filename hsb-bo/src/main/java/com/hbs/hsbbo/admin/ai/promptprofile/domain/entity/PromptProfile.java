@@ -4,6 +4,8 @@ import com.hbs.hsbbo.admin.ai.promptprofile.domain.type.PromptStatus;
 import com.hbs.hsbbo.common.AuditBase.AuditBase;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 
@@ -72,19 +74,23 @@ public class PromptProfile extends AuditBase {
     @Column(name = "guardrail_tpl", columnDefinition = "MEDIUMTEXT")
     private String guardrailTpl;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "welcome_blocks_json", columnDefinition = "json")
     private String welcomeBlocksJson;
 
+
     /** 스타일 기본값(JSON) — {"lang":"ko","tone":"formal","length":"short","emoji":"N"} */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "style_json", columnDefinition = "json")
     private String styleJson;
 
     /** 허용 툴/함수 스키마(JSON) */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tools_json", columnDefinition = "json")
     private String toolsJson;
 
     /** 정책/금칙/PII 마스킹 규정(JSON) */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "policies_json", columnDefinition = "json")
     private String policiesJson;
 
