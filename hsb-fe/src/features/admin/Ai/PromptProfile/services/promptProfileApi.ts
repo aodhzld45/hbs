@@ -35,29 +35,34 @@ export const fetchPromptProfileDetail = async (id: number): Promise<PromptProfil
 export const createPromptProfile = async (
   body: PromptProfileRequest,
   actorId: string | number,
+  files?: File[]
 ): Promise<PromptProfile> => {
-  const params = {
-    actor: String(actorId),
-  };
+  const params = { actor: String(actorId) };
+  const fd = new FormData();
 
-  return okOrThrow(
-    api.post<PromptProfile>(BASE, body, { params }),
-  );
+  fd.append("body", new Blob([JSON.stringify(body)], { type: "application/json" }));
+
+  (files ?? []).forEach((f) => fd.append("files", f, f.name)); // @RequestPart("files")
+
+  return okOrThrow(api.post<PromptProfile>(BASE, fd, { params }));
 };
+
 
 // 프롬프트 프로필 수정 API 요청
 export const updatePromptProfile = async (
   id: number,
   body: PromptProfileRequest,
   actorId: string | number,
+  files?: File[]
 ): Promise<PromptProfile> => {
-  const params = {
-    actor: String(actorId),
-  };
+  const params = { actor: String(actorId) };
+  const fd = new FormData();
 
-  return okOrThrow(
-    api.put<PromptProfile>(`${BASE}/${id}`, body, { params }),
-  );
+  fd.append("body", new Blob([JSON.stringify(body)], { type: "application/json" }));
+
+  (files ?? []).forEach((f) => fd.append("files", f, f.name));
+
+  return okOrThrow(api.put<PromptProfile>(`${BASE}/${id}`, fd, { params }));
 };
 
 // 프롬프트 프로필 삭제 API 요청

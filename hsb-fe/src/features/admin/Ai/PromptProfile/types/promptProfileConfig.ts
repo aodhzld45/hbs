@@ -23,6 +23,8 @@ export type PromptProfile = {
   // 프롬프트 리소스
   systemTpl?: string | null;
   guardrailTpl?: string | null;
+
+  welcomeBlocksJson?: string | null;
   styleJson?: string | null;
   toolsJson?: string | null;
   policiesJson?: string | null;

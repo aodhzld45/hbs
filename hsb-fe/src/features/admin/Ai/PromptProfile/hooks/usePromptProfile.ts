@@ -109,12 +109,11 @@ export function usePromptProfileMutations(actorId: string | number) {
   const [error, setError] = useState<unknown>(null);
 
   const create = useCallback(
-    async (body: PromptProfileRequest) => {
+    async (body: PromptProfileRequest, files?: File[]) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await createPromptProfile(body, actorId);
-        return res;
+        return await createPromptProfile(body, actorId, files);
       } catch (e) {
         setError(e);
         throw e;
@@ -126,12 +125,11 @@ export function usePromptProfileMutations(actorId: string | number) {
   );
 
   const update = useCallback(
-    async (id: number, body: PromptProfileRequest) => {
+    async (id: number, body: PromptProfileRequest, files?: File[]) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await updatePromptProfile(id, body, actorId);
-        return res;
+        return await updatePromptProfile(id, body, actorId, files);
       } catch (e) {
         setError(e);
         throw e;

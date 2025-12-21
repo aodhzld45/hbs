@@ -154,15 +154,15 @@ export default function AdminPromptProfile() {
   };
 
   /** ── CRUD 핸들러 ──────────────────────────────────────────────────── */
-  const handleSubmit = async (data: PromptProfileRequest) => {
+  const handleSubmit = async (data: PromptProfileRequest, files?: File[]) => {
     try {
       if (editing) {
         // 수정
-        await updatePromptProfile(editing.id, data, actorId);
+        await updatePromptProfile(editing.id, data, actorId, files);
         alert("프롬프트 프로필이 수정되었습니다.");
       } else {
         // 신규
-        await createPromptProfile(data, actorId);
+        await createPromptProfile(data, actorId, files);
         alert("프롬프트 프로필이 등록되었습니다.");
       }
       closeEditor();

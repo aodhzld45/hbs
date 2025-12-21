@@ -4,6 +4,11 @@ import type {
   PromptProfileRequest,
   Status,
 } from "../types/promptProfileConfig";
+
+import { WelcomeBlock } from "../types/welcomeBlockConfig";
+import { blocksToWelcomeJson, collectFilesFromBlocks, welcomeJsonToBlocks } from "../utils/welcomeBlocksMapper";
+import { WelcomeBlocksEditor } from "./WelcomeBlocksEditor";
+
 import type { SiteKeySummary } from "../../AdminSiteKeys/types/siteKey";
 import {
   fetchSiteKeyList,
@@ -12,7 +17,7 @@ import {
 
 type Props = {
   value?: PromptProfile | null; // 수정 시 전달, 신규는 undefined/null
-  onSubmit: (data: PromptProfileRequest) => void | Promise<void>;
+  onSubmit: (data: PromptProfileRequest, files?: File[]) => void | Promise<void>;
   onCancel: () => void;
 };
 
@@ -32,6 +37,7 @@ const DEFAULT_FORM: PromptProfileRequest = {
   stopJson: "",
   systemTpl: "",
   guardrailTpl: "",
+  welcomeBlocksJson: "",
   styleJson: "",
   toolsJson: "",
   policiesJson: "",
@@ -58,6 +64,8 @@ export default function PromptProfileEditorForm({
   const [errors, setErrors] = useState<ErrorMap>({});
 
   const [linkedTouched, setLinkedTouched] = useState(false);
+  const [welcomeBlocks, setWelcomeBlocks] = useState<WelcomeBlock[]>([]);
+
 
   // 사이트키 목록 상태
   const [siteKeys, setSiteKeys] = useState<SiteKeySummary[]>([]);
@@ -167,6 +175,9 @@ export default function PromptProfileEditorForm({
       setForm(DEFAULT_FORM);
       setErrors({});
       setLinkedTouched(false);
+
+      // 신규일 때 블록 초기화
+      setWelcomeBlocks([]);
       return;
     }
     setForm({
@@ -183,6 +194,7 @@ export default function PromptProfileEditorForm({
       stopJson: value.stopJson ?? "",
       systemTpl: value.systemTpl ?? "",
       guardrailTpl: value.guardrailTpl ?? "",
+      welcomeBlocksJson: value.welcomeBlocksJson ?? "",
       styleJson: value.styleJson ?? "",
       toolsJson: value.toolsJson ?? "",
       policiesJson: value.policiesJson ?? "",
@@ -192,8 +204,13 @@ export default function PromptProfileEditorForm({
       useTf: value.useTf ?? "Y",
       delTf: value.delTf ?? "N",
     });
+
     setErrors({});
     setLinkedTouched(false);
+    
+    setWelcomeBlocks(welcomeJsonToBlocks(value.welcomeBlocksJson));
+
+
   }, [value]);
 
   // 사이트키 목록 로드 (ACTIVE 위주)
@@ -339,7 +356,20 @@ export default function PromptProfileEditorForm({
 
     try {
       setSubmitting(true);
-      await onSubmit(form);
+
+      // 1) blocks -> welcomeBlocksJson 생성
+      const welcomeBlocksJson = blocksToWelcomeJson(welcomeBlocks);
+
+      // 2) blocks에서 파일 수집 (A안: fileName=key.ext로 리네임 포함)
+      const files = collectFilesFromBlocks(welcomeBlocks);
+
+      // 3) body에 주입해서 제출
+      const nextBody = {
+        ...form,
+      welcomeBlocksJson,
+    };
+
+      await onSubmit(nextBody, files);
     } finally {
       setSubmitting(false);
     }
@@ -639,6 +669,8 @@ export default function PromptProfileEditorForm({
           />
         </div>
       </div>
+
+      <WelcomeBlocksEditor blocks={welcomeBlocks} setBlocks={setWelcomeBlocks} />        
 
       {/* 스타일/툴/정책 JSON */}
       <div className="grid grid-cols-3 gap-4">
