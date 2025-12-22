@@ -274,6 +274,21 @@ export function WelcomeBlocksEditor({ blocks, setBlocks }: Props) {
                       />
                     </div>
 
+                    <button
+                      type="button"
+                      className="px-2 py-1 text-xs border rounded text-red-600"
+                      onClick={() => {
+                        patchBlock(b.id, {
+                          file: undefined,
+                          imagePath: undefined,
+                          // uploadKey는 유지해도 되고 초기화해도 됨 (운영 편의상 유지 추천)
+                          // uploadKey: "",
+                        } as any);
+                      }}
+                    >
+                      이미지 제거
+                    </button>
+
                     <div className="text-[11px] text-gray-500">
                       파일을 선택했다면 uploadKey는 필수입니다. 저장 시 <code>file:uploadKey</code>로 치환됩니다.
                     </div>
@@ -324,6 +339,21 @@ export function WelcomeBlocksEditor({ blocks, setBlocks }: Props) {
                           />
                         </label>
                       </div>
+
+                      <button
+                        type="button"
+                        className="px-2 py-1 text-xs border rounded text-red-600"
+                        onClick={() => {
+                          patchBlock(b.id, {
+                            file: undefined,
+                            imagePath: undefined,
+                            // uploadKey는 유지해도 되고 초기화해도 됨 (운영 편의상 유지 추천)
+                            // uploadKey: "",
+                          } as any);
+                        }}
+                      >
+                        이미지 제거
+                      </button>
 
                       <div className="text-[11px] text-gray-500">
                         카드에 파일을 선택했다면 uploadKey는 필수입니다.

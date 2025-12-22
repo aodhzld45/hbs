@@ -344,6 +344,24 @@ export default function PromptProfileEditorForm({
     }));
   };
 
+  // uploadKey 중복 체크(이미지/카드만)
+  function assertUniqueUploadKeys(blocks: WelcomeBlock[]) {
+    const used = new Map<string, string>(); // key -> blockId
+
+    for (const b of blocks) {
+      if ((b.type === "image" || b.type === "card") && b.file) {
+        const key = (b.uploadKey ?? "").trim().toLowerCase();
+        if (!key) throw new Error(`업로드 키(uploadKey)가 비어 있습니다. (blockId=${b.id})`);
+
+        if (used.has(key)) {
+          const prev = used.get(key)!;
+          throw new Error(`업로드 키가 중복되었습니다: "${key}" (blockId=${prev}, ${b.id})`);
+        }
+        used.set(key, b.id);
+      }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -357,13 +375,16 @@ export default function PromptProfileEditorForm({
     try {
       setSubmitting(true);
 
-      // 1) blocks -> welcomeBlocksJson 생성
+      // 1) 업로드 key 중복/누락 검사
+      assertUniqueUploadKeys(welcomeBlocks);
+
+      // 2) blocks -> welcomeBlocksJson 생성
       const welcomeBlocksJson = blocksToWelcomeJson(welcomeBlocks);
 
-      // 2) blocks에서 파일 수집 (A안: fileName=key.ext로 리네임 포함)
+      // 3) blocks에서 파일 수집 (A안: fileName=key.ext로 리네임 포함)
       const files = collectFilesFromBlocks(welcomeBlocks);
 
-      // 3) body에 주입해서 제출
+      // 4) body에 주입해서 제출
       const nextBody = {
         ...form,
       welcomeBlocksJson,
