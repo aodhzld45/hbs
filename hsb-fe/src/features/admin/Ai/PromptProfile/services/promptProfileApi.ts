@@ -31,6 +31,17 @@ export const fetchPromptProfileDetail = async (id: number): Promise<PromptProfil
   );
 }
 
+// 사이트키로 기본 PromptProfile 조회 (welcomeBlocksJson 얻기 용도)
+export const fetchDefaultPromptProfileBySiteKey = async (siteKeyId: number): Promise<PromptProfile | null> => {
+  try {
+    return await okOrThrow(api.get<PromptProfile>(`${BASE}/${siteKeyId}/prompt-profile`));
+  } catch (e: any) {
+    const status = e?.response?.status;
+    if (status === 204 || status === 404) return null;
+    throw e;
+  }
+};
+
 // 프롬프트 프로필 생성 API 요청
 export const createPromptProfile = async (
   body: PromptProfileRequest,
