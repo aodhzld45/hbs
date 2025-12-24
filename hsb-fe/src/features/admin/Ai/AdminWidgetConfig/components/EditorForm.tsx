@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import type { WidgetConfig, WidgetConfigRequest } from '../types/widgetConfig';
 
-import { fetchSiteKeyList, fetchLinkedSiteKeys } from '../../AdminSiteKeys/services/siteKeyApi'; 
+import { fetchSiteKeyList, fetchLinkedSiteKeys } from '../../AdminSiteKeys/services/siteKeyApi';
+ 
 import type { SiteKeySummary } from '../../AdminSiteKeys/types/siteKey';
+import { fetchDefaultPromptProfileBySiteKey } from '../../PromptProfile/services/promptProfileApi';
+
 import { useQuickReplies } from '../hooks/useQuickReplies';
 
 import ColorPickerField from './ColorPickerField';  // 재사용 가능한 컬러 피커 컴포넌트
@@ -12,9 +15,10 @@ type Props = {
   onSubmit: (data: WidgetConfigRequest, iconFile?: File | null) => void;
   onCancel: () => void;
   onChangePreview?: (cfg: Partial<WidgetConfigRequest>) => void; // 미리보기 패널 value용
+  onWelcomeBlocksJsonChange?: (json: string | null) => void;    
 };
 
-export default function EditorForm({ value, onSubmit, onCancel, onChangePreview }: Props) {
+export default function EditorForm({ value, onSubmit, onCancel, onChangePreview, onWelcomeBlocksJsonChange }: Props) {
   const [form, setForm] = useState<WidgetConfigRequest>({
     name: '',
     position: 'right',
@@ -29,6 +33,8 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview 
 
     // 연결할 사이트키
     linkedSiteKeyId: null,
+    // 연결된 프롬프트 프로필
+    welcomeBlocksJson: 'null'
   });
 
   // 퀵리플라이 훅: value에서 내려온 welcomeQuickRepliesJson을 초기값으로 사용
@@ -98,6 +104,18 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview 
       }
     })();
   }, []);
+
+  // 연결된 사이트키 id를 파라미터로 프롬프트 프로필 조회
+  useEffect(() => {
+    const siteKeyId = form.linkedSiteKeyId;
+    if (!siteKeyId) return;
+  
+    (async () => {
+      const pp = await fetchDefaultPromptProfileBySiteKey(siteKeyId);
+
+      onWelcomeBlocksJsonChange?.(pp?.welcomeBlocksJson ?? null);
+    })();
+  }, [form.linkedSiteKeyId, onWelcomeBlocksJsonChange]);
 
   // 수정 모드: 현재 위젯을 기본으로 쓰는 사이트키를 자동 매핑
   useEffect(() => {

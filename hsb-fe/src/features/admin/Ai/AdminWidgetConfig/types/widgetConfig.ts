@@ -2,8 +2,11 @@ export type WidgetConfig = {
   id: number;
   name: string;
 
-  /* 이 위젯설정을 연결할 SiteKey ID */
+  // 이 위젯설정을 연결할 SiteKey ID
   linkedSiteKeyId?: number | null;
+
+  // 연결된 프롬프트 프로필
+  welcomeBlocksJson?: string;
 
   panelTitle?: string;
   welcomeText?: string;

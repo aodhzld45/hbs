@@ -52,15 +52,18 @@ export default function AdminWidgetConfig() {
     };
 
     useEffect(() => {
-    loadMenus();
+      loadMenus();
     }, [location.pathname]);
 
     useEffect(() => {
-    setAdminId(admin?.id || null);
+      setAdminId(admin?.id || null);
     }, [admin?.id]);
   
   // 미리보기 패널용 설정 상태  
   const [previewCfg, setPreviewCfg] = useState<Partial<WidgetConfigRequest>>({});
+
+  // 미리보기 패널용 프롬프트 프로필 welcomeBlocksJson
+  const [welcomeBlocksJson, setWelcomeBlocksJson] = useState<string | null>(null);
   
   // 목록 훅
   const list = useWidgetConfigList({ page: 0, size: 20, sort: 'regDate,desc', keyword: '' });
@@ -123,11 +126,15 @@ export default function AdminWidgetConfig() {
     }
   };
 
-    // 상세가 로드되면 미리보기 초기화
+  // 상세가 로드되면 미리보기 초기화
   useEffect(() => {
     if (detail.data) {
       const { id, useTf, delTf, regDate, upDate, ...rest } = detail.data;
       setPreviewCfg({ ...rest });
+
+      // 편집 진입 시 기본 초기화 (EditorForm에서 다시 채워줌)
+      setWelcomeBlocksJson(null);
+
     } else if (selectedId === 0) {
       // 신규 기본값
       setPreviewCfg({
@@ -142,7 +149,8 @@ export default function AdminWidgetConfig() {
         closeOnEsc: 'Y',
         closeOnOutsideClick: 'Y',
         linkedSiteKeyId: null,
-      });
+      }); 
+      setWelcomeBlocksJson(null);
     }
   }, [detail.data, selectedId]);
 
@@ -186,10 +194,14 @@ export default function AdminWidgetConfig() {
               onSubmit={handleSubmit}
               onCancel={closeEditor}
               onChangePreview={setPreviewCfg}
+              onWelcomeBlocksJsonChange={setWelcomeBlocksJson}
             />
           </div>
           <div className="order-1 lg:order-2">
-            <PreviewPanel cfg={previewCfg} />
+            <PreviewPanel 
+              cfg={previewCfg}
+              welcomeBlocksJson={welcomeBlocksJson}
+            />
           </div>
         </div>
       )}

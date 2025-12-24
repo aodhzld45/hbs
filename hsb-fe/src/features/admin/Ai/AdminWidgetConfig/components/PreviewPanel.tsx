@@ -1,10 +1,16 @@
 // PreviewPanel.tsx
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { WidgetConfigRequest } from '../types/widgetConfig';
+import { welcomeJsonToBlocks } from "../../PromptProfile/utils/welcomeBlocksMapper"; 
+import WelcomeBlocksPreview from './WelcomeBlocksPreview';
+import { FILE_BASE_URL } from '../../../../../config/config';
 
-type Props = { cfg: Partial<WidgetConfigRequest> };
+type Props = { 
+  cfg: Partial<WidgetConfigRequest>;
+  welcomeBlocksJson?: string | null;  
+};
 
-export default function PreviewPanel({ cfg }: Props) {
+export default function PreviewPanel({ cfg, welcomeBlocksJson }: Props) {
   // ===== CSS 변수 세팅(상위에서 내려준 값만 사용) =====
   const style: React.CSSProperties = {
     ['--hsbs-primary' as any]: cfg.primaryColor || '#2563eb',
@@ -26,7 +32,6 @@ export default function PreviewPanel({ cfg }: Props) {
 
   // ===== 아이콘/로고 우선순위: url → 실패시 이모지 → 실패시 이니셜 =====
   const bubbleEmoji = (cfg.bubbleIconEmoji && cfg.bubbleIconEmoji.trim()) || '💬';
-
   const [bubbleImgOk, setBubbleImgOk] = useState(true);
   const [logoImgOk, setLogoImgOk] = useState(true);
 
@@ -69,6 +74,82 @@ export default function PreviewPanel({ cfg }: Props) {
     );
   };
 
+  const blocks = useMemo(() => {
+    let parsed: any[] = [];
+    try {
+      parsed = welcomeJsonToBlocks((welcomeBlocksJson ?? "").trim());
+    } catch {
+      parsed = [];
+    }
+  
+    // 운영/로컬 모두 커버하는 filesBase 결정
+    const getFilesBase = () => {
+      // 1) 환경변수 기반 FILE_BASE_URL이 있으면 우선 사용(단 /api 제거)
+      const env = (FILE_BASE_URL || "").trim().replace(/\/api\/?$/, "");
+      if (env) return env;
+  
+      // 2) 환경변수가 비어있으면 현재 origin 기준으로 판단
+      const origin = window.location.origin;
+  
+      // 운영(리버스프록시)면 같은 도메인
+      return origin;
+    };
+  
+    const filesBase = getFilesBase();
+  
+    const normalizeUrl = (u?: string) => {
+      if (!u) return u;
+      const url = String(u).trim();
+      if (!url) return url;
+  
+      if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  
+      // /files 로 시작하면 filesBase 붙이기
+      if (url.startsWith("/files")) return `${filesBase}${url}`;
+  
+      return url;
+    };
+  
+    // ✅ 핵심: mapper 결과가 top-level imagePath를 갖는 경우까지 커버
+    return parsed.map((b: any) => {
+      // card (top-level imagePath 지원)
+      if (b?.type === "card") {
+        const img = normalizeUrl(b.imagePath || b?.data?.imagePath || b?.data?.image || b?.data?.imageUrl);
+        return {
+          ...b,
+          imagePath: img,                 // ✅ top-level
+          data: b.data
+            ? {
+                ...b.data,
+                imagePath: img,           // ✅ nested도 같이
+                image: img,
+                imageUrl: img,
+              }
+            : b.data,
+        };
+      }
+  
+      // image 블록
+      if (b?.type === "image") {
+        const u = normalizeUrl(b.url || b?.data?.url);
+        return { ...b, url: u, data: b.data ? { ...b.data, url: u } : b.data };
+      }
+  
+      // cards(캐러셀) 형태도 대비
+      if (b?.type === "cards" && Array.isArray(b.items)) {
+        return {
+          ...b,
+          items: b.items.map((c: any) => ({
+            ...c,
+            imagePath: normalizeUrl(c.imagePath),
+          })),
+        };
+      }
+  
+      return b;
+    });
+  }, [welcomeBlocksJson]);
+
   // ===== 패널 폭/높이 적용(미리보기 용) =====
   const panelWidthPx = cfg.panelWidthPx ?? 360;
   const panelHeightPx = 420; // 고정 높이 안에서만 스크롤 되도록
@@ -105,8 +186,13 @@ export default function PreviewPanel({ cfg }: Props) {
           </div>
 
           {/* 본문(웰컴 메시지 영역) - 여기만 스크롤 */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 text-sm whitespace-pre-wrap">
-            {welcome}
+          <div className="flex-1 overflow-y-auto px-4 py-4 text-sm">
+            {blocks.length > 0 ? (
+              <WelcomeBlocksPreview blocks={blocks} />
+            ) : (
+              <div className="whitespace-pre-wrap">{welcome}</div>
+            )
+          }
           </div>
 
           {/* 푸터(입력창 + 버튼) - 오른쪽 padding 을 버블만큼 확보 */}
