@@ -24,16 +24,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +44,20 @@ public class PromptProfileService {
     private final SiteKeyRepository siteKeyRepository;
     private final FileUtil fileUtil;
     private final ObjectMapper om;
+
+    @Transactional(readOnly = true)
+    public PromptProfileResponse loadForPublic(String siteKey, String host) {
+        if (siteKey == null || siteKey.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "siteKey is required");
+        }
+
+        PromptProfile entity = findDefaultProfileForSiteKeyOrThrow(siteKey, host);
+
+        // (선택) 공용 노출 조건 여기서 한번 더 가드
+        // if ("Y".equals(entity.getDelTf()) || "N".equals(entity.getUseTf())) { ... }
+
+        return PromptProfileResponse.from(entity);
+    }
 
     // 프롬프트 프로필 리스트 (페이징 + 키워드,모델 필터)
     @Transactional(readOnly = true)

@@ -8,6 +8,7 @@ import com.hbs.hsbbo.admin.ai.brain.dto.model.response.BrainUsage;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainChatRequest;
 import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainChatResponse;
 import com.hbs.hsbbo.admin.ai.promptprofile.domain.entity.PromptProfile;
+import com.hbs.hsbbo.admin.ai.promptprofile.dto.response.PromptProfileResponse;
 import com.hbs.hsbbo.admin.ai.promptprofile.service.PromptProfileService;
 import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
 import com.hbs.hsbbo.admin.ai.sitekey.service.SiteKeyService;
@@ -103,6 +104,64 @@ public class AiPlayGroundController {
                 .cacheControl(CacheControl.maxAge(300, TimeUnit.SECONDS).cachePublic())
                 .body(body);
     }
+
+    // Get /api/ai/public/prompt-profile : 프롬프트 프로필(환영 블록 포함) 불러오기
+    @GetMapping("/public/prompt-profile")
+    @CrossOrigin(origins = "*", allowedHeaders = { "Content-Type", "Authorization", "X-HSBS-Site-Key" })
+    public ResponseEntity<PromptProfileResponse> getPublicPromptProfile(
+            @RequestHeader(value = "X-HSBS-Site-Key", required = false) String siteKeyHeader,
+            @RequestParam(value = "siteKey", required = false) String siteKeyQuery,
+            HttpServletRequest http
+    ) {
+        String origin  = http.getHeader("Origin");
+        String referer = http.getHeader("Referer");
+        String ua      = http.getHeader("User-Agent");
+        String ip      = Optional.ofNullable(http.getHeader("X-Forwarded-For"))
+                .map(v -> v.split(",", 2)[0].trim())
+                .filter(s -> !s.isBlank())
+                .orElse(http.getRemoteAddr());
+
+        log.info("[public-prompt-profile] siteKeyHeader={}, siteKeyQuery={}, origin={}, referer={}, ua={}, ip={}",
+                mask(siteKeyHeader), mask(siteKeyQuery), origin, referer, ua, ip);
+
+        String siteKey = (siteKeyHeader != null && !siteKeyHeader.isBlank())
+                ? siteKeyHeader : siteKeyQuery;
+
+        if (siteKey == null || siteKey.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String host = extractClientHost(http);
+
+        // 여기서 “사이트키에 연결된 기본 PromptProfile”을 찾아서 전체 응답을 리턴
+        // (welcomeBlocksJson은 PromptProfileResponse 안에 포함)
+        PromptProfileResponse body = promptProfileService.loadForPublic(siteKey, host);
+
+        if (body == null) {
+            // 연결된 프롬프트가 없으면 204 (프론트에서 null 처리 가능)
+            return ResponseEntity.noContent()
+                    .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS).cachePublic())
+                    .build();
+        }
+
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(300, TimeUnit.SECONDS).cachePublic())
+                .body(body);
+    }
+
+
+    // (호환용) Get /api/ai/public/prompt-profile-welcome : 위젯 JS에서 fallback으로 호출하는 엔드포인트
+    @GetMapping("/public/prompt-profile-welcome")
+    @CrossOrigin(origins = "*", allowedHeaders = { "Content-Type", "Authorization", "X-HSBS-Site-Key" })
+    public ResponseEntity<PromptProfileResponse> getPublicPromptProfileWelcome(
+            @RequestHeader(value = "X-HSBS-Site-Key", required = false) String siteKeyHeader,
+            @RequestParam(value = "siteKey", required = false) String siteKeyQuery,
+            HttpServletRequest http
+    ) {
+        // 구현은 위 메서드와 동일하게 위임
+        return getPublicPromptProfile(siteKeyHeader, siteKeyQuery, http);
+    }
+
 
     //  POST /api/ai/complete : - 포트폴리오용
     //   - 키 기반 쿼리 소모/응답 헤더(Remaining)
