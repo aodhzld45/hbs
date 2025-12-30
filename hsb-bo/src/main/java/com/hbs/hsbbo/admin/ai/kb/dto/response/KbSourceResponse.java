@@ -2,12 +2,13 @@ package com.hbs.hsbbo.admin.ai.kb.dto.response;
 
 import com.hbs.hsbbo.admin.ai.kb.domain.entity.KbSource;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@ToString
+@Slf4j
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor

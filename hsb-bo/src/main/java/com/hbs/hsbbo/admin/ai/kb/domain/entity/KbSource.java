@@ -3,10 +3,11 @@ package com.hbs.hsbbo.admin.ai.kb.domain.entity;
 import com.hbs.hsbbo.common.AuditBase.AuditBase;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 @Getter
 @Setter
-@ToString
+@Slf4j
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
