@@ -23,4 +23,7 @@ public class KbSourceRequest {
     @Size(max = 255)
     private String description;
 
+    private String useTf;       // "Y"/"N" (null 허용: 기본값 처리)
+    private String delTf;       // "N" 고정 권장
+
 }

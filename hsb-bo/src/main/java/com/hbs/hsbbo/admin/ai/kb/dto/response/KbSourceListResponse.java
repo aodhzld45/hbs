@@ -1,7 +1,6 @@
 package com.hbs.hsbbo.admin.ai.kb.dto.response;
 
 import lombok.*;
-import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -16,11 +15,11 @@ public class KbSourceListResponse {
     private long totalCount;
     private int totalPages;
 
-    public static KbSourceListResponse of(Page<?> page, List<KbSourceResponse> items) {
+    public static KbSourceListResponse of(List<KbSourceResponse> items, long totalCount, int totalPages) {
         return KbSourceListResponse.builder()
                 .items(items)
-                .totalCount(page.getTotalElements())
-                .totalPages(page.getTotalPages())
+                .totalCount(totalCount)
+                .totalPages(totalPages)
                 .build();
     }
 }
