@@ -4,22 +4,14 @@ import com.hbs.hsbbo.admin.ai.kb.dto.request.KbSourceRequest;
 import com.hbs.hsbbo.admin.ai.kb.dto.response.KbSourceListResponse;
 import com.hbs.hsbbo.admin.ai.kb.dto.response.KbSourceResponse;
 import com.hbs.hsbbo.admin.ai.kb.service.KbSourceService;
-import com.hbs.hsbbo.admin.ai.promptprofile.dto.request.PromptProfileRequest;
-import com.hbs.hsbbo.admin.ai.sitekey.dto.request.SiteKeyCreateRequest;
-import com.hbs.hsbbo.admin.ai.sitekey.dto.request.SiteKeyUpdateRequest;
-import com.hbs.hsbbo.admin.ai.sitekey.dto.response.SiteKeyResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
-import java.util.List;
 
 @RestController
 @Slf4j
@@ -52,7 +44,7 @@ public class KbSourceController {
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<Long> create(
             @Valid @RequestBody KbSourceRequest req,
-            @RequestParam("actor") String actor,
+            @RequestParam("actor") String actor
 
     ){
         Long id = kbSourceService.create(req, actor);
