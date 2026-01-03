@@ -2,13 +2,27 @@ package com.hbs.hsbbo.admin.ai.kb.repository;
 
 import com.hbs.hsbbo.admin.ai.kb.domain.entity.KbDocument;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.data.domain.*;
+
+import java.util.Optional;
 
 
 public interface KbDocumentRepository extends JpaRepository<KbDocument, Long> {
+    // 소프트 삭제 아닌 단건 조회
+    @Query(
+            """
+            SELECT kd FROM KbDocument kd
+            WHERE kd.id = :id
+            AND kd.delTf = 'N'
+            """
+    )
+    Optional<KbDocument> findActiveById(@Param("id") Long id);
+
+    // 중복체크용
+    boolean existsByKbSourceIdAndTitleAndDelTf(Long kbSourceId, String title, String delTf);
 
     @Query("""
            SELECT d FROM KbDocument d
@@ -31,6 +45,8 @@ public interface KbDocumentRepository extends JpaRepository<KbDocument, Long> {
             @Param("kw") String keyword,
             Pageable pageable
     );
+
+
 }
 
 

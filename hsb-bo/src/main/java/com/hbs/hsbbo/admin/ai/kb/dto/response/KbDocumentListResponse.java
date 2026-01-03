@@ -2,7 +2,6 @@ package com.hbs.hsbbo.admin.ai.kb.dto.response;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -18,11 +17,11 @@ public class KbDocumentListResponse {
     private long totalCount;
     private int totalPages;
 
-    public static KbDocumentListResponse of(Page<?> page, List<KbDocumentResponse> items) {
+    public static KbDocumentListResponse of(List<KbDocumentResponse> items, long totalCount, int totalPage) {
         return KbDocumentListResponse.builder()
                 .items(items)
-                .totalCount(page.getTotalElements())
-                .totalPages(page.getTotalPages())
+                .totalCount(totalCount)
+                .totalPages(totalPage)
                 .build();
     }
 
