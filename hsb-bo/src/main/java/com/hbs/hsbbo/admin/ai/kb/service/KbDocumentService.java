@@ -62,6 +62,14 @@ public class KbDocumentService {
         );
     }
 
+    // 단건 조회
+    @Transactional(readOnly = true)
+    public KbDocumentResponse get(Long id) {
+        KbDocument e = kbDocumentRepository.findActiveById(id)
+                .orElseThrow(() -> new NotFoundException("지식 문서를 찾을 수 없습니다. id=%d", id));
+        return KbDocumentResponse.from(e);
+    }
+
     // 등록(create)
     public Long create(KbDocumentRequest request, MultipartFile file, String actor) {
         Long kbSourceId = request.getKbSourceId();
