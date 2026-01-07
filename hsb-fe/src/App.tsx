@@ -24,6 +24,7 @@ import ContactManager from "./features/admin/Contact/index";
 import ContactDetail from "./features/admin/Contact/components/ContactDetail";
 
 import CorsOriginPage from "./features/admin/CorsOrigin";
+import MaintenanceRulePage from "./features/admin/MaintenanceRule";
 
 import PopupBannerManager from './pages/Admin/Main/PopupBannerManager';
 
@@ -221,6 +222,7 @@ function App() {
                 <Route path="/admin/contact/detail/:id" element={<ContactDetail />} />
 
                 <Route path="/admin/cors-origins" element={<CorsOriginPage />} />
+                <Route path="/admin/maintenance" element={<MaintenanceRulePage />} />
 
                 <Route path='/admin/main/popup-banner-manager' element={<PopupBannerManager />} />
               </Route>
