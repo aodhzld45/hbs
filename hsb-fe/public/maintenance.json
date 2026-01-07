@@ -1,5 +1,5 @@
 {
-    "enabled": true,
+    "enabled": false,
     "type": "maintenance",
     "title": "시스템 점검중",
     "description": "현재 시스템은 점검중입니다. 조금 후에 다시 시도해주세요.",
