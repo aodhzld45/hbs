@@ -1,7 +1,7 @@
 import api, {okOrThrow} from '../../../../services/api';
 import { MaintenanceConfig } from "../types/maintenanceRule";
 
-const BASE = "/api/admin/maintenance-config";
+const BASE = "/admin/maintenance-config";
 
 export const getMaintenanceConfig = async (): Promise<MaintenanceConfig> => {
     return okOrThrow(

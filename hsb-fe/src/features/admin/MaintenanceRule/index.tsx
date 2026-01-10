@@ -42,7 +42,7 @@ export default function MaintenanceRulePage() {
           <div>
             <h1 className="text-xl font-bold">점검 페이지 관리</h1>
             <p className="text-sm text-slate-500 mt-1">
-              관리자(/admin)는 제외하고, 지정한 URL만 ComingSoonPage로 전환합니다. (DB 없이 Flag)
+              관리자(/admin)는 제외하고, 지정한 URL만 ComingSoonPage로 전환합니다.
             </p>
           </div>
 
