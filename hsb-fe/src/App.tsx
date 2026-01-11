@@ -1,5 +1,4 @@
 // src/App.tsx
-import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // 관리자 페이지 imports
@@ -38,7 +37,7 @@ import BoardDetail from "./pages/Admin/Board/BoardDetail";
 // 사용자 메뉴 Url 가드
 import { UserMenuProvider } from './context/UserMenuContext';
 import UserRouteGuard from './components/Route/UserRouteGuard';
-import ComingSoonPage from './components/Common/ComingSoonPage'; // 혹시 404용으로도 쓸 거면
+import MaintenanceRouteGuard from './components/Route/MaintenanceRouteGuard';
 
 // 사용자 페이지 imports
 import MainPage from './pages/MainPage';
@@ -66,101 +65,7 @@ import PrivateRoute from './components/Admin/PrivateRoute';
 import { AuthProvider } from './context/AuthContext';
 import { PermissionProvider } from './context/PermissionContext';
 
-type MaintenanceType = 'MAINTENANCE' | 'COMING_SOON' | 'NOTICE';
-
-type MaintenanceConfig = {
-  enabled: boolean;
-  type?: MaintenanceType;
-  title?: string;
-  description?: string;
-  expectedEndAt?: string; // ISO string
-  helpText?: string;
-  helpHref?: string;
-  checkIntervalSec?: number;
-};
-
-const DEFAULT_CONFIG: MaintenanceConfig= {
-  enabled: false,
-  type: 'MAINTENANCE',
-}
-
-async function fetchMaintenanceConfig(): Promise<MaintenanceConfig> {
-  try {
-    // 캐시 방지(중요): 파일만 바꿔도 바로 반영되도록
-    const res = await fetch(`/maintenance.json?t=${Date.now()}`, {
-      cache: 'no-store',
-    });
-    if (!res.ok) return DEFAULT_CONFIG;
-
-    const data = (await res.json()) as Partial<MaintenanceConfig>;
-    return {
-      ...DEFAULT_CONFIG,
-      ...data,
-      enabled: Boolean(data.enabled),
-    };
-  } catch {
-    return DEFAULT_CONFIG;
-  }
-}
-
 function App() {
-  const [checked, setChecked] = useState(false);
-  const [maintenance, setMaintenance] = useState<MaintenanceConfig>(DEFAULT_CONFIG);
-  
-  useEffect(() => {
-    let alive = true;
-    let timer: number | null = null;
-
-    const tick = async () => {
-      const cfg = await fetchMaintenanceConfig();
-      if (!alive) return;
-
-      setMaintenance(cfg);
-      if (!checked) setChecked(true);
-
-      const sec = Math.max(5, Number(cfg.checkIntervalSec ?? 15));
-      timer = window.setTimeout(tick, sec * 1000);
-    };
-
-    tick();
-    return () => {
-      alive = false;
-      if (timer) window.clearTimeout(timer);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // 최초 체크 전: 깜빡임 방지
-  if (!checked) return null;
-
-  // 점검 모드면 “어떤 URL이든” ComingSoonPage만
-  if (maintenance.enabled) {
-    return (
-      <AuthProvider>
-        <PermissionProvider>
-          <Router>
-            <Routes>
-              <Route
-                path="*"
-                element={
-                  <ComingSoonPage
-                    type={maintenance.type ?? 'MAINTENANCE'}
-                    title={maintenance.title}
-                    description={maintenance.description}
-                    expectedEndAt={maintenance.expectedEndAt}
-                    helpText={maintenance.helpText}
-                    helpHref={maintenance.helpHref}
-                  />
-                }
-              />
-            </Routes>
-          </Router>
-        </PermissionProvider>
-      </AuthProvider>
-    );
-  }
-
-
   return (
     // AuthProvider를 전체를 감싸서 전역 인증 상태를 모든 페이지에서 사용할 수 있도록 함
     <AuthProvider>
@@ -169,18 +74,20 @@ function App() {
           <UserMenuProvider>
             <Routes>
               {/* 사용자 보호 라우트 가드 */}
-              <Route element={<UserRouteGuard />}>
-                <Route path="/" element={<MainPage />} />
-                <Route path="/:boardType/board-list" element={<BoardList />} />
-                <Route path="/:boardType/board-detail/:id" element={<UserBoardDetail />} />
-                <Route path="/:fileType/:contentType/list" element={<ContentsList />} />
-                <Route path="/:fileType/:contentType/detail/:fileId" element={<ContentDetail />} />
-                <Route path="/contact" element={<ContactForm />} />
-                <Route path="/test" element={<TestPage />} />
-                <Route path="/test/2depth" element={<SqlProblemTestPage />} />
-                <Route path="/test/kis" element={<KisPage />} />
-                <Route path="/test/ai" element={<AIPlayground />} />
-              </Route>  
+              <Route element={<MaintenanceRouteGuard />}>
+                <Route element={<UserRouteGuard />}>
+                  <Route path="/" element={<MainPage />} />
+                  <Route path="/:boardType/board-list" element={<BoardList />} />
+                  <Route path="/:boardType/board-detail/:id" element={<UserBoardDetail />} />
+                  <Route path="/:fileType/:contentType/list" element={<ContentsList />} />
+                  <Route path="/:fileType/:contentType/detail/:fileId" element={<ContentDetail />} />
+                  <Route path="/contact" element={<ContactForm />} />
+                  <Route path="/test" element={<TestPage />} />
+                  <Route path="/test/2depth" element={<SqlProblemTestPage />} />
+                  <Route path="/test/kis" element={<KisPage />} />
+                  <Route path="/test/ai" element={<AIPlayground />} />
+                </Route>
+              </Route>
 
               {/* 관리자 공용 라우트 (로그인 페이지) */}
               <Route path="/admin/login" element={<AdminLogin />} />
