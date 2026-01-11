@@ -2,6 +2,7 @@ package com.hbs.hsbbo.admin.maintenance.controller;
 
 import com.hbs.hsbbo.admin.maintenance.dto.request.MaintenanceConfigRequest;
 import com.hbs.hsbbo.admin.maintenance.dto.response.MaintenanceConfigResponse;
+import com.hbs.hsbbo.admin.maintenance.service.MaintenanceConfigService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/admin/maintenance-config")
 public class MaintenanceConfigController {
 
-    private final com.hbs.hsbbo.admin.system.maintenance.service.MaintenanceConfigService maintenanceConfigService;
+    private final MaintenanceConfigService maintenanceConfigService;
 
 
     // 점검 설정 조회

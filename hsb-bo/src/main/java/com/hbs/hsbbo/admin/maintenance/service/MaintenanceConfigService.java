@@ -1,4 +1,4 @@
-package com.hbs.hsbbo.admin.system.maintenance.service;
+package com.hbs.hsbbo.admin.maintenance.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hbs.hsbbo.admin.maintenance.dto.MaintenanceRuleDto;
