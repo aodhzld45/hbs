@@ -4,7 +4,7 @@ import { useContactManager } from './hooks/useContactManager';
 import AdminLayout from '../../../components/Layout/AdminLayout';
 import Pagination from '../../../components/Common/Pagination';
 // 공통검색 import
-import SearchInput from '../Common/SearchInput';
+import SearchInput from '../Common/components/SearchInput';
 
 const ContactManager = () => {
   const navigate = useNavigate();

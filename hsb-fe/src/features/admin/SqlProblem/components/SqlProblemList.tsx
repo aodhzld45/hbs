@@ -1,6 +1,6 @@
 import React, { FormEvent } from 'react';
 import { ProblemItem } from '../types/ProblemItem';
-import SearchInput from '../../Common/SearchInput'; // ← 공통 경로에 맞게 import 경로 조정하세요
+import SearchInput from '../../Common/components/SearchInput'; // ← 공통 경로에 맞게 import 경로 조정하세요
 import Pagination from '../../../../components/Common/Pagination';
 
 type ListState = {
