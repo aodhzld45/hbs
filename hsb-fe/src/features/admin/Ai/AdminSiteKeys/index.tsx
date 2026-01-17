@@ -1,63 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useSiteKeys } from "./hooks/useSiteKey";
 import { CreateRequest, SiteKeyResponse, SiteKeySummary, Status, UpdateRequest } from "./types/siteKey";
+import AdminLayout from "../../../../components/Layout/AdminLayout";
 import SiteKeyFormModal from "./components/SiteKeyFormModal";
 import Pagination from "../../../../components/Common/Pagination"; // ← 공통 컴포넌트 경로에 맞게 조정
+import { useAdminPageHeader } from "../../Common/hooks/useAdminPageHeader";
 
 import { updateSiteKeyUseTf, deleteSiteKey } from "./services/siteKeyApi";
 
-import { useNavigate } from "react-router-dom";
-
-// 공통 메뉴 목록 불러오기
-import {
-  fetchAdminMenus
-} from '../../../../services/Admin/adminMenuApi';
-import { AdminMenu } from '../../../../types/Admin/AdminMenu';
-import { useLocation } from "react-router-dom";
-
-// 관리자 정보 불러오기
-import AdminLayout from "../../../../components/Layout/AdminLayout";
-import { useAuth } from "../../../../context/AuthContext";
-
 
 export default function AdminSiteKeys() {
-  // 공통 헤더/메뉴 관련
-  const location = useLocation();
-  const { admin } = useAuth();
-  const [adminId, setAdminId] = useState<string | null>(admin?.id || null);
-  const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
-  const [currentMenuTitle, setCurrentMenuTitle] = useState<string | null>(null);
-  const [menuLoading, setMenuLoading] = useState(true);
-  const [menuError, setMenuError] = useState<string>("");
 
   const { query, setQuery, data, loading, error, load, create, update, changeStatus, getDetail } = useSiteKeys();
 
   const [openModal, setOpenModal] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [selected, setSelected] = useState<SiteKeyResponse | null>(null);
-
-  // ===== 메뉴 로딩 =====
-  const loadMenus = async () => {
-    try {
-      const data = await fetchAdminMenus();
-      setMenus(data);
-      const matched = data.find((m) => m.url === location.pathname);
-      setCurrentMenuTitle(matched ? matched.name : null);
-    } catch (e) {
-      console.error(e);
-      setMenuError("메뉴 목록을 불러오는데 실패했습니다.");
-    } finally {
-      setMenuLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadMenus();
-  }, [location.pathname]);
-
-  useEffect(() => {
-    setAdminId(admin?.id || null);
-  }, [admin?.id]);
+  /* 공통 헤더/메뉴 처리 */
+  const { currentMenuTitle, actorId, menuError } = useAdminPageHeader();
 
   const onSearch = async () => { await load({ page: 0 }); };
 
@@ -65,13 +25,13 @@ export default function AdminSiteKeys() {
     try {
       if (!window.confirm("사용여부를 변경 하시겠습니까?")) return;
 
-      if(!adminId) {
+      if(!actorId) {
         alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
         return;
       }
 
       const newUseTf: "Y" | "N" = siteKey.useTf === "Y" ? "N" : "Y";
-      const updatedId = await updateSiteKeyUseTf(siteKey.id, newUseTf, adminId);
+      const updatedId = await updateSiteKeyUseTf(siteKey.id, newUseTf, actorId);
       const statusLabel = newUseTf === "Y" ? "사용" : "미사용";
 
       alert(`${updatedId}번 사이트키의 사용여부가 '${statusLabel}'으로 변경되었습니다.`);
@@ -88,12 +48,12 @@ export default function AdminSiteKeys() {
     try {
       if (!window.confirm("정말 삭제하시겠습니까?")) return;
 
-      if(!adminId) {
+      if(!actorId) {
         alert('관리자 정보가 없습니다. 다시 로그인 해주세요.');
         return;
       }
 
-      const deletedId = await deleteSiteKey(id, adminId);
+      const deletedId = await deleteSiteKey(id, actorId);
       alert(`${deletedId}번 사이트키가 삭제되었습니다.`);
 
       await load(); // 삭제 후 목록 새로고침
@@ -119,10 +79,12 @@ export default function AdminSiteKeys() {
   return (
     <AdminLayout>
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">
-        {currentMenuTitle}
-      </h2>
-
+    <h2 className="text-2xl font-bold mb-4">{currentMenuTitle}</h2>
+      {menuError && (
+        <div className="px-4 py-2 mb-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded">
+          {menuError}
+        </div>
+      )}
       {/* 검색바 */}
       <div className="bg-gray-50 p-3 rounded-lg mt-3 flex flex-col gap-3">
         {/* 1행: 총 건수 */}

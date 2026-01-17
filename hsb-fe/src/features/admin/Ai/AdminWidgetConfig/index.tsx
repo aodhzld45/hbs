@@ -1,64 +1,30 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Toolbar from './components/Toolbar';
+import AdminLayout from "../../../../components/Layout/AdminLayout";
+
 import ListTable from './components/ListTable';
 import EditorForm from './components/EditorForm';
 import PreviewPanel from './components/PreviewPanel';
-import Pagination from "../../../../components/Common/Pagination"; // ← 공통 컴포넌트 경로에 맞게 조정
+import Pagination from "../../../../components/Common/Pagination";
+
+import { useAdminPageHeader } from "../../Common/hooks/useAdminPageHeader";
+import { useSearchParams } from 'react-router-dom';
 
 import { fetchWidgetConfigCreateWithFile, fetchWidgetConfigUpdateWithFile, fetchWidgetConfigCreateMultipart, fetchWidgetConfigUpdateMultipart, updateWidgetConfigUseTf, fetchWidgetConfigDelete } from "./services/widgetConfigApi";
 import { useWidgetConfigDetail, useWidgetConfigList, useWidgetConfigMutations } from './hooks/useWidgetConfig';
 import type { WidgetConfigRequest } from './types/widgetConfig';
 
-// 공통 메뉴 목록 불러오기
-import {
-  fetchAdminMenus
-} from '../../../../services/Admin/adminMenuApi';
-import { AdminMenu } from '../../../../types/Admin/AdminMenu';
-import { useLocation, useSearchParams } from "react-router-dom";
-
-// 관리자 정보 불러오기
-import AdminLayout from "../../../../components/Layout/AdminLayout";
-import { useAuth } from "../../../../context/AuthContext";
-
 export default function AdminWidgetConfig() {
     const [searchParams, setSearchParams] = useSearchParams();
+
+    /* 공통 헤더/메뉴 처리 */
+    const { currentMenuTitle, actorId, menuError } = useAdminPageHeader();
 
     // URL ?editId=3 이면 3, 없으면 null
     const editIdParam = searchParams.get('editId');
     const selectedId: number | null =
       editIdParam != null ? Number(editIdParam) : null;
 
-    // 공통 헤더/메뉴 관련
-    const location = useLocation();
-    const { admin } = useAuth();
-    const [adminId, setAdminId] = useState<string | null>(admin?.id || null);
-    const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
-    const [currentMenuTitle, setCurrentMenuTitle] = useState<string | null>(null);
-    const [menuLoading, setMenuLoading] = useState(true);
-    const [menuError, setMenuError] = useState<string>("");
-    // ===== 메뉴 로딩 =====
-    const loadMenus = async () => {
-        try {
-        const data = await fetchAdminMenus();
-        setMenus(data);
-        const matched = data.find((m) => m.url === location.pathname);
-        setCurrentMenuTitle(matched ? matched.name : null);
-        } catch (e) {
-        console.error(e);
-        setMenuError("메뉴 목록을 불러오는데 실패했습니다.");
-        } finally {
-        setMenuLoading(false);
-        }
-    };
-
-    useEffect(() => {
-      loadMenus();
-    }, [location.pathname]);
-
-    useEffect(() => {
-      setAdminId(admin?.id || null);
-    }, [admin?.id]);
-  
   // 미리보기 패널용 설정 상태  
   const [previewCfg, setPreviewCfg] = useState<Partial<WidgetConfigRequest>>({});
 
@@ -92,7 +58,7 @@ export default function AdminWidgetConfig() {
   const handleSubmit = async (data: WidgetConfigRequest, iconFile?: File | null) => {
     try {
       const isCreate = !selectedId || selectedId === 0;
-      const actor = adminId ?? '';
+      const actor = actorId ?? '';
 
       if (iconFile) {
         // 멀티파트(FormData) 전송: form(JSON) + iconFile
@@ -157,9 +123,13 @@ export default function AdminWidgetConfig() {
   return (
   <AdminLayout>
     <div className="p-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">위젯 설정</h2>
-      </div>
+    <h2 className="text-2xl font-bold mb-4">{currentMenuTitle}</h2>
+
+      {menuError && (
+        <div className="px-4 py-2 mb-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded">
+          {menuError}
+        </div>
+      )}
 
       {selectedId === null ? (
         <>
@@ -176,8 +146,8 @@ export default function AdminWidgetConfig() {
             data={list.data}
             loading={list.loading}
             onEdit={openEdit}
-            onToggleUse={async (id, next) => { await updateWidgetConfigUseTf(id, next, adminId ?? ""); await list.refresh(); }}
-            onDelete={async (id) => { await fetchWidgetConfigDelete(id, adminId ?? ""); await list.refresh(); }}
+            onToggleUse={async (id, next) => { await updateWidgetConfigUseTf(id, next, actorId ?? ""); await list.refresh(); }}
+            onDelete={async (id) => { await fetchWidgetConfigDelete(id, actorId ?? ""); await list.refresh(); }}
           />
 
           <Pagination

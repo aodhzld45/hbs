@@ -1,11 +1,9 @@
 // src/features/Admin/AiPromptProfile/index.tsx
 import React, { useCallback, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
 import AdminLayout from "../../../../components/Layout/AdminLayout";
-import { useAuth } from "../../../../context/AuthContext";
-import { fetchAdminMenus } from "../../../../services/Admin/adminMenuApi";
-import type { AdminMenu } from "../../../../types/Admin/AdminMenu";
-import Pagination from "../../../../components/Common/Pagination"; // ← 공통 컴포넌트 경로에 맞게 조정
+import Pagination from "../../../../components/Common/Pagination"; 
+
+import { useAdminPageHeader } from "../../Common/hooks/useAdminPageHeader";
 
 import {
   PromptProfileListResponse,
@@ -25,40 +23,10 @@ import PromptProfileTable from "./components/PromptProfileTable";
 import PromptProfileEditorForm from "./components/PromptProfileEditorForm";
 
 export default function AdminPromptProfile() {
-  /** ── 공통 헤더/메뉴 처리 ───────────────────────────────────────────── */
-  const location = useLocation();
-  const { admin } = useAuth();
-  const [adminId, setAdminId] = useState<string | null>(admin?.id || null);
-  const actorId = String(admin?.id ?? admin?.email ?? "system");
-  const [currentMenuTitle, setCurrentMenuTitle] = useState<string | null>(null);
-  const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
-  const [menuLoading, setMenuLoading] = useState(true);
-  const [menuError, setMenuError] = useState<string>("");
+  /* 공통 헤더/메뉴 처리 */
+  const { currentMenuTitle, actorId, menuError } = useAdminPageHeader();
 
-  // ===== 메뉴 로딩 =====
-  const loadMenus = async () => {
-    try {
-      const data = await fetchAdminMenus();
-      setMenus(data);
-      const matched = data.find((m) => m.url === location.pathname);
-      setCurrentMenuTitle(matched ? matched.name : null);
-    } catch (e) {
-      console.error(e);
-      setMenuError("메뉴 목록을 불러오는데 실패했습니다.");
-    } finally {
-      setMenuLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadMenus();
-  }, [location.pathname]);
-
-  useEffect(() => {
-    setAdminId(admin?.id || null);
-  }, [admin?.id]);
-
-  /** ── 리스트/검색 상태 ─────────────────────────────────────────────── */
+  /* 리스트/검색 상태 */
   const [keyword, setKeyword] = useState("");
   const [modelFilter, setModelFilter] = useState("");
 
@@ -202,9 +170,12 @@ export default function AdminPromptProfile() {
   return (
     <AdminLayout>
       <div className="p-6">
-        <h2 className="text-2xl font-bold mb-4">
-          {currentMenuTitle}
-        </h2>
+      <h2 className="text-2xl font-bold mb-4">{currentMenuTitle}</h2>
+        {menuError && (
+          <div className="px-4 py-2 mb-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded">
+            {menuError}
+          </div>
+        )}
         {/* 검색 영역 */}
         <form
           className="flex items-end gap-3 px-4 py-3 border rounded-lg bg-white"
