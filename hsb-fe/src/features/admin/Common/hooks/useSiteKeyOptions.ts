@@ -39,5 +39,19 @@ export function useSiteKeyOptions() {
     return m;
   }, [siteKeys]);
 
-  return { siteKeys, loadingKeys, keysError, idToNameMap };
+
+    // Select 라벨 가독성 향상
+  const siteKeyOptions = useMemo(
+    () =>
+      siteKeys.map((k) => ({
+        value: k.id,
+        label: `[${k.id}] ${k.siteKey} (${k.planCode ?? '-'}, ${k.status}${
+          k.useTf === 'Y' ? '' : ', off'
+        })`,
+        disabled: k.status !== 'ACTIVE',
+      })),
+    [siteKeys]
+  );
+
+  return { siteKeys, loadingKeys, keysError, idToNameMap, siteKeyOptions };
 }

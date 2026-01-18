@@ -48,14 +48,17 @@ import ContentDetail from './components/Contents/ContentDetail';
 
 import ContactForm from './features/user/Contact/index';
 
-// 각종 테스트용 imports
+// 기본 ai 관리 부분분
 import AIPlayground from './features/user/OpenAI/AIPlayground';
-
 import AdminSiteKeys from './features/admin/Ai/AdminSiteKeys';
 import AdminWidgetConfig from './features/admin/Ai/AdminWidgetConfig';
 import AdminPromptProfile from './features/admin/Ai/PromptProfile';
 import AdminUsageStats from './features/admin/Ai/AdminUsageStats';
 
+// Knowlage_Base 부분
+import AdminKbSourse from './features/admin/Ai/KbSource';
+
+// 테스트 용 
 import TestPage from './pages/User/TestPage';
 import SqlProblemTestPage from './features/admin/SqlProblem/SqlProblemTestPage';
 import KisPage from './features/user/Kis';
@@ -104,6 +107,8 @@ function App() {
                 <Route path="/admin/ai/widget-configs" element={<AdminWidgetConfig />} />
                 <Route path="/admin/ai/prompt-profiles" element={<AdminPromptProfile />} />
                 <Route path="/admin/ai/usage-stats" element={<AdminUsageStats />} />
+
+                <Route path='/admin/kb/kb-source' element={<AdminKbSourse /> }/>
 
                 <Route path="/admin/sql-manager" element={<SqlProblemManager />} />
                 <Route path="/admin/sql-manager/:id" element={<SqlProblemDetail />} />
