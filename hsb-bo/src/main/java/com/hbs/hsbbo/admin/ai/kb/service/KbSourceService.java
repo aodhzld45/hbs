@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -117,6 +118,7 @@ public class KbSourceService {
         }
 
         e.setUpAdm(actor);
+        e.setUpDate(LocalDateTime.now());
         kbSourceRepository.save(e);
         return e.getId();
     }
@@ -132,6 +134,7 @@ public class KbSourceService {
 
         e.setUseTf("Y".equals(e.getUseTf()) ? "N" : "Y");
         e.setUpAdm(actor);
+        e.setUpDate(LocalDateTime.now());
         return e.getId();
     }
 
@@ -146,6 +149,7 @@ public class KbSourceService {
 
         e.setDelTf("Y");
         e.setDelAdm(actor);
+        e.setDelDate(LocalDateTime.now());
         return e.getId();
     }
 
