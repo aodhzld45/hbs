@@ -31,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -219,6 +220,7 @@ public class PromptProfileService {
         }
         e.setUseTf("Y".equals(e.getUseTf()) ? "N" : "Y");
         e.setUpAdm(actor);
+        e.setUpDate(LocalDateTime.now());
         return e.getId();
     }
 
@@ -230,6 +232,7 @@ public class PromptProfileService {
         }
         e.setDelTf("Y");
         e.setDelAdm(actor);
+        e.setDelDate(LocalDateTime.now());
         return e.getId();
     }
     // 사이트키 검증 프로필 반환

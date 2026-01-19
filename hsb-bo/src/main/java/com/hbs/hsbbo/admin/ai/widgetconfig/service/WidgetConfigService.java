@@ -14,6 +14,7 @@ import com.hbs.hsbbo.admin.ai.widgetconfig.dto.response.WidgetConfigResponse;
 import com.hbs.hsbbo.admin.ai.widgetconfig.repository.WidgetConfigRepository;
 import com.hbs.hsbbo.common.util.FileUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -125,6 +127,7 @@ public class WidgetConfigService {
         apply(e, req);
         e.setBubbleIconUrl(savedPath);
         e.setRegAdm(actor);
+        e.setRegDate(LocalDateTime.now());
         widgetConfigRepository.save(e); // e.getId() 확보
 
         // 3) 선택: 사이트키와 매핑 (linkedSiteKeyId가 있을 때만)
@@ -135,6 +138,7 @@ public class WidgetConfigService {
             // 여기서 매핑: site_key.default_widget_config_id = 위젯 id
             sk.setDefaultWidgetConfig(e);
             sk.setUpAdm(actor);
+            sk.setUpDate(LocalDateTime.now());
             siteKeyRepository.save(sk);
         }
 
@@ -178,6 +182,7 @@ public class WidgetConfigService {
         }
         e.setBubbleIconUrl(finalIconUrl);
         e.setUpAdm(actor);
+        e.setUpDate(LocalDateTime.now());
 
         // 사이트키 매핑: linkedSiteKeyId가 넘어오면 해당 SiteKey에 이 위젯을 기본으로 설정
         if (req.getLinkedSiteKeyId() != null) {
@@ -189,6 +194,7 @@ public class WidgetConfigService {
             // if (!"ACTIVE".equals(sk.getStatus()) || "Y".equals(sk.getDelTf())) { ... }
 
             sk.setDefaultWidgetConfig(e);
+            sk.setUpDate(LocalDateTime.now());
             sk.setUpAdm(actor);
             // save 호출은 생략 가능(JPA flush 시 반영)
             siteKeyRepository.save(sk);
@@ -215,6 +221,7 @@ public class WidgetConfigService {
         WidgetConfig e = widgetConfigRepository.findById(id).orElseThrow();
         e.setUseTf("Y".equals(e.getUseTf()) ? "N" : "Y");
         e.setUpAdm(actor);
+        e.setUpDate(LocalDateTime.now());
         return e.getId();
     }
 
@@ -223,6 +230,7 @@ public class WidgetConfigService {
         WidgetConfig e = widgetConfigRepository.findById(id).orElseThrow();
         e.setDelTf("Y");
         e.setDelAdm(actor);
+        e.setDelDate(LocalDateTime.now());
         return e.getId();
     }
 
