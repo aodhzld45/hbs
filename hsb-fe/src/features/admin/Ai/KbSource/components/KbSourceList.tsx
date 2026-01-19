@@ -6,11 +6,11 @@ import type {
   KbSourceListResponse,
   KbSourceResponse,
 } from "../types/kbSourceConfig";
-import { toggleKbSourceUseTf, deleteKbSourceSoft } from "../services/kbSourceApi";
 
 type KbSourceListParams = {
   siteKeyId?: number;
   keyword?: string;
+  actorId?: string;
   useTf?: "Y" | "N";
   page?: number;
   size?: number;
@@ -24,7 +24,8 @@ type Props = {
   loading: boolean;
   error: string | null;
   onRefetch: () => void;
-
+  onToggleUse: (row: KbSourceResponse) => void;
+  onClickDelete: (row: KbSourceResponse) => void;
   onOpenCreate: () => void;
   onOpenEdit: (row: KbSourceResponse) => void;
 };
@@ -37,6 +38,8 @@ export default function KbSourceList({
   error,
   onRefetch,
   onOpenCreate,
+  onToggleUse,
+  onClickDelete,
   onOpenEdit,
 }: Props) {
   const { loadingKeys, siteKeyOptions, keysError, siteKeys } =
@@ -64,26 +67,6 @@ export default function KbSourceList({
       size: 20,
       sort: "regDate,desc",
     }));
-  };
-
-  const onToggleUse = async (row: KbSourceResponse) => {
-    try {
-      await toggleKbSourceUseTf(row.id);
-      onRefetch();
-    } catch (e: any) {
-      alert(e?.message || "사용여부 변경 실패");
-    }
-  };
-
-  const onDelete = async (row: KbSourceResponse) => {
-    if (!window.confirm(`"${row.sourceName}" 소스를 삭제(숨김) 처리할까요?`))
-      return;
-    try {
-      await deleteKbSourceSoft(row.id);
-      onRefetch();
-    } catch (e: any) {
-      alert(e?.message || "삭제 실패");
-    }
   };
 
   const items = data?.items ?? [];
@@ -318,7 +301,7 @@ export default function KbSourceList({
                       </button>
                       <button
                         className="px-2 py-1 text-xs rounded border text-red-600 hover:bg-red-50"
-                        onClick={() => onDelete(row)}
+                        onClick={() => onClickDelete(row)}
                         type="button"
                       >
                         삭제

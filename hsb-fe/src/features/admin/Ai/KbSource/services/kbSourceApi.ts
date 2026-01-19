@@ -44,24 +44,19 @@ const BASE = '/ai/kb-source'
   
 
     // 사용여부 토글
-    export const toggleKbSourceUseTf = async (
-        id: number,
-        actor?: string
-    ): Promise<number> => {
-        const params = actor ? { actor } : undefined;
-        return okOrThrow(
-        api.patch<number>(`${BASE}/${id}/use-tf`, null, { params })
-        );
+    export const toggleKbSourceUseTf = (id: number, newUseTf: "Y" | "N", actorId: string | number) => {
+        return okOrThrow<number>(
+            api.patch(`${BASE}/${id}/use-tf`, null, {
+            params: { newUseTf, actor: String(actorId) },
+            })
+        )
     };
   
-
     // 소프트 삭제(del_tf='Y')
-    export const deleteKbSourceSoft = async (
-        id: number,
-        actor?: string
-    ): Promise<number> => {
-        const params = actor ? { actor } : undefined;
-        return okOrThrow(
-        api.patch<number>(`${BASE}/${id}/del-tf`, null, { params })
-        );
-    };
+    export const deleteKbSourceSoft = (id: number, actorId: string | number) => {
+        return okOrThrow<number>(
+          api.patch(`${BASE}/${id}/del-tf`, null, {
+            params: { actor: String(actorId) },
+          })
+        )
+      };

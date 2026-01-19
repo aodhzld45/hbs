@@ -9,6 +9,7 @@ import KbSourceList from "./components/KbSourceList";
 import { useKbSourceList } from "./hooks/useKbSourceList";
 import { KbSourceRequest, KbSourceResponse } from "./types/kbSourceConfig";
 import KbSourceEditorForm from "./components/KbSourceEditorForm";
+import { createKbSource, updateKbSource, toggleKbSourceUseTf, deleteKbSourceSoft } from "./services/kbSourceApi";
 
 
 export default function AdminKbSourse() {
@@ -34,11 +35,46 @@ export default function AdminKbSourse() {
   const closeEditor = () => { setEditorOpen(false); setEditing(null); };
 
   const handleSubmit = async (req: KbSourceRequest) => {
-    // if (editing) await updateKbSource(editing.id, req, actorId);
-    // else await createKbSource(req, actorId);
-    // closeEditor();
-    // setParams(p => ({...p, page: 0}));
-    // refetch();
+    try {
+      if (editing) {
+        // 수정
+        await updateKbSource(editing.id, req, actorId)
+        alert("지식 소스가 수정되었습니다.");
+      } else {
+        // 신규 등록
+        await createKbSource(req, actorId)
+        alert("지식 소스가 등록되었습니다.")
+      }
+      refetch();
+      closeEditor();
+    } catch (e: any) {
+      alert(e?.message ?? "지식 소스 저장 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleDelete = async (row: KbSourceResponse) => {
+    if (!window.confirm(`"${row.sourceName}"지식 소스를 삭제하시겠습니까?`)) {
+      return;
+    }
+    try {
+      await deleteKbSourceSoft(row.id, actorId);
+      alert("삭제되었습니다.");
+      refetch();
+    } catch (e: any) {
+      console.error(e);
+      alert(e?.message ?? "삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleToggleUse = async (row: KbSourceResponse) => {
+    const nextUse: "Y" | "N" = row.useTf === "Y" ? "N" : "Y";
+    try {
+      await toggleKbSourceUseTf(row.id, nextUse, actorId);
+      refetch();
+    } catch (e: any) {
+      console.error(e);
+      alert(e?.message ?? "사용여부 변경 중 오류가 발생했습니다.");
+    }
   };
 
   return (
@@ -51,6 +87,7 @@ export default function AdminKbSourse() {
           </div>
         )}
 
+
         <KbSourceList
           params={params}
           setParams={setParams}
@@ -60,6 +97,8 @@ export default function AdminKbSourse() {
           onRefetch={refetch}
           onOpenCreate={openCreate} 
           onOpenEdit={openEdit}
+          onClickDelete={handleDelete}
+          onToggleUse={handleToggleUse}
         />
 
         <Pagination
