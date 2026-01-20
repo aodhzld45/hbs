@@ -9,7 +9,7 @@ import KbSourceList from "./components/KbSourceList";
 import { useKbSourceList } from "./hooks/useKbSourceList";
 import { KbSourceRequest, KbSourceResponse } from "./types/kbSourceConfig";
 import KbSourceEditorForm from "./components/KbSourceEditorForm";
-import { createKbSource, updateKbSource, toggleKbSourceUseTf, deleteKbSourceSoft } from "./services/kbSourceApi";
+import { createKbSource, fetchKbSource, updateKbSource, toggleKbSourceUseTf, deleteKbSourceSoft } from "./services/kbSourceApi";
 
 
 export default function AdminKbSourse() {
@@ -29,9 +29,25 @@ export default function AdminKbSourse() {
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<KbSourceResponse | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const openCreate = () => { setEditing(null); setEditorOpen(true); };
-  const openEdit = (row: KbSourceResponse) => { setEditing(row); setEditorOpen(true); };
+
+  const openEdit = async (row: KbSourceResponse) => {
+    try {
+      setDetailLoading(true);
+
+      const detail = await fetchKbSource(row.id);
+      setEditing(detail);
+      setEditorOpen(true);
+    } catch (e:any) {
+      console.error(e);
+      alert(e?.message ?? "지식 소스 상세 조회 실패");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const closeEditor = () => { setEditorOpen(false); setEditing(null); };
 
   const handleSubmit = async (req: KbSourceRequest) => {
@@ -112,16 +128,21 @@ export default function AdminKbSourse() {
         {editorOpen && (
           <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
             <div className="bg-white rounded-lg shadow-xl w-[720px] max-h-[90vh] overflow-y-auto p-4">
-              <KbSourceEditorForm
-                value={editing}
-                siteKeyOptions={siteKeyOptions}
-                onSubmit={handleSubmit}
-                onCancel={closeEditor}
-              />
+              {detailLoading ? (
+                <div className="py-10 text-center text-sm text-gray-500">
+                  로딩 중...
+                </div>
+              ) : (
+                <KbSourceEditorForm
+                  value={editing}
+                  siteKeyOptions={siteKeyOptions}
+                  onSubmit={handleSubmit}
+                  onCancel={closeEditor}
+                />
+              )}
             </div>
           </div>
-        )}
-
+          )}
         </div>
     </AdminLayout>
   )

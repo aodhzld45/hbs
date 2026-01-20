@@ -53,7 +53,7 @@ public class KbSourceController {
     }
 
     // 수정
-    @PatchMapping("/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<Long> update(
             @PathVariable Long id,
             @Valid @RequestBody KbSourceRequest req,

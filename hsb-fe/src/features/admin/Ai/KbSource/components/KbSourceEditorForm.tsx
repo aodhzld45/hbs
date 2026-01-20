@@ -102,7 +102,7 @@ export default function KbSourceEditorForm({
             value={form.siteKeyId || ""}
             onChange={handleChange}
             className="w-full h-10 border rounded px-2 text-sm bg-white"
-            disabled={isEdit} // 수정 시 siteKey 변경 막고 싶으면 true
+            // disabled={isEdit} // 수정 시 siteKey 변경 막고 싶으면 true
           >
             <option value="">(선택)</option>
             {siteKeyOptions.map((opt) => (

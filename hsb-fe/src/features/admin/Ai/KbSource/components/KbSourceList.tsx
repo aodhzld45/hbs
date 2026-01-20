@@ -47,12 +47,24 @@ export default function KbSourceList({
 
   const siteKeyNameMap = useMemo(() => {
     const m = new Map<number, string>();
-    for (const k of siteKeys as any[]) {
-      m.set(k.id, k.siteKeyName ?? k.name ?? `#${k.id}`);
+    for (const k of (siteKeys as any[]) ?? []) {
+      const id = Number(k.id);
+  
+      const name =
+        k.siteKeyName ??
+        k.site_key_name ??
+        k.name ??
+        k.keyName ??
+        k.siteKey ??
+        k.site_key ??
+        k.code ??
+        null;
+  
+      m.set(id, name ? String(name) : `#${id}`);
     }
     return m;
   }, [siteKeys]);
-
+  
   // ===== actions =====
   const onSearchClick = () => {
     setParams((p) => ({ ...p, page: 0 }));
@@ -294,7 +306,7 @@ export default function KbSourceList({
                     <div className="flex justify-end gap-2">
                       <button
                         className="px-2 py-1 text-xs rounded border hover:bg-gray-50"
-                        onClick={() => alert("다음 단계: 수정 모달 연결")}
+                        onClick={() => onOpenEdit(row)}
                         type="button"
                       >
                         수정
