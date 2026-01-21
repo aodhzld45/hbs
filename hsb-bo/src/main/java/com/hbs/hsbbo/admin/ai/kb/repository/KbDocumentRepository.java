@@ -31,6 +31,7 @@ public interface KbDocumentRepository extends JpaRepository<KbDocument, Long> {
               AND (:docType IS NULL OR TRIM(:docType) = '' OR d.docType = :docType)
               AND (:docStatus IS NULL OR TRIM(:docStatus) = '' OR d.docStatus = :docStatus)
               AND (:category IS NULL OR TRIM(:category) = '' OR d.category = :category)
+              AND (:useTf IS NULL OR d.useTf = :useTf)
               AND (
                    :kw IS NULL
                    OR TRIM(:kw) = ''
@@ -42,6 +43,7 @@ public interface KbDocumentRepository extends JpaRepository<KbDocument, Long> {
             @Param("docType") String docType,
             @Param("docStatus") String docStatus,
             @Param("category") String category,
+            @Param("useTf") String useTf,     // "Y" / "N" or null
             @Param("kw") String keyword,
             Pageable pageable
     );

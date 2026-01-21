@@ -36,11 +36,13 @@ public class KbDocumentService {
             String docStatus,
             String category,
             String keyword,
+            String useTf,
             int page,
             int size,
             String sort
     ) {
         Pageable pageable = buildPageable(page, size, sort);
+        String use = normalizeFlag(useTf);     // "Y"/"N"/null
 
         Page<KbDocument> result = kbDocumentRepository.search(
                 kbSourceId,
@@ -48,6 +50,7 @@ public class KbDocumentService {
                 normalize(docStatus),
                 normalize(category),
                 normalize(keyword),
+                use,
                 pageable
         );
 
@@ -221,6 +224,12 @@ public class KbDocumentService {
     private String normalize(String s) {
         if (s == null || s.isBlank()) return null;
         return s.trim();
+    }
+
+    private String normalizeFlag(String s) {
+        if (s == null || s.isBlank()) return null;
+        String v = s.trim().toUpperCase();
+        return ("Y".equals(v) || "N".equals(v)) ? v : null;
     }
 
     private String normalizeRequired(String s, String field) {

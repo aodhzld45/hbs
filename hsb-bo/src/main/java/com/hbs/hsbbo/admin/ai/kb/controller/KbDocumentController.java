@@ -28,12 +28,13 @@ public class KbDocumentController {
             @RequestParam(value = "docStatus", required = false) String docStatus,
             @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(required = false) String useTf,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestParam(value = "sort", defaultValue = "regDate,desc") String sort
     ) {
         KbDocumentListResponse body = kbDocumentService.list(
-                kbSourceId, docType, docStatus, category, keyword, page, size, sort
+                kbSourceId, docType, docStatus, category, keyword, useTf, page, size, sort
         );
         return ResponseEntity.ok(body);
     }
