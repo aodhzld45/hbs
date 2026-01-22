@@ -45,3 +45,9 @@ openai:
 
 logging.level.root: INFO
 logging.level.org.springframework.web.reactive.function.client: INFO
+
+hsbs:
+  brain:
+    base-url: ${BRAIN_BASE_URL:http://127.0.0.1:8000}
+    api-key: ${BRAIN_API_KEY:change-me}
+    enabled: true
