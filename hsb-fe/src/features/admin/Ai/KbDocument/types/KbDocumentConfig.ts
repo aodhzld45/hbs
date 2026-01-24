@@ -15,6 +15,8 @@ export interface KbDocumentResponse {
     category: string;
     tagsJson: string;
 
+    useTf?: 'Y' | 'N';
+    delTf?: 'Y' | 'N';
     regAdm: string;
     regDate: string; // ISO 8601 형식의 문자열 (LocalDateTime 대응)
     upAdm: string;
