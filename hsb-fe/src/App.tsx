@@ -57,6 +57,7 @@ import AdminUsageStats from './features/admin/Ai/AdminUsageStats';
 
 // Knowlage_Base 부분
 import AdminKbSourse from './features/admin/Ai/KbSource';
+import AdminKbDocument from './features/admin/Ai/KbDocument';
 
 // 테스트 용 
 import TestPage from './pages/User/TestPage';
@@ -109,6 +110,7 @@ function App() {
                 <Route path="/admin/ai/usage-stats" element={<AdminUsageStats />} />
 
                 <Route path='/admin/kb/kb-source' element={<AdminKbSourse /> }/>
+                <Route path='/admin/kb/kb-document' element={<AdminKbDocument />} />
 
                 <Route path="/admin/sql-manager" element={<SqlProblemManager />} />
                 <Route path="/admin/sql-manager/:id" element={<SqlProblemDetail />} />

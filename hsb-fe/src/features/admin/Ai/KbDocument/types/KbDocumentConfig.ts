@@ -26,9 +26,20 @@ export interface KbDocumentResponse {
 }
 
 // 등록 / 수정 공용 Request
-export type KbDocumentRequest =
-  Omit<KbDocumentResponse, 'id' | 'regDate' | 'upDate'>
+export type KbDocumentRequest = {
+  kbSourceId: number;
+  title: string;
 
+  docType: string;      // 예: "FILE" | "URL" | "TEXT"
+  docStatus: string;    // 예: "DRAFT" | "READY" | "INDEXED" | "FAILED"
+
+  sourceUrl?: string;   // URL 타입일 때 사용
+  category?: string;
+  tagsJson?: string;    // 기본 "[]"
+
+  useTf?: "Y" | "N";
+  delTf?: "Y" | "N";
+};
 
 // 목록 + 필터 페이징 포함 응답
 export interface KbDocumentListResponse {
