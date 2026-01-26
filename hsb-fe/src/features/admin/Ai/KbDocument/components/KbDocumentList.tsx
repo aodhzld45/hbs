@@ -203,7 +203,7 @@ export default function KbDocumentList({
           </div>
 
           {/* keyword */}
-          <div className="md:col-span-3">
+          <div className="md:col-span-2">
             <label className="block text-xs font-medium text-gray-700 mb-1 h-4">
               키워드
             </label>
@@ -220,7 +220,7 @@ export default function KbDocumentList({
           </div>
 
           {/* actions */}
-          <div className="md:col-span-1 flex gap-2 justify-end">
+          <div className="md:col-span-2 flex gap-2 justify-end">
             <button
               className="h-10 px-3 text-sm rounded border bg-white hover:bg-gray-50 whitespace-nowrap"
               onClick={onResetClick}

@@ -3,6 +3,10 @@ export interface KbDocumentResponse {
     id: number;
     kbSourceId: number;
     title: string;
+    vectorStoreId: string | null; // https://api.openai.com/v1/vector_stores/{vector_store_id}/search와 매핑
+    vectorFileId: string | null;
+    indexedAt: string | null;
+    indexError: string | null;
     docType: string;
     docStatus: string;
     version: number;
