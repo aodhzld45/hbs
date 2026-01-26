@@ -16,10 +16,14 @@ public class KbDocumentResponse {
 
     private Long id;
     private Long kbSourceId;
+    private String vectorStoreId;
+    private String vectorFileId;
+    private LocalDateTime indexedAt;
+    private String indexError;
     private String title;
     private String docType;
     private String docStatus;
-    private float version;
+    private int version;
     private String filePath;
     private String originalFileName;
     private Long fileSize;
@@ -42,6 +46,10 @@ public class KbDocumentResponse {
         return KbDocumentResponse.builder()
                 .id(hd.getId())
                 .kbSourceId(hd.getKbSourceId())
+                .vectorStoreId(hd.getVectorStoreId())
+                .vectorFileId(hd.getVectorFileId())
+                .indexedAt(hd.getIndexedAt())
+                .indexError(hd.getIndexError())
                 .title(hd.getTitle())
                 .docType(hd.getDocType())
                 .docStatus(hd.getDocStatus())

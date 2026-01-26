@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Builder
@@ -23,6 +25,18 @@ public class KbDocument extends AuditBase {
 
     @Column(name = "kb_source_id", nullable = false)
     private Long kbSourceId;
+
+    @Column(name = "vector_store_id")
+    private String vectorStoreId;
+
+    @Column(name = "vector_file_id")
+    private String vectorFileId;
+
+    @Column(name = "indexed_at")
+    private LocalDateTime indexedAt;
+
+    @Column(name ="index_error")
+    private String indexError;
 
     private String title;
 
