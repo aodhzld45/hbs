@@ -1,5 +1,7 @@
 package com.hbs.hsbbo.admin.ai.kb.domain.entity;
 
+import com.hbs.hsbbo.admin.ai.kb.domain.type.KbJobStatus;
+import com.hbs.hsbbo.admin.ai.kb.domain.type.KbJobType;
 import com.hbs.hsbbo.common.AuditBase.AuditBase;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,12 +26,14 @@ public class KbJob extends AuditBase {
     private Long kbDocumentId;
 
     // Job 타입: INGEST / REINDEX / DELETE_VECTOR 등
+    @Enumerated(EnumType.STRING)
     @Column(name = "job_type", nullable = false, length = 30)
-    private String jobType;
+    private KbJobType jobType;
 
     // 상태: READY / RUNNING / DONE / FAILED
+    @Enumerated(EnumType.STRING)
     @Column(name = "job_status", nullable = false, length = 30)
-    private String jobStatus;
+    private KbJobStatus jobStatus;
 
     // 워커가 처리할 payload (Python hsbs-brain 전달용)
     @Column(name = "payload_json", columnDefinition = "json")
@@ -58,6 +62,5 @@ public class KbJob extends AuditBase {
         // AuditBase.prePersist()가 자동 호출되진 않으니 필요하면 수동 호출
         // (AuditBase에 @PrePersist가 있으면 JPA가 둘 다 호출해주긴 하지만, 안전하게 유지하고 싶다면 super 호출 패턴도 가능)
         if (this.tryCount == null) this.tryCount = 0;
-        if (this.jobStatus == null) this.jobStatus = "READY";
     }
 }
