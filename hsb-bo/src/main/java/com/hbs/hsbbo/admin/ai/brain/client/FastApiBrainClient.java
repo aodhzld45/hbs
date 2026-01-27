@@ -2,7 +2,9 @@ package com.hbs.hsbbo.admin.ai.brain.client;
 
 import com.hbs.hsbbo.admin.ai.brain.config.HsbsBrainProperties;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainChatRequest;
+import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainIngestRequest;
 import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainChatResponse;
+import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainIngestResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -32,6 +34,26 @@ public class FastApiBrainClient implements BrainClient{
                     .block();
             } catch (Exception e) {
             throw new RuntimeException("Brain 서버 호출 실패", e);
+        }
+    }
+
+    @Override
+    public BrainIngestResponse ingest(BrainIngestRequest request) {
+        try {
+            return webClient.post()
+                    .uri(props.getIngestPath())  // yml/env에서 받은 ingest-path 사용
+                    .header("X-HSBS-Internal-Token", props.getApiKey())
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(BrainIngestResponse.class)
+                    .onErrorResume(WebClientResponseException.class, ex ->
+                            Mono.error(new RuntimeException(
+                                    "Brain ingest 실패: " + ex.getStatusCode() + " " + ex.getResponseBodyAsString(), ex
+                            ))
+                    )
+                    .block();
+        } catch (Exception e) {
+            throw new RuntimeException("Brain 서버 ingest 호출 실패", e);
         }
     }
 }
