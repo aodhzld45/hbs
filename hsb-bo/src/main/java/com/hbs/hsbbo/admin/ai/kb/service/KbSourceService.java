@@ -1,5 +1,8 @@
 package com.hbs.hsbbo.admin.ai.kb.service;
 
+import com.hbs.hsbbo.admin.ai.brain.client.BrainClient;
+import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainVectorStoreCreateRequest;
+import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainVectorStoreCreateResponse;
 import com.hbs.hsbbo.admin.ai.kb.domain.entity.KbSource;
 import com.hbs.hsbbo.admin.ai.kb.dto.request.KbSourceRequest;
 import com.hbs.hsbbo.admin.ai.kb.dto.response.KbSourceListResponse;
@@ -24,6 +27,50 @@ import java.util.List;
 @Slf4j
 public class KbSourceService {
     private final KbSourceRepository kbSourceRepository;
+    private final BrainClient brainClient;
+
+    /**
+     * kb_source_id 기준으로 vector_store_id를 보장
+     * - 이미 있으면 그대로 반환
+     * - 없으면 hsbs-brain을 통해 생성 후 저장
+     * - 동시성: DB PESSIMISTIC_WRITE 락으로 중복 생성 방지
+     */
+    @Transactional
+    public String ensureVectorStoreId(Long kbSourceId) {
+        KbSource source = kbSourceRepository.findByIdForUpdate(kbSourceId)
+                .orElseThrow(() -> new IllegalArgumentException("KbSource 없음: " + kbSourceId));
+
+        // 1) 이미 있으면 재사용
+        if (source.getVectorStoreId() != null && !source.getVectorStoreId().isBlank()) {
+            return source.getVectorStoreId();
+        }
+
+        // 2) 없으면 생성
+        String storeName = "hsbs-kbsource-" + kbSourceId;
+
+        BrainVectorStoreCreateResponse created;
+        try {
+            created = brainClient.createVectorStore(
+                    BrainVectorStoreCreateRequest.builder()
+                            .name(storeName)
+                            .build()
+            );
+        } catch (Exception e) {
+            log.error("Vector store create failed. kbSourceId={}", kbSourceId, e);
+            throw e;
+        }
+
+        if (created == null || created.getVectorStoreId() == null || created.getVectorStoreId().isBlank()) {
+            throw new IllegalStateException("Vector store create 응답이 비정상입니다. kbSourceId=" + kbSourceId);
+        }
+
+        // 3) 저장
+        source.setVectorStoreId(created.getVectorStoreId());
+        // JPA dirty checking으로 커밋 시 update
+
+        log.info("Vector store ensured. kbSourceId={}, vectorStoreId={}", kbSourceId, created.getVectorStoreId());
+        return created.getVectorStoreId();
+    }
 
     // 목록 (페이징 + 필터)
     @Transactional(readOnly = true)

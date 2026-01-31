@@ -1,9 +1,11 @@
 package com.hbs.hsbbo.admin.ai.kb.repository;
 
 import com.hbs.hsbbo.admin.ai.kb.domain.entity.KbSource;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -19,6 +21,11 @@ public interface KbSourceRepository extends JpaRepository<KbSource, Long> {
             """
     )
     Optional<KbSource> findActiveById(@Param("id") Long id);
+
+    // PESSIMISTIC_WRITE로 동시에 두 개가 생성 요청 들어와도 하나만 생성
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from KbSource s where s.id = :id")
+    Optional<KbSource> findByIdForUpdate(@Param("id") Long id);
 
     // 중복체크용
     boolean existsBySiteKeyIdAndSourceNameAndDelTf(Long siteKeyId, String name, String delTf);

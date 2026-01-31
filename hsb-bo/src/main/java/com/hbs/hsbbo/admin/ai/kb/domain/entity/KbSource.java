@@ -22,6 +22,9 @@ public class KbSource extends AuditBase {
     @Column(name = "site_key_id", nullable = false)
     private Long siteKeyId;
 
+    @Column(name = "vector_store_id", length = 100)
+    private String vectorStoreId;
+
     @Column(name = "source_name", nullable = false, length = 100)
     private String sourceName;
 
