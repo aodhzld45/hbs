@@ -8,6 +8,7 @@ import com.hbs.hsbbo.admin.ai.kb.domain.entity.KbJob;
 import com.hbs.hsbbo.admin.ai.kb.domain.type.KbJobStatus;
 import com.hbs.hsbbo.admin.ai.kb.repository.KbDocumentRepository;
 import com.hbs.hsbbo.admin.ai.kb.repository.KbJobRepository;
+import com.hbs.hsbbo.admin.ai.kb.service.KbSourceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +25,7 @@ public class KbJobWorker {
 
     private final KbJobRepository kbJobRepository;
     private final KbDocumentRepository kbDocumentRepository;
+    private final KbSourceService kbSourceService;
     private final BrainClient brainClient;
 
     @Transactional
@@ -54,6 +56,24 @@ public class KbJobWorker {
                 return;
             }
 
+            // kb_source 기준 vector_store_id 보장 + DB 저장 (예외처리 강화)
+            final String ensuredVsId;
+            try {
+                ensuredVsId = kbSourceService.ensureVectorStoreId(doc.getKbSourceId());
+            } catch (Exception e) {
+                String msg = String.format(
+                        "VectorStore ensure 실패 (kbSourceId=%d): %s",
+                        doc.getKbSourceId(),
+                        e.getMessage()
+                );
+                fail(job, doc, msg);
+                log.error(msg, e); // 스택 트레이스는 로그로만
+                return;
+            }
+
+            // document에도 디버깅/캐싱용으로
+            doc.setVectorStoreId(ensuredVsId);
+
             // 5) Brain ingest 요청 생성
             BrainIngestRequest request = BrainIngestRequest.builder()
                     .kbJobId(job.getId())
@@ -71,7 +91,7 @@ public class KbJobWorker {
             // 7) 결과 반영
             if (res != null && res.isOk()) {
                 // 문서에 벡터 결과 저장
-                doc.setVectorStoreId(res.getVectorStoreId());
+                // doc.setVectorStoreId(res.getVectorStoreId()); // ❌ kb_source 기준이므로 덮지 않음
                 doc.setVectorFileId(res.getVectorFileId());
                 doc.setIndexedAt(LocalDateTime.now());
                 doc.setIndexError(null);
@@ -81,11 +101,8 @@ public class KbJobWorker {
                 job.setFinishedAt(LocalDateTime.now());
                 job.setLastError(null);
 
-                // (선택) payloadJson에 결과를 남기고 싶으면 여기서 저장
-                // job.setPayloadJson(...);
-
                 log.info("KbJob SUCCESS. jobId={}, docId={}, vectorStoreId={}, vectorFileId={}",
-                        job.getId(), doc.getId(), res.getVectorStoreId(), res.getVectorFileId());
+                        job.getId(), doc.getId(), ensuredVsId, res.getVectorFileId());
 
             } else {
                 String msg = (res == null) ? "Brain ingest 응답 null"
