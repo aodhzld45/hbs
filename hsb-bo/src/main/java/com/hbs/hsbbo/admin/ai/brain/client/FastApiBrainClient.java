@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.ai.brain.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hbs.hsbbo.admin.ai.brain.config.HsbsBrainProperties;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainChatRequest;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainIngestRequest;
@@ -19,6 +20,7 @@ public class FastApiBrainClient implements BrainClient{
 
     private final WebClient webClient;
     private final HsbsBrainProperties props;
+    private final ObjectMapper objectMapper;
 
     private static final String VECTOR_STORE_CREATE_PATH = "/api/brain/vector-stores";
 
@@ -45,18 +47,34 @@ public class FastApiBrainClient implements BrainClient{
     @Override
     public BrainIngestResponse ingest(BrainIngestRequest request) {
         try {
-            return webClient.post()
-                    .uri(props.getIngestPath())  // yml/env에서 받은 ingest-path 사용
+            String raw = webClient.post()
+                    .uri(props.getIngestPath())
                     .header("X-HSBS-Internal-Token", props.getApiKey())
                     .bodyValue(request)
                     .retrieve()
-                    .bodyToMono(BrainIngestResponse.class)
+                    .bodyToMono(String.class) // RAW로 받기
                     .onErrorResume(WebClientResponseException.class, ex ->
                             Mono.error(new RuntimeException(
-                                    "Brain ingest 실패: " + ex.getStatusCode() + " " + ex.getResponseBodyAsString(), ex
+                                    "Brain ingest 실패: " + ex.getStatusCode() + " " + safeBody(ex.getResponseBodyAsString()), ex
                             ))
                     )
                     .block();
+
+            log.info("[Brain ingest RAW] {}", safeBody(raw));
+
+            BrainIngestResponse resp = objectMapper.readValue(raw, BrainIngestResponse.class);
+
+            // DTO도 요약해서.
+            log.info("[Brain ingest DTO] ok={} ingestId={} vsId={} fileId={} msg={}",
+                    resp.isOk(), resp.getIngestId(), resp.getVectorStoreId(), resp.getVectorFileId(), resp.getMessage());
+
+            // 필요하면 summaryText도 일부만
+            if (resp.getSummaryText() != null) {
+                log.info("[Brain ingest summary] {}", safeBody(resp.getSummaryText()));
+            }
+
+            return resp;
+
         } catch (Exception e) {
             throw new RuntimeException("Brain 서버 ingest 호출 실패", e);
         }

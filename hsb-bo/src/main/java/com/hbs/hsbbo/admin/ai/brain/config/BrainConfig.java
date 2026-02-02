@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.ai.brain.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hbs.hsbbo.admin.ai.brain.client.BrainClient;
 import com.hbs.hsbbo.admin.ai.brain.client.FastApiBrainClient;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainChatRequest;
@@ -46,7 +47,7 @@ public class BrainConfig {
     }
 
     @Bean
-    public BrainClient brainClient(WebClient brainWebClient) {
+    public BrainClient brainClient(WebClient brainWebClient, ObjectMapper objectMapper) {
         if (!props.isEnabled()) {
             return new BrainClient() {
                 @Override
@@ -71,6 +72,6 @@ public class BrainConfig {
                 }
             };
         }
-        return new FastApiBrainClient(brainWebClient, props);
+        return new FastApiBrainClient(brainWebClient, props, objectMapper);
     }
 }
