@@ -56,7 +56,7 @@ public class KbJobWorker {
                 return;
             }
 
-            // kb_source 기준 vector_store_id 보장 + DB 저장 (예외처리 강화)
+            // 5) kb_source 기준 vector_store_id 보장 + DB 저장 (예외처리 강화)
             final String ensuredVsId;
             try {
                 ensuredVsId = kbSourceService.ensureVectorStoreId(doc.getKbSourceId());
@@ -74,25 +74,31 @@ public class KbJobWorker {
             // document에도 디버깅/캐싱용으로
             doc.setVectorStoreId(ensuredVsId);
 
-            // 5) Brain ingest 요청 생성
+            // 6) Brain ingest 요청 생성
             BrainIngestRequest request = BrainIngestRequest.builder()
                     .kbJobId(job.getId())
                     .kbDocumentId(doc.getId())
                     .kbSourceId(doc.getKbSourceId())
+                    .vectorStoreId(ensuredVsId)
                     .filePath(doc.getFilePath())
                     .sourceUrl(doc.getSourceUrl())
                     .docType(doc.getDocType())
                     .category(doc.getCategory())
                     .build();
 
-            // 6) Brain 서버 호출
+            // 7) Brain 서버 호출
             BrainIngestResponse res = brainClient.ingest(request);
 
             // 7) 결과 반영
             if (res != null && res.isOk()) {
-                // 문서에 벡터 결과 저장
-                // doc.setVectorStoreId(res.getVectorStoreId()); // ❌ kb_source 기준이므로 덮지 않음
-                doc.setVectorFileId(res.getVectorFileId());
+                String openaiFileId = safe(res.getOpenaiFileId());
+                if (!openaiFileId.isEmpty()) {
+                    doc.setVectorFileId(openaiFileId);
+                } else {
+                    // 혹시 구버전 응답 호환이 남아있다면(임시)
+                    doc.setVectorFileId(openaiFileId);
+                }
+
                 doc.setIndexedAt(LocalDateTime.now());
                 doc.setIndexError(null);
 
@@ -101,8 +107,13 @@ public class KbJobWorker {
                 job.setFinishedAt(LocalDateTime.now());
                 job.setLastError(null);
 
-                log.info("KbJob SUCCESS. jobId={}, docId={}, vectorStoreId={}, vectorFileId={}",
-                        job.getId(), doc.getId(), ensuredVsId, res.getVectorFileId());
+                log.info("KbJob SUCCESS. jobId={}, docId={}, vectorStoreId={}, openaiFileId={}, vectorStoreFileId={}",
+                        job.getId(),
+                        doc.getId(),
+                        ensuredVsId,
+                        openaiFileId,
+                        safe(res.getVectorStoreFileId())
+                );
 
             } else {
                 String msg = (res == null) ? "Brain ingest 응답 null"
@@ -137,5 +148,9 @@ public class KbJobWorker {
 
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
+    }
+
+    private String safe(String s) {
+        return (s == null) ? "" : s.trim();
     }
 }

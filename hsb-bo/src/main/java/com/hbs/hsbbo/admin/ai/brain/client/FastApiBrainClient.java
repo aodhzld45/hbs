@@ -22,13 +22,11 @@ public class FastApiBrainClient implements BrainClient{
     private final HsbsBrainProperties props;
     private final ObjectMapper objectMapper;
 
-    private static final String VECTOR_STORE_CREATE_PATH = "/api/brain/vector-stores";
-
     @Override
     public BrainChatResponse chat(BrainChatRequest request) {
         try {
             return webClient.post()
-                    .uri("/brain/chat") // FastAPI 쪽에서 /v1/brain/chat 이면 baseUrl에 /v1 포함
+                    .uri("/api/brain/chat") // FastAPI 쪽에서 /v1/brain/chat 이면 baseUrl에 /v1 포함
                     .header("X-HSBS-Internal-Token", props.getApiKey())
                     .bodyValue(request)
                     .retrieve()
@@ -63,10 +61,18 @@ public class FastApiBrainClient implements BrainClient{
             log.info("[Brain ingest RAW] {}", safeBody(raw));
 
             BrainIngestResponse resp = objectMapper.readValue(raw, BrainIngestResponse.class);
+            // ID 분리 반영 (file_ / vsf_)
+            String openaiFileId = safe(resp.getOpenaiFileId());
+            String vsFileId = safe(resp.getVectorStoreFileId());
 
-            // DTO도 요약해서.
-            log.info("[Brain ingest DTO] ok={} ingestId={} vsId={} fileId={} msg={}",
-                    resp.isOk(), resp.getIngestId(), resp.getVectorStoreId(), resp.getVectorFileId(), resp.getMessage());
+            log.info("[Brain ingest DTO] ok={} ingestId={} vsId={} openaiFileId={} vectorStoreFileId={} msg={}",
+                    resp.isOk(),
+                    resp.getIngestId(),
+                    resp.getVectorStoreId(),
+                    openaiFileId,
+                    vsFileId,
+                    resp.getMessage()
+            );
 
             // 필요하면 summaryText도 일부만
             if (resp.getSummaryText() != null) {
@@ -98,6 +104,9 @@ public class FastApiBrainClient implements BrainClient{
         } catch (Exception e) {
             throw new RuntimeException("Brain 서버 createVectorStore 호출 실패", e);
         }
+    }
+    private String safe(String s) {
+        return s == null ? "" : s.trim();
     }
 
     private String safeBody(String s) {

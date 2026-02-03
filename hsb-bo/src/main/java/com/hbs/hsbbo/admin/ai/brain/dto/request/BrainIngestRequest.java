@@ -13,6 +13,8 @@ public class BrainIngestRequest {
     private Long kbDocumentId;
     private Long kbSourceId;
 
+    private String vectorStoreId;
+
     private String filePath;   // 서버 로컬 파일 경로(/home/upload/..)
     private String sourceUrl;  // URL 문서면
     private String docType;    // FILE/URL/TEXT

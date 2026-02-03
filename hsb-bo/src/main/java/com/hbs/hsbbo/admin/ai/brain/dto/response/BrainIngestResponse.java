@@ -14,7 +14,8 @@ public class BrainIngestResponse {
 
     // OpenAI Vector Store 결과 값 저장 키값 id
     private String vectorStoreId;
-    private String vectorFileId;
+    private String openaiFileId;
+    private String vectorStoreFileId;
 
     private String summaryText;
     private String rawPreview;
