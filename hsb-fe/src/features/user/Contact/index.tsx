@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import Layout from '../../../components/Layout/Layout';
 import PrivacyPolicyModal from '../../../components/Common/PrivacyPolicyModal';
 import { useContactForm } from './hooks/useContactForm';
@@ -37,7 +36,6 @@ const ContactForm = () => {
           <option value="">-- 답변 방법 선택 --</option>
           <option value="EMAIL">이메일</option>
           <option value="SMS">문자</option>
-          <option value="BOTH">둘 다</option>
         </select>
 
         <input
@@ -52,7 +50,15 @@ const ContactForm = () => {
           <input type="checkbox" name="agreeTf" checked={form.agreeTf} onChange={handleChange} />
           <span>
             개인정보 수집 및 이용에 동의합니다.{' '}
-            <button type="button" onClick={() => setShowModal(true)} className="underline text-blue-600 hover:text-blue-800">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowModal(true);
+              }}
+              className="underline text-blue-600 hover:text-blue-800"
+            >
               [내용 보기]
             </button>
           </span>

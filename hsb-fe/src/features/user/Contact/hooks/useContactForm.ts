@@ -72,22 +72,32 @@ export function useContactForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    setLoading(true);   //  전송 시작
-
-    if (!form.agreeTf) return alert('개인정보 수집 동의가 필요합니다.');
-    if (!isValidEmail(form.email)) return alert('유효한 이메일 형식이 아닙니다.');
-    if (!isValidPhone(form.phone)) return alert('유효한 전화번호 형식이 아닙니다. 예: 010-1234-5678');
-
+  
+    // 유효성 먼저
+    if (!form.agreeTf) {
+      alert("개인정보 수집 동의가 필요합니다.");
+      return;
+    }
+    if (!isValidEmail(form.email)) {
+      alert("유효한 이메일 형식이 아닙니다.");
+      return;
+    }
+    if (!isValidPhone(form.phone)) {
+      alert("유효한 전화번호 형식이 아닙니다. 예: 010-1234-5678");
+      return;
+    }
+  
+    setLoading(true); // 여기서부터 전송 시작
+  
     try {
       const res = await fetchContactCreate(form);
-      alert(res.message || '문의가 등록되었습니다.');
+      alert(res.message || "문의가 등록되었습니다.");
       resetForm();
     } catch (err) {
       console.error(err);
-      alert('문의 등록에 실패했습니다.');
-    } finally { 
-      setLoading(false);   // 전송 완료
+      alert("문의 등록에 실패했습니다.");
+    } finally {
+      setLoading(false);
     }
   };
 
