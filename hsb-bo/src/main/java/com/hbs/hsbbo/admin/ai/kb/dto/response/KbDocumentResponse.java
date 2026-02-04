@@ -20,6 +20,7 @@ public class KbDocumentResponse {
     private String vectorFileId;
     private LocalDateTime indexedAt;
     private String indexError;
+    private String indexSummary;
     private String title;
     private String docType;
     private String docStatus;
@@ -50,6 +51,7 @@ public class KbDocumentResponse {
                 .vectorFileId(hd.getVectorFileId())
                 .indexedAt(hd.getIndexedAt())
                 .indexError(hd.getIndexError())
+                .indexSummary(hd.getIndexSummary())
                 .title(hd.getTitle())
                 .docType(hd.getDocType())
                 .docStatus(hd.getDocStatus())

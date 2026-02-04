@@ -149,13 +149,20 @@ public class KbDocumentService {
         KbDocument e = kbDocumentRepository.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("KB Document를 찾을 수 없습니다. id=%d", id));
 
-        // 변경 감지 플래그(재인덱싱 필요 여부)
-        boolean needReindex = false;
+        // 메타 변경 여부(벡터화 불필요)
+        boolean metaChanged = false;
 
-        // kbSource 이동 허용 여부: 정책에 따라 (여기선 허용)
+        // 콘텐츠 변경 여부(벡터화 필요)
+        boolean contentChanged = false;
+
+        // kbSource 이동 허용 여부: 이동 자체는 메타지만, 벡터스토어가 kb_source 기준이면 콘텐츠 재적재 필요할 수 있음
+        // 정책 선택:
+        // - "이동"을 허용하고 "새 vector_store에 재적재"가 필요하다면 contentChanged=true
+        // - 이동만 하고 기존 벡터는 유지할거면 metaChanged=true
         if (request.getKbSourceId() != null && !request.getKbSourceId().equals(e.getKbSourceId())) {
             e.setKbSourceId(request.getKbSourceId());
-            needReindex = true;
+            // 여기 정책 중요: kb_source 별 vector_store를 쓰므로 "재적재 필요"로 보는 게 안전
+            contentChanged = true;
         }
 
         if (request.getTitle() != null) {
@@ -166,7 +173,7 @@ public class KbDocumentService {
             }
             if (!newTitle.equals(e.getTitle())) {
                 e.setTitle(newTitle);
-                needReindex = true;
+                metaChanged = true; // 제목은 메타
             }
         }
 
@@ -174,33 +181,31 @@ public class KbDocumentService {
             String newDocType = normalize(request.getDocType());
             if (newDocType != null && !newDocType.equalsIgnoreCase(e.getDocType())) {
                 e.setDocType(newDocType);
-                needReindex = true;
+                // docType 변경은 실제 콘텐츠 소스가 바뀌므로 재적재 필요
+                contentChanged = true;
             }
         }
-
-        // docStatus는 시스템이 관리하는 게 안전(외부 요청으로 변경 금지 권장)
-        // if (request.getDocStatus() != null) e.setDocStatus(normalize(request.getDocStatus()));
 
         if (request.getCategory() != null) {
             String newCategory = normalize(request.getCategory());
             if ((newCategory == null && e.getCategory() != null) || (newCategory != null && !newCategory.equals(e.getCategory()))) {
                 e.setCategory(newCategory);
-                needReindex = true;
+                metaChanged = true; // 카테고리는 메타
             }
         }
 
         if (request.getTagsJson() != null) {
             if (!request.getTagsJson().equals(e.getTagsJson())) {
                 e.setTagsJson(request.getTagsJson());
-                needReindex = true;
+                metaChanged = true; // 태그는 메타
             }
         }
 
         if (request.getUseTf() != null) e.setUseTf(flag(request.getUseTf()));
 
-        // 파일이 들어오면 교체(단일)
+        // 파일 교체 시에만 콘텐츠 변경
         boolean fileReplaced = applySingleFile(e, file);
-        if (fileReplaced) needReindex = true;
+        if (fileReplaced) contentChanged = true;
 
         // 버전 정책: 파일 교체 시 자동 +1
         if (request.getVersion() != null) {
@@ -209,19 +214,19 @@ public class KbDocumentService {
             e.setVersion(e.getVersion() + 1);
         }
 
-        // 파일이 있으면 sourceUrl은 제거, 파일이 없으면 URL 업데이트 허용
+        // 파일이 있으면 sourceUrl 제거, 파일이 없으면 URL 업데이트 허용
         if (e.getFilePath() != null) {
-            // 파일 기반 문서
             e.setSourceUrl(null);
         } else if (request.getSourceUrl() != null) {
             String newUrl = normalize(request.getSourceUrl());
             if ((newUrl == null && e.getSourceUrl() != null) || (newUrl != null && !newUrl.equals(e.getSourceUrl()))) {
                 e.setSourceUrl(newUrl);
-                needReindex = true;
+                // URL 문서는 sourceUrl 변경이 콘텐츠 변경
+                contentChanged = true;
             }
         }
 
-        // (권장) docType 별 최소 검증
+        // docType 별 최소 검증
         String docType = e.getDocType();
         if ("FILE".equalsIgnoreCase(docType) && (e.getFilePath() == null || e.getFilePath().isBlank())) {
             throw new IllegalArgumentException("FILE 문서는 파일 업로드가 필요합니다.");
@@ -230,8 +235,8 @@ public class KbDocumentService {
             throw new IllegalArgumentException("URL 문서는 sourceUrl이 필요합니다.");
         }
 
-        // 재인덱싱 필요 시: index 필드 reset + 상태 READY로 되돌림
-        if (needReindex) {
+        // 재인덱싱은 '콘텐츠 변경'일 때만
+        if (contentChanged) {
             resetIndexFields(e);
             e.setDocStatus("READY");
         }
@@ -239,14 +244,13 @@ public class KbDocumentService {
         e.setUpAdm(actor);
         kbDocumentRepository.save(e);
 
-        // 재인덱싱 필요 시: Job enqueue
-        if (needReindex) {
+        // Job enqueue도 '콘텐츠 변경'일 때만
+        if (contentChanged) {
             enqueueIngestJob(e, actor);
         }
 
         return e.getId();
     }
-
 
     // 사용여부 토글
     public Long toggleUse(Long id, String actor) {
