@@ -35,8 +35,11 @@ public class KbDocument extends AuditBase {
     @Column(name = "indexed_at")
     private LocalDateTime indexedAt;
 
-    @Column(name ="index_error")
+    @Column(name = "index_error")
     private String indexError;
+
+    @Column(name = "index_summary", columnDefinition = "LONGTEXT")
+    private String indexSummary;
 
     private String title;
 

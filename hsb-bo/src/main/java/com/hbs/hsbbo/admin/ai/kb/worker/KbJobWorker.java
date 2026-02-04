@@ -99,6 +99,7 @@ public class KbJobWorker {
                     doc.setVectorFileId(openaiFileId);
                 }
 
+                doc.setIndexSummary(res.getSummaryText());
                 doc.setIndexedAt(LocalDateTime.now());
                 doc.setIndexError(null);
 
@@ -136,6 +137,7 @@ public class KbJobWorker {
         // 문서에도 에러 남기기(디버깅/관리자 화면에 도움)
         if (docOrNull != null) {
             docOrNull.setIndexError(msg);
+            docOrNull.setIndexSummary(null);
         }
 
         log.warn("KbJob FAILED. jobId={}, tryCount={}, msg={}",
