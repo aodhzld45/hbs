@@ -61,20 +61,27 @@ export async function createKbDocument(
 
 // 수정 (multipart: body + file)
 export async function updateKbDocument(
-    id: number,
-    body: KbDocumentRequest,
-    actor: string,
-    file?: File | null
-  ): Promise<KbDocumentResponse> {
-    const formData = buildKbDocumentFormData(body, file);
-  
+  id: number,
+  body: KbDocumentRequest,
+  actor: string,
+  file?: File | null
+): Promise<KbDocumentResponse> {
+  // 파일 없으면: JSON PUT
+  if (!file) {
     return okOrThrow(
-      api.put<KbDocumentResponse>(`${BASE}/${id}`, formData, {
-        params: { actor },
-        headers: { "Content-Type": "multipart/form-data" },
-      })
+      api.put<KbDocumentResponse>(`${BASE}/${id}`, body, { params: { actor } })
     );
   }
+
+  // 파일 있으면: multipart PUT
+  const formData = buildKbDocumentFormData(body, file);
+  return okOrThrow(
+    api.put<KbDocumentResponse>(`${BASE}/${id}`, formData, {
+      params: { actor },
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+  );
+}
 
 
 // 사용여부 토글

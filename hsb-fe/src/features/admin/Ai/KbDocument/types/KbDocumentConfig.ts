@@ -7,6 +7,7 @@ export interface KbDocumentResponse {
     vectorFileId: string | null;
     indexedAt: string | null;
     indexError: string | null;
+    indexSummary: string | null;
     docType: string;
     docStatus: string;
     version: number;

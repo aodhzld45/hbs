@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import AdminLayout from "../../../../components/Layout/AdminLayout";
 import Pagination from "../../../../components/Common/Pagination";
 
@@ -86,12 +86,17 @@ export default function AdminKbDocument() {
       if (editing) {
         await updateKbDocument(editing.id, req, String(actorId), file ?? null);
         alert("문서가 수정되었습니다.");
-      } else {
-        await createKbDocument(req, String(actorId), file ?? null);
-        alert("문서가 등록되었습니다.");
-      }
-      refetch();
-      closeEditor();
+        refetch();
+        closeEditor();
+        return;
+      }  
+
+      const created = await createKbDocument(req, String(actorId), file ?? null); // id 반환
+      const detail = await fetchKbDocumentDetail(created.id);
+      setEditing(detail);
+      refetch(); // 목록 갱신
+      alert("문서가 등록되었습니다. 인덱싱을 시작합니다.");
+      
     } catch (e: any) {
       console.error(e);
       alert(e?.message ?? "문서 저장 중 오류가 발생했습니다.");

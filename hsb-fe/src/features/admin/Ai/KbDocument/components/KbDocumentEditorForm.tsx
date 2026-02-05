@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { KbDocumentRequest, KbDocumentResponse } from "../types/KbDocumentConfig";
+import { fetchKbDocumentDetail } from "../services/KbDocumentApi";
 
 type Props = {
   value?: KbDocumentResponse | null; // 수정이면 값 주입
@@ -36,6 +37,24 @@ function formatBytes(bytes?: number) {
   return `${v.toFixed(v >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
+type ProgressStep = 0 | 1 | 2 | 3 | 99;
+// 0: idle, 1: 업로드/attach 중, 2: 해독/요약 생성 중, 3: 완료, 99: 실패
+
+function stepLabel(step: ProgressStep) {
+  switch (step) {
+    case 1:
+      return "1. 벡터스토어에 문서 업로드중...";
+    case 2:
+      return "2. 문서 해독해서 답변(요약) 생성 중...";
+    case 3:
+      return "3. 완료! 아래에서 답변(요약)을 확인하세요.";
+    case 99:
+      return "처리 실패";
+    default:
+      return "";
+  }
+}
+
 export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Props) {
   const isEdit = !!value?.id;
 
@@ -46,16 +65,28 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
   // 파일 상태
   const [file, setFile] = useState<File | null>(null);
 
+  // 진행 상태(폴링 기반)
+  const [progressStep, setProgressStep] = useState<ProgressStep>(0);
+  const [progressText, setProgressText] = useState<string>("");
+  const [liveDetail, setLiveDetail] = useState<KbDocumentResponse | null>(null);
+  const [polling, setPolling] = useState(false);
+
+  const pollTimerRef = useRef<number | null>(null);
+  const pollStartRef = useRef<number>(0);
+
+  const detail = liveDetail ?? value ?? null;
+
   // 수정일 때 기존 파일 정보 표시용
   const existingFileInfo = useMemo(() => {
-    if (!value) return null;
-    if (!value.originalFileName && !value.filePath) return null;
+    const v = detail;   // value -> detail로 변경
+    if (!v) return null;
+    if (!v.originalFileName && !v.filePath) return null;
     return {
-      name: value.originalFileName ?? "(파일명 없음)",
-      size: value.fileSize ? formatBytes(value.fileSize) : "",
-      path: value.filePath ?? "",
+      name: v.originalFileName ?? "(파일명 없음)",
+      size: v.fileSize ? formatBytes(v.fileSize) : "",
+      path: v.filePath ?? "",
     };
-  }, [value]);
+  }, [detail]);
 
   // value 변경 시 form 초기화
   useEffect(() => {
@@ -71,24 +102,25 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
         useTf: value.useTf ?? "Y",
         delTf: value.delTf ?? "N",
       });
-      setFile(null); // 수정 모드 진입 시 새 파일은 선택 전까지 null
+      setFile(null);
+      setLiveDetail(value); // value를 liveDetail로 시작
     } else {
       setForm(DEFAULT_FORM);
       setFile(null);
+      setLiveDetail(null);
     }
     setErr(null);
-  }, [value]);
+    setProgressStep(0);
+    setProgressText("");
+    stopPolling();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value?.id]); // id 기준으로 바뀔 때만
 
   const canSubmit = useMemo(() => {
-    // 최소 요구값만 검사 (필요시 강화)
     if (!form.kbSourceId) return false;
     if (!form.title?.trim()) return false;
-
-    // 신규 등록일 때는 file 또는 sourceUrl 중 하나는 필수로 하고 싶다면:
-    // if (!isEdit && !file && !form.sourceUrl?.trim()) return false;
-
     return true;
-  }, [form.kbSourceId, form.title, isEdit, file, form.sourceUrl]);
+  }, [form.kbSourceId, form.title]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -113,6 +145,98 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
     setFile(null);
   };
 
+  // 단계 추정 로직 (DB 필드 변화 기반)
+  const computeStepFromDetail = (d: KbDocumentResponse | null): ProgressStep => {
+    if (!d) return 0;
+
+    // 실패
+    if (d.indexError && String(d.indexError).trim()) return 99;
+
+    // 완료: 요약이 생기거나 indexedAt이 찍혔다면 완료로 간주
+    const hasSummary = !!(d.indexSummary && String(d.indexSummary).trim());
+    if (hasSummary || d.indexedAt) return 3;
+
+    // 요약 생성 중: 파일 업로드/attach가 끝났다고 볼 수 있는 신호(= vectorFileId 존재)
+    // (추가 컬럼 없이 vectorFileId에 openaiFileId(file_...)가 저장되는 흐름)
+    if (d.vectorFileId && String(d.vectorFileId).trim()) return 2;
+
+    // 업로드/attach 중
+    return 1;
+  };
+
+  const refreshDetailOnce = async () => {
+    if (!detail?.id) return;
+    const fresh = await fetchKbDocumentDetail(detail.id);
+    setLiveDetail(fresh);
+
+    const step = computeStepFromDetail(fresh);
+    setProgressStep(step);
+    setProgressText(stepLabel(step));
+  };
+
+  const stopPolling = () => {
+    if (pollTimerRef.current) {
+      window.clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    setPolling(false);
+  };
+
+  const startPolling = () => {
+    if (!detail?.id) return;
+
+    stopPolling();
+    setPolling(true);
+    pollStartRef.current = Date.now();
+
+    // 처음 1회 바로
+    refreshDetailOnce().catch(() => {});
+
+    pollTimerRef.current = window.setInterval(async () => {
+      try {
+        // 5분 타임아웃(원하면 조정)
+        const elapsed = Date.now() - pollStartRef.current;
+        if (elapsed > 5 * 60 * 1000) {
+          stopPolling();
+          setProgressText("처리가 오래 걸리고 있습니다. 잠시 후 '새로고침'을 눌러 확인해주세요.");
+          return;
+        }
+
+        const fresh = await fetchKbDocumentDetail(detail.id!);
+        setLiveDetail(fresh);
+
+        const step = computeStepFromDetail(fresh);
+        setProgressStep(step);
+        setProgressText(stepLabel(step));
+
+        // 완료/실패면 폴링 중지
+        if (step === 3 || step === 99) {
+          stopPolling();
+        }
+      } catch (e) {
+        // 네트워크 순간 오류는 조용히 유지
+      }
+    }, 2000);
+  };
+
+  // 편의: edit 모드에서, 문서가 아직 완료가 아니면 자동 폴링
+  useEffect(() => {
+    if (!detail?.id) return;
+
+    const step = computeStepFromDetail(detail);
+    setProgressStep(step);
+    setProgressText(stepLabel(step));
+
+    // 이미 완료/실패면 폴링 불필요
+    if (step === 3 || step === 99) return;
+
+    // 자동 시작
+    startPolling();
+
+    return () => stopPolling();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detail?.id]);
+
   const handleSubmit = async () => {
     setErr(null);
 
@@ -132,12 +256,18 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
     try {
       setSaving(true);
       await onSubmit(form, file);
+ 
+      if (detail?.id) {
+        startPolling();
+      }
     } catch (e: any) {
       setErr(e?.message ?? "저장 중 오류가 발생했습니다.");
     } finally {
       setSaving(false);
     }
   };
+
+  const summaryText = detail?.indexSummary ?? "";
 
   return (
     <div className="space-y-4">
@@ -154,6 +284,80 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
           닫기
         </button>
       </div>
+
+      {/* 진행 상태 카드 (edit + 인덱싱 진행중일 때 유용) */}
+      {detail?.id && (
+        <div className="rounded border bg-gray-50 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-gray-700">
+                인덱싱 진행 상태
+              </div>
+
+              {progressStep === 99 ? (
+                <div className="mt-1 text-sm text-red-700">
+                  처리 실패: {detail.indexError}
+                </div>
+              ) : progressStep === 3 ? (
+                <div className="mt-1 text-sm text-green-700">
+                  {progressText || "완료"}
+                </div>
+              ) : progressStep === 0 ? (
+                <div className="mt-1 text-sm text-gray-600">
+                  상태 확인 대기 중...
+                </div>
+              ) : (
+                <div className="mt-1 flex items-center gap-2 text-sm text-gray-700">
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+                  <span>{progressText}</span>
+                </div>
+              )}
+
+              <div className="mt-1 text-[11px] text-gray-500">
+                {polling ? "상태를 자동으로 확인 중입니다." : "상태 확인이 멈췄습니다."}
+              </div>
+            </div>
+
+            <div className="flex shrink-0 flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => startPolling()}
+                className="text-xs px-2 py-1 rounded border bg-white hover:bg-gray-50"
+                disabled={!detail?.id}
+              >
+                자동 확인
+              </button>
+              <button
+                type="button"
+                onClick={() => refreshDetailOnce()}
+                className="text-xs px-2 py-1 rounded border bg-white hover:bg-gray-50"
+                disabled={!detail?.id}
+              >
+                새로고침
+              </button>
+              <button
+                type="button"
+                onClick={() => stopPolling()}
+                className="text-xs px-2 py-1 rounded border bg-white hover:bg-gray-50"
+              >
+                중지
+              </button>
+            </div>
+          </div>
+
+          {/* 결과(요약) 표시 */}
+          {progressStep === 3 && summaryText?.trim() && (
+            <div className="mt-3">
+              <div className="text-xs font-semibold text-gray-700 mb-1">
+                AI 요약 결과 (index_summary)
+              </div>
+              <div className="rounded border bg-white p-3 text-sm whitespace-pre-wrap">
+                {summaryText}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 폼 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
