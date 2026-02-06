@@ -28,17 +28,24 @@ public class KbJobWorker {
     private final KbSourceService kbSourceService;
     private final BrainClient brainClient;
 
+    /**
+     * Adaptive polling용: 이번 tick에서 "일이 있었는지" 결과를 반환한다.
+     * - NO_JOB: READY job 없음
+     * - LOCK_LOST: READY는 있었지만 선점 실패(다른 워커가 잡음)
+     * - SUCCESS: 1건 처리 성공
+     * - FAILED: 1건 처리 실패
+     */
     @Transactional
-    public void runOnce() {
+    public WorkerResult runOnce() {
         // 1) READY + INGEST 1건 조회
         List<KbJob> jobs = kbJobRepository.findReadyIngestJobs(PageRequest.of(0, 1));
-        if (jobs.isEmpty()) return;
+        if (jobs.isEmpty()) return WorkerResult.NO_JOB;
 
         KbJob job = jobs.get(0);
 
         // 2) 선점: READY -> RUNNING (startedAt 세팅)
         int locked = kbJobRepository.lockJob(job.getId());
-        if (locked == 0) return; // 다른 워커가 이미 잡음
+        if (locked == 0) return WorkerResult.LOCK_LOST;
 
         try {
             // 3) 문서 조회
@@ -49,14 +56,14 @@ public class KbJobWorker {
             String docType = normalize(doc.getDocType());
             if ("FILE".equals(docType) && isBlank(doc.getFilePath())) {
                 fail(job, doc, "docType=FILE 인데 filePath가 비어있습니다.");
-                return;
+                return WorkerResult.FAILED;
             }
             if ("URL".equals(docType) && isBlank(doc.getSourceUrl())) {
                 fail(job, doc, "docType=URL 인데 sourceUrl이 비어있습니다.");
-                return;
+                return WorkerResult.FAILED;
             }
 
-            // 5) kb_source 기준 vector_store_id 보장 + DB 저장 (예외처리 강화)
+            // 5) kb_source 기준 vector_store_id 보장
             final String ensuredVsId;
             try {
                 ensuredVsId = kbSourceService.ensureVectorStoreId(doc.getKbSourceId());
@@ -68,7 +75,7 @@ public class KbJobWorker {
                 );
                 fail(job, doc, msg);
                 log.error(msg, e); // 스택 트레이스는 로그로만
-                return;
+                return WorkerResult.FAILED;
             }
 
             // document에도 디버깅/캐싱용으로
@@ -89,13 +96,12 @@ public class KbJobWorker {
             // 7) Brain 서버 호출
             BrainIngestResponse res = brainClient.ingest(request);
 
-            // 7) 결과 반영
+            // 8) 결과 반영
             if (res != null && res.isOk()) {
                 String openaiFileId = safe(res.getOpenaiFileId());
+
+                // NOTE: 기존 코드에서 else 분기가 동일 set이라 의미가 없어서 정리
                 if (!openaiFileId.isEmpty()) {
-                    doc.setVectorFileId(openaiFileId);
-                } else {
-                    // 혹시 구버전 응답 호환이 남아있다면(임시)
                     doc.setVectorFileId(openaiFileId);
                 }
 
@@ -116,15 +122,19 @@ public class KbJobWorker {
                         safe(res.getVectorStoreFileId())
                 );
 
+                return WorkerResult.SUCCESS;
+
             } else {
                 String msg = (res == null) ? "Brain ingest 응답 null"
                         : (res.getMessage() == null ? "Brain ingest 실패" : res.getMessage());
                 fail(job, doc, msg);
+                return WorkerResult.FAILED;
             }
 
         } catch (Exception e) {
             log.error("KbJob 처리 실패. jobId={}", job.getId(), e);
             fail(job, null, e.getMessage());
+            return WorkerResult.FAILED;
         }
     }
 
