@@ -26,7 +26,7 @@ public class FastApiBrainClient implements BrainClient{
     public BrainChatResponse chat(BrainChatRequest request) {
         try {
             return webClient.post()
-                    .uri("/api/brain/chat") // FastAPI 쪽에서 /v1/brain/chat 이면 baseUrl에 /v1 포함
+                    .uri("/chat") // FastAPI 쪽에서 /v1/brain/chat 이면 baseUrl에 /v1 포함
                     .header("X-HSBS-Internal-Token", props.getApiKey())
                     .bodyValue(request)
                     .retrieve()
@@ -46,7 +46,7 @@ public class FastApiBrainClient implements BrainClient{
     public BrainIngestResponse ingest(BrainIngestRequest request) {
         try {
             String raw = webClient.post()
-                    .uri(props.getIngestPath())
+                    .uri("/kb/ingest")
                     .header("X-HSBS-Internal-Token", props.getApiKey())
                     .bodyValue(request)
                     .retrieve()
@@ -90,7 +90,7 @@ public class FastApiBrainClient implements BrainClient{
     public BrainVectorStoreCreateResponse createVectorStore(BrainVectorStoreCreateRequest request) {
         try {
             return webClient.post()
-                    .uri("/api/brain/vector-stores")
+                    .uri("/vector-stores")
                     .header("X-HSBS-Internal-Token", props.getApiKey())
                     .bodyValue(request)
                     .retrieve()

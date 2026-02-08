@@ -98,32 +98,48 @@ public class KbJobWorker {
 
             // 8) 결과 반영
             if (res != null && res.isOk()) {
-                String openaiFileId = safe(res.getOpenaiFileId());
+                String openaiFileId = safe(res.getOpenaiFileId());        // file_...
+                String summaryText  = safe(res.getSummaryText());         // 있으면 완료
+                String vsFileId     = safe(res.getVectorStoreFileId());
 
-                // NOTE: 기존 코드에서 else 분기가 동일 set이라 의미가 없어서 정리
                 if (!openaiFileId.isEmpty()) {
-                    doc.setVectorFileId(openaiFileId);
+                    doc.setVectorFileId(openaiFileId); // step2 신호
                 }
 
-                doc.setIndexSummary(res.getSummaryText());
-                doc.setIndexedAt(LocalDateTime.now());
+                // 요약이 있으면 "완료"
+                if (!summaryText.isEmpty()) {
+                    doc.setIndexSummary(summaryText);
+                    doc.setIndexedAt(LocalDateTime.now());
+                    doc.setIndexError(null);
+                    doc.setDocStatus("INDEXED");
+
+                    job.setJobStatus(KbJobStatus.SUCCESS); // 완료 상태
+                    job.setFinishedAt(LocalDateTime.now());
+                    job.setLastError(null);
+
+                    log.info("KbJob DONE. jobId={}, docId={}, vsId={}, openaiFileId={}, vsFileId={}",
+                            job.getId(), doc.getId(), ensuredVsId, openaiFileId, vsFileId);
+
+                    return WorkerResult.SUCCESS;
+                }
+
+                // 요약이 없으면: 아직 진행중(2단계)
+                doc.setIndexSummary(null);
                 doc.setIndexError(null);
+                doc.setDocStatus("INDEXING"); // READY 말고 INDEXING
 
-                // Job 성공 처리
-                job.setJobStatus(KbJobStatus.SUCCESS);
-                job.setFinishedAt(LocalDateTime.now());
+                // 중요: findReadyIngestJobs가 READY만 잡는 구조라면 RUNNING으로 두면 영원히 멈춤
+                job.setJobStatus(KbJobStatus.READY);
                 job.setLastError(null);
+                job.setTryCount((job.getTryCount() == null ? 0 : job.getTryCount()) + 1);
 
-                log.info("KbJob SUCCESS. jobId={}, docId={}, vectorStoreId={}, openaiFileId={}, vectorStoreFileId={}",
-                        job.getId(),
-                        doc.getId(),
-                        ensuredVsId,
-                        openaiFileId,
-                        safe(res.getVectorStoreFileId())
-                );
+                // finishedAt은 찍지 않음(완료 아님)
+                job.setFinishedAt(null); // 엔티티가 nullable이면. 아니라면 제거.
+
+                log.info("KbJob RUNNING(accepted). jobId={}, docId={}, vsId={}, openaiFileId={}, vsFileId={}",
+                        job.getId(), doc.getId(), ensuredVsId, openaiFileId, vsFileId);
 
                 return WorkerResult.SUCCESS;
-
             } else {
                 String msg = (res == null) ? "Brain ingest 응답 null"
                         : (res.getMessage() == null ? "Brain ingest 실패" : res.getMessage());
