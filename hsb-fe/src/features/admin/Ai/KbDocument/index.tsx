@@ -85,9 +85,12 @@ export default function AdminKbDocument() {
     try {
       if (editing) {
         await updateKbDocument(editing.id, req, String(actorId), file ?? null);
-        alert("문서가 수정되었습니다.");
+
+        const detail = await fetchKbDocumentDetail(editing.id);
+        setEditing(detail);
         refetch();
-        closeEditor();
+
+        alert("문서가 수정되었습니다. 인덱싱 상태를 확인합니다.");
         return;
       }  
 
