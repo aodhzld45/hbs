@@ -1,6 +1,8 @@
 package com.hbs.hsbbo.admin.ai.kb.repository;
 
 import com.hbs.hsbbo.admin.ai.kb.domain.entity.KbJob;
+import com.hbs.hsbbo.admin.ai.kb.domain.type.KbJobStatus;
+import com.hbs.hsbbo.admin.ai.kb.domain.type.KbJobType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -12,6 +14,10 @@ import java.util.Optional;
 
 public interface KbJobRepository extends JpaRepository<KbJob, Long> {
     Optional<KbJob> findTopByKbDocumentIdOrderByIdDesc(Long kbDocumentId);
+
+    boolean existsByKbDocumentIdAndJobTypeAndJobStatusInAndDelTf(
+            Long kbDocumentId, KbJobType jobType, List<KbJobStatus> statuses, String delTf
+    );
 
     @Modifying
     @Query("""

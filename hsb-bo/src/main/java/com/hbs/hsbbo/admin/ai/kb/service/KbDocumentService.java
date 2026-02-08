@@ -238,7 +238,7 @@ public class KbDocumentService {
         // 재인덱싱은 '콘텐츠 변경'일 때만
         if (contentChanged) {
             resetIndexFields(e);
-            e.setDocStatus("READY");
+            e.setDocStatus("INDEXING");
         }
 
         e.setUpAdm(actor);
@@ -339,14 +339,31 @@ public class KbDocumentService {
     }
 
     private void resetIndexFields(KbDocument e) {
-        e.setVectorStoreId(null);
-        e.setVectorFileId(null);
         e.setIndexedAt(null);
+        e.setIndexSummary(null);
         e.setIndexError(null);
+
+        // 재인덱싱이면 이전 벡터 파일 식별자는 무조건 초기화
+        e.setVectorFileId(null);
+
+        // kbSource 이동/정책에 따라 초기화
+        e.setVectorStoreId(null);
     }
 
     private void enqueueIngestJob(KbDocument doc, String actor) {
         try {
+            // 중복 INGEST job 방지 (READY/RUNNING 있으면 skip)
+            boolean exists = kbJobRepository.existsByKbDocumentIdAndJobTypeAndJobStatusInAndDelTf(
+                    doc.getId(),
+                    KbJobType.INGEST,
+                    List.of(KbJobStatus.READY, KbJobStatus.RUNNING),
+                    "N"
+            );
+            if (exists) {
+                log.info("[kb-document] ingest job already exists. docId={}", doc.getId());
+                return;
+            }
+
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("kbDocumentId", doc.getId());
             payload.put("kbSourceId", doc.getKbSourceId());
