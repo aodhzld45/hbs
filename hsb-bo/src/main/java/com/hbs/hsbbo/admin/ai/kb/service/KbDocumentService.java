@@ -10,6 +10,7 @@ import com.hbs.hsbbo.admin.ai.kb.dto.response.KbDocumentListResponse;
 import com.hbs.hsbbo.admin.ai.kb.dto.response.KbDocumentResponse;
 import com.hbs.hsbbo.admin.ai.kb.repository.KbDocumentRepository;
 import com.hbs.hsbbo.admin.ai.kb.repository.KbJobRepository;
+import com.hbs.hsbbo.admin.ai.kb.worker.KbJobScheduler;
 import com.hbs.hsbbo.common.exception.CommonException.NotFoundException;
 import com.hbs.hsbbo.common.util.FileUtil;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -33,6 +37,7 @@ import java.util.Map;
 @Slf4j
 public class KbDocumentService {
     private final KbDocumentRepository kbDocumentRepository;
+    private final KbJobScheduler kbJobScheduler;
     private final FileUtil fileUtil;
 
     private final KbJobRepository kbJobRepository;
@@ -388,6 +393,16 @@ public class KbDocumentService {
             job.setUpAdm(actor);
 
             kbJobRepository.save(job);
+            // 트랜잭션 커밋 이후에만 깨우기
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            kbJobScheduler.wakeUpNow();
+                        }
+                    }
+            );
+
         } catch (Exception ex) {
             log.error("[kb-document] enqueue job failed. docId={}", doc.getId(), ex);
             throw new IllegalStateException("문서 인덱싱 작업(Job) 생성에 실패했습니다.");

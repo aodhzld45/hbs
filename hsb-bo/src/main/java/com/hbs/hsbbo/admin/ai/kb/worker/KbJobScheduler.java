@@ -8,6 +8,7 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Component
@@ -20,6 +21,9 @@ public class KbJobScheduler {
 
     private volatile long currentDelayMs;
     private int idleStreak = 0;
+    private int errorStreak = 0;
+    // 중복 스케줄 방지: "현재 tick 예약이 이미 걸려있는가?"
+    private final AtomicBoolean scheduled = new AtomicBoolean(false);
 
     @PostConstruct
     public void start() {
@@ -32,12 +36,29 @@ public class KbJobScheduler {
         log.info("[KbJobScheduler] started (initialDelayMs={})", props.getInitialDelayMs());
     }
 
+    public void wakeUpNow() {
+        if (!props.isEnabled()) return;
+        taskScheduler.schedule(this::tick, Instant.now().plusMillis(100));
+    }
+
     private void scheduleNext(long delayMs) {
+        if (!props.isEnabled()) return;
+
+        // 이미 예약이 걸려 있으면 스킵 (tick의 finally에서 항상 scheduleNext를 부르기 때문에 중복 방지)
+        if (!scheduled.compareAndSet(false, true)) {
+            return;
+        }
+
         taskScheduler.schedule(this::tick, Instant.now().plusMillis(delayMs));
     }
 
     private void tick() {
-        if (!props.isEnabled()) return;
+        if (!props.isEnabled()) {
+            scheduled.set(false);
+            return;
+        }
+
+        scheduled.set(false);
 
         try {
             // WorkerResult를 별도 enum으로 썼다는 가정
@@ -59,14 +80,24 @@ public class KbJobScheduler {
 
             } else {
                 idleStreak = 0;
+                errorStreak = 0;
                 currentDelayMs = props.getMinDelayMs();
             }
 
         } catch (Exception e) {
-            log.error("[KbJobScheduler] tick error", e);
+            errorStreak++;
+
+            if (errorStreak == 1 || errorStreak % 10 == 0) {
+                log.error("[KbJobScheduler] tick error (errorStreak={}, delayMs={})", errorStreak, currentDelayMs, e);
+            } else {
+                log.warn("[KbJobScheduler] tick error (errorStreak={}, delayMs={}, msg={})",
+                        errorStreak, currentDelayMs, e.toString());
+            }
+
             long next = currentDelayMs * 2;
             currentDelayMs = Math.min(props.getMaxDelayMs(), Math.max(props.getMinDelayMs(), next));
         } finally {
+            // 다음 tick 예약
             scheduleNext(currentDelayMs);
         }
     }
