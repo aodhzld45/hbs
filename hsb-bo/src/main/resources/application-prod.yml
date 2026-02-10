@@ -48,8 +48,8 @@ logging.level.org.springframework.web.reactive.function.client: INFO
 
 hsbs:
   brain:
-    base-url: ${BRAIN_BASE_URL:http://127.0.0.1:8000}
-    api-key: ${BRAIN_API_KEY:change-me}
+    base-url: ${BRAIN_BASE_URL:http://127.0.0.1}
+    api-key: ${BRAIN_API_KEY:local-test-key}
     enabled: true
     timeout-ms: ${BRAIN_TIMEOUT_MS:120000}
   kb:
