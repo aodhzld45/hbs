@@ -34,6 +34,9 @@ public class KbDocumentResponse {
     private String category;
     private String tagsJson;
 
+
+    private String useTf;
+
     private String regAdm;
     private LocalDateTime regDate;
     private String upAdm;
@@ -64,6 +67,7 @@ public class KbDocumentResponse {
                 .sourceUrl(hd.getSourceUrl())
                 .category(hd.getCategory())
                 .tagsJson(hd.getTagsJson())
+                .useTf(hd.getUseTf())
                 .regAdm(hd.getRegAdm())
                 .regDate(hd.getRegDate())
                 .upAdm(hd.getUpAdm())
