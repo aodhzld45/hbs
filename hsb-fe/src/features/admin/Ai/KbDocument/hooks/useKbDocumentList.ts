@@ -20,9 +20,22 @@ const DEFAULT_PARAMS: Params = {
     sort: "regDate,desc",
   };
 
+const normalizeSelect = (v?: string) => {
+  if (v == null) return undefined;
+  const t = v.trim();
+  if (!t) return undefined;
+  if (t === "전체" || t.toUpperCase() === "ALL") return undefined;
+  return t;
+};  
+
 const cleanParams = (p: Params): Params => ({
-...p,
-keyword: p.keyword?.trim() ? p.keyword.trim() : undefined,
+  ...p,
+  kbSourceId: p.kbSourceId ?? undefined,
+  docType: normalizeSelect(p.docType),
+  docStatus: normalizeSelect(p.docStatus),
+  category: normalizeSelect(p.category),
+  useTf: (p.useTf === ("전체" as any) ? undefined : p.useTf), // 혹시 useTf도 select로 '전체'가 올 수 있으면
+  keyword: p.keyword?.trim() ? p.keyword.trim() : undefined,
 });
 
 export function useKbDocumentList(initial?: Params) {
