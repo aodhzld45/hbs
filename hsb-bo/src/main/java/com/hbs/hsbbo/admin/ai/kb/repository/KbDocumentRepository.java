@@ -25,19 +25,20 @@ public interface KbDocumentRepository extends JpaRepository<KbDocument, Long> {
     boolean existsByKbSourceIdAndTitleAndDelTf(Long kbSourceId, String title, String delTf);
 
     @Query("""
-           SELECT d FROM KbDocument d
-            WHERE d.delTf = 'N'
-              AND (:kbSourceId IS NULL OR d.kbSourceId = :kbSourceId)
-              AND (:docType IS NULL OR TRIM(:docType) = '' OR d.docType = :docType)
-              AND (:docStatus IS NULL OR TRIM(:docStatus) = '' OR d.docStatus = :docStatus)
-              AND (:category IS NULL OR TRIM(:category) = '' OR d.category = :category)
-              AND (:useTf IS NULL OR d.useTf = :useTf)
-              AND (
-                   :kw IS NULL
-                   OR TRIM(:kw) = ''
-                   OR LOWER(d.title) LIKE LOWER(CONCAT('%', :kw, '%'))
-              )
-           """)
+            SELECT d FROM KbDocument d
+             WHERE d.delTf = 'N'
+               AND (:kbSourceId IS NULL OR d.kbSourceId = :kbSourceId)
+               AND (:docType IS NULL OR TRIM(:docType) = '' OR d.docType = :docType)
+               AND (:docStatus IS NULL OR TRIM(:docStatus) = '' OR d.docStatus = :docStatus)
+               AND (:category IS NULL OR TRIM(:category) = '' OR d.category = :category)
+               AND (:useTf IS NULL OR d.useTf = :useTf)
+               AND (
+                    :kw IS NULL OR TRIM(:kw) = ''
+                    OR LOWER(COALESCE(d.title, '')) LIKE LOWER(CONCAT('%', :kw, '%'))
+                    OR LOWER(COALESCE(d.originalFileName, '')) LIKE LOWER(CONCAT('%', :kw, '%'))
+                    OR LOWER(COALESCE(d.sourceUrl, '')) LIKE LOWER(CONCAT('%', :kw, '%'))
+               )
+            """)
     Page<KbDocument> search(
             @Param("kbSourceId") Long kbSourceId,
             @Param("docType") String docType,

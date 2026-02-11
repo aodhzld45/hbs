@@ -64,8 +64,8 @@ public class KbDocumentService {
                 normalize(docType),
                 normalize(docStatus),
                 normalize(category),
-                normalize(keyword),
                 use,
+                normalize(keyword),
                 pageable
         );
 
