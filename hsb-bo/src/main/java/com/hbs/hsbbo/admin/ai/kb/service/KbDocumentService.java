@@ -94,22 +94,6 @@ public class KbDocumentService {
         String title = normalizeRequired(request.getTitle(), "title");
         String docType = normalizeRequired(request.getDocType(), "docType");
 
-        if ("FILE".equals(docType)) {
-            boolean fileSaved = applySingleFile(e, file);
-            if (!fileSaved || isBlank(e.getFilePath())) {
-                throw new IllegalArgumentException("FILE 문서는 파일 업로드가 필요합니다.");
-            }
-            e.setSourceUrl(null);
-        } else if ("URL".equals(docType)) {
-            if (file != null && !file.isEmpty()) {
-                throw new IllegalArgumentException("URL 문서는 파일 업로드를 허용하지 않습니다.");
-            }
-            e.setFilePath(null);
-            e.setSourceUrl(normalizeRequired(request.getSourceUrl(), "sourceUrl"));
-        } else {
-            throw new IllegalArgumentException("지원하지 않는 docType=" + docType);
-        }
-
         // 중복 방지: kbSourceId + title
         if (kbDocumentRepository.existsByKbSourceIdAndTitleAndDelTf(kbSourceId, title, "N")) {
             throw new IllegalArgumentException("이미 존재하는 문서 제목입니다. title=" + title);
@@ -128,9 +112,6 @@ public class KbDocumentService {
         e.setCategory(normalize(request.getCategory()));
         e.setTagsJson(request.getTagsJson()); // JSON string 그대로
 
-        // 파일 or URL 중 하나
-        boolean fileSaved = applySingleFile(e, file);
-
         if (e.getFilePath() == null) {
             // 파일이 없다면 URL 문서일 수 있음
             e.setSourceUrl(normalize(request.getSourceUrl()));
@@ -138,16 +119,25 @@ public class KbDocumentService {
             e.setSourceUrl(null);
         }
 
-        // (권장) docType 별 최소 검증
-        if ("FILE".equalsIgnoreCase(docType) && (e.getFilePath() == null || e.getFilePath().isBlank())) {
-            throw new IllegalArgumentException("FILE 문서는 파일 업로드가 필요합니다.");
+        // 4. docType별 조건부 로직 (FILE vs URL)
+        if ("FILE".equals(docType)) {
+            // 파일 업로드 시도
+            boolean fileSaved = applySingleFile(e, file);
+            // isBlank 에러 해결: e.getFilePath()가 String일 경우 자바 11 이상은 .isBlank() 가능
+            if (!fileSaved || e.getFilePath() == null || e.getFilePath().trim().isEmpty()) {
+                throw new IllegalArgumentException("FILE 문서는 파일 업로드가 필요합니다.");
+            }
+            e.setSourceUrl(null); // URL은 비움
+        } else if ("URL".equals(docType)) {
+            if (file != null && !file.isEmpty()) {
+                throw new IllegalArgumentException("URL 문서는 파일 업로드를 허용하지 않습니다.");
+            }
+            String sourceUrl = normalizeRequired(request.getSourceUrl(), "sourceUrl");
+            e.setSourceUrl(sourceUrl);
+            e.setFilePath(null); // 경로는 비움
+        } else {
+            throw new IllegalArgumentException("지원하지 않는 docType=" + docType);
         }
-        if ("URL".equalsIgnoreCase(docType) && (e.getSourceUrl() == null || e.getSourceUrl().isBlank())) {
-            throw new IllegalArgumentException("URL 문서는 sourceUrl이 필요합니다.");
-        }
-
-        // 인덱싱 관련 필드 초기화(생성 시점엔 아직 없음)
-        resetIndexFields(e);
 
         // 감사필드
         e.setUseTf(flag(request.getUseTf())); // null이면 "Y"
@@ -155,10 +145,11 @@ public class KbDocumentService {
         e.setRegAdm(actor);
         e.setUpAdm(actor);
 
-        // 먼저 저장해서 ID 확보
+        // 5. 인덱싱 관련 필드 초기화(생성 시점엔 아직 없음) 및 저장
+        resetIndexFields(e);
         kbDocumentRepository.save(e);
 
-        // (핵심) 비동기 인덱싱 작업(Job) 생성
+        // 6. 비동기 작업 큐 등록
         enqueueIngestJob(e, actor);
 
         return e.getId();
@@ -171,8 +162,9 @@ public class KbDocumentService {
                 .orElseThrow(() -> new NotFoundException("KB Document를 찾을 수 없습니다. id=%d", id));
         // 콘텐츠 변경 여부(벡터화 필요)
         boolean contentChanged = false;
+        boolean metaChanged = false; // 누락된 변수 선언 추가
 
-        // kbSource 이동 허용 여부: 이동 자체는 메타지만, 벡터스토어가 kb_source 기준이면 콘텐츠 재적재 필요할 수 있음
+        // 1. kbSource 이동 허용 여부: 이동 자체는 메타지만, 벡터스토어가 kb_source 기준이면 콘텐츠 재적재 필요할 수 있음
         // 정책 선택:
         // - "이동"을 허용하고 "새 vector_store에 재적재"가 필요하다면 contentChanged=true
         // - 이동만 하고 기존 벡터는 유지할거면 metaChanged=true
@@ -182,6 +174,7 @@ public class KbDocumentService {
             contentChanged = true;
         }
 
+        // 2. 제목 변경 및 중복 체크
         if (request.getTitle() != null) {
             String newTitle = normalizeRequired(request.getTitle(), "title");
             if (!newTitle.equals(e.getTitle())
@@ -194,6 +187,7 @@ public class KbDocumentService {
             }
         }
 
+        // 3. 문서 타입 변경
         if (request.getDocType() != null) {
             String newDocType = normalize(request.getDocType());
             if (newDocType != null && !newDocType.equalsIgnoreCase(e.getDocType())) {
@@ -203,6 +197,7 @@ public class KbDocumentService {
             }
         }
 
+        // 4. 메타데이터 (카테고리, 태그, 사용여부)
         if (request.getCategory() != null) {
             String newCategory = normalize(request.getCategory());
             if ((newCategory == null && e.getCategory() != null) || (newCategory != null && !newCategory.equals(e.getCategory()))) {
@@ -220,11 +215,12 @@ public class KbDocumentService {
 
         if (request.getUseTf() != null) e.setUseTf(flag(request.getUseTf()));
 
+
         // 파일 교체 시에만 콘텐츠 변경
         boolean fileReplaced = applySingleFile(e, file);
         if (fileReplaced) contentChanged = true;
 
-        // 버전 정책: 파일 교체 시 자동 +1
+        // 7. 버전 관리버전 정책: 파일 교체 시 자동 +1
         if (request.getVersion() != null) {
             e.setVersion(request.getVersion());
         } else if (fileReplaced) {
@@ -243,7 +239,7 @@ public class KbDocumentService {
             }
         }
 
-        // docType 별 최소 검증
+        // 8. docType 별 최소 검증
         String docType = e.getDocType();
         if ("FILE".equalsIgnoreCase(docType) && (e.getFilePath() == null || e.getFilePath().isBlank())) {
             throw new IllegalArgumentException("FILE 문서는 파일 업로드가 필요합니다.");
@@ -252,6 +248,7 @@ public class KbDocumentService {
             throw new IllegalArgumentException("URL 문서는 sourceUrl이 필요합니다.");
         }
 
+        // 9. 인덱싱 필요 여부에 따른 처리
         // 재인덱싱은 '콘텐츠 변경'일 때만
         if (contentChanged) {
             resetIndexFields(e);
@@ -261,6 +258,7 @@ public class KbDocumentService {
         e.setUpAdm(actor);
         kbDocumentRepository.save(e);
 
+        // 10. 비동기 작업 실행
         // Job enqueue도 '콘텐츠 변경'일 때만
         if (contentChanged) {
             enqueueIngestJob(e, actor);
