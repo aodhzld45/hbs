@@ -51,7 +51,7 @@ hsbs:
     base-url: ${BRAIN_BASE_URL:http://127.0.0.1:8000}
     api-key: ${BRAIN_API_KEY:local-test-key}
     enabled: true
-    timeout-ms: ${BRAIN_TIMEOUT_MS:120000}
+    timeout-ms: ${BRAIN_TIMEOUT_MS:600000}
   kb:
     job:
       enabled: ${KB_JOB_SCHED_ENABLED:true}
