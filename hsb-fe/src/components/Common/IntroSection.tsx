@@ -4,7 +4,7 @@ const IntroSection = () => {
   return (
     <section
       id="intro"
-      className="h-screen bg-white dark:bg-[#2e2e2e] text-gray-900 dark:text-white flex flex-col justify-center items-center px-4 relative transition-colors duration-300"
+      className="min-h-[100dvh] overflow-hidden bg-white dark:bg-[#2e2e2e] text-gray-900 dark:text-white flex flex-col justify-center items-center px-4 relative transition-colors duration-300 py-20"
     >
       {/* 좌상단 GitHub 및 날짜 */}
       <div className="absolute top-10 left-1/2 transform -translate-x-1/2 flex items-center gap-6 text-gray-700 dark:text-white text-lg opacity-80">
