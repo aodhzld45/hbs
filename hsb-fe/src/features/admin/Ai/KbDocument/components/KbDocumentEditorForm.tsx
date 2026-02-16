@@ -70,11 +70,21 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
   const [progressText, setProgressText] = useState<string>("");
   const [liveDetail, setLiveDetail] = useState<KbDocumentResponse | null>(null);
   const [polling, setPolling] = useState(false);
+  const [lockedAfterDone, setLockedAfterDone] = useState(false);
 
   const pollTimerRef = useRef<number | null>(null);
   const pollStartRef = useRef<number>(0);
 
   const detail = liveDetail ?? value ?? null;
+
+  const canSubmit = useMemo(() => {
+    if (!form.kbSourceId) return false;
+    if (!form.title?.trim()) return false;
+    return true;
+  }, [form.kbSourceId, form.title]);
+
+  const isIndexing = progressStep === 1 || progressStep === 2;
+  const isProcessing = saving || polling || isIndexing;
 
   // 수정일 때 기존 파일 정보 표시용
   const existingFileInfo = useMemo(() => {
@@ -88,8 +98,21 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
     };
   }, [detail]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] ?? null;
+    setFile(f);
+  
+    if (f) {
+      setLockedAfterDone(false); // 다시 저장 가능
+      setProgressStep(0);
+      setProgressText("");
+    }
+  };
+
   // value 변경 시 form 초기화
   useEffect(() => {
+    setLockedAfterDone(false);   // 문서 바뀌면 잠금 초기화
+
     if (value) {
       setForm({
         kbSourceId: value.kbSourceId,
@@ -116,11 +139,11 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value?.id]); // id 기준으로 바뀔 때만
 
-  const canSubmit = useMemo(() => {
-    if (!form.kbSourceId) return false;
-    if (!form.title?.trim()) return false;
-    return true;
-  }, [form.kbSourceId, form.title]);
+  useEffect(() => {
+    if (!value) return;
+    const step = computeStepFromDetail(value);
+    if (step === 3) setLockedAfterDone(true); // 기존에 이미 완료된 문서면 잠금
+  }, [value?.id]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -136,11 +159,6 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
     }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] ?? null;
-    setFile(f);
-  };
-
   const handleRemoveSelectedFile = () => {
     setFile(null);
   };
@@ -148,19 +166,21 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
   // 단계 추정 로직 (DB 필드 변화 기반)
   const computeStepFromDetail = (d: KbDocumentResponse | null): ProgressStep => {
     if (!d) return 0;
-
-    // 실패
-    if (d.indexError && String(d.indexError).trim()) return 99;
-
-    // 완료: 요약이 생기거나 indexedAt이 찍혔다면 완료로 간주
-    const hasSummary = !!(d.indexSummary && String(d.indexSummary).trim());
-    if (hasSummary || d.indexedAt) return 3;
-
-    // 요약 생성 중: 파일 업로드/attach가 끝났다고 볼 수 있는 신호(= vectorFileId 존재)
-    // (추가 컬럼 없이 vectorFileId에 openaiFileId(file_...)가 저장되는 흐름)
-    if (d.vectorFileId && String(d.vectorFileId).trim()) return 2;
-
-    // 업로드/attach 중
+  
+    const status = (d.docStatus ?? "").toUpperCase();
+  
+    // 인덱싱 진행은 INDEXING일 때만
+    if (status !== "INDEXING") {
+      // 완료 상태면 3
+      if (status === "INDEXED" && (d.indexSummary?.trim() || d.indexedAt)) return 3;
+      if (status === "FAILED" && d.indexError?.trim()) return 99;
+      return 0;
+    }
+  
+    // INDEXING 상태일 때만 진행 단계
+    if (d.indexError?.trim()) return 99;
+    if (d.indexSummary?.trim() || d.indexedAt) return 3;
+    if (d.vectorFileId?.trim()) return 2;
     return 1;
   };
 
@@ -194,9 +214,9 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
 
     pollTimerRef.current = window.setInterval(async () => {
       try {
-        // 5분 타임아웃(원하면 조정)
+        // 10분 타임아웃(원하면 조정)
         const elapsed = Date.now() - pollStartRef.current;
-        if (elapsed > 5 * 60 * 1000) {
+        if (elapsed > 10 * 60 * 1000) {
           stopPolling();
           setProgressText("처리가 오래 걸리고 있습니다. 잠시 후 '새로고침'을 눌러 확인해주세요.");
           return;
@@ -228,28 +248,36 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
     setProgressText(stepLabel(step));
 
     // 이미 완료/실패면 폴링 불필요
-    if (step === 3 || step === 99) return;
-
-    // 자동 시작
-    startPolling();
+    // step 0(진행아님)도 자동 폴링 금지
+    if (step === 0 || step === 3 || step === 99) return;
+      // 자동 시작
+      startPolling();
 
     return () => stopPolling();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail?.id]);
+
+  useEffect(() => {
+    if (progressStep === 3 && detail) {
+      setForm((prev) => ({
+        ...prev,
+        tagsJson: detail.tagsJson?.trim() ? detail.tagsJson : "[]",
+      }));
+    }
+  }, [progressStep, detail?.tagsJson]);
+
+  useEffect(() => {
+    if (progressStep === 3) {
+      setLockedAfterDone(true);
+      setFile(null); // 완료되면 선택 파일 제거(안전장치)
+    }
+  }, [progressStep]);
 
   const handleSubmit = async () => {
     setErr(null);
 
     if (!canSubmit) {
       setErr("KB Source / 제목은 필수입니다.");
-      return;
-    }
-
-    // tagsJson 가 JSON 배열 문자열 형태인지 간단 검사
-    try {
-      if (form.tagsJson?.trim()) JSON.parse(form.tagsJson);
-    } catch {
-      setErr("tagsJson 형식이 올바른 JSON이 아닙니다. 예: [] 또는 [\"a\",\"b\"]");
       return;
     }
 
@@ -268,6 +296,16 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
   };
 
   const summaryText = detail?.indexSummary ?? "";
+  const tagsJson = detail?.tagsJson?.trim() ? detail.tagsJson : "[]";
+
+  const tags: string[] = (() => {
+    try {
+      const arr = JSON.parse(tagsJson);
+      return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  })();
 
   return (
     <div className="space-y-4">
@@ -279,7 +317,8 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
         <button
           type="button"
           onClick={onCancel}
-          className="text-sm px-2 py-1 rounded border hover:bg-gray-50"
+          disabled={isProcessing}
+          className="text-sm px-2 py-1 rounded border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           닫기
         </button>
@@ -475,22 +514,26 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
           />
         </div>
 
-        {/* tagsJson */}
-        <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            태그(JSON)
-          </label>
-          <input
-            name="tagsJson"
-            value={form.tagsJson ?? "[]"}
-            onChange={handleChange}
-            className="w-full h-10 border rounded px-2 text-sm"
-            placeholder='예: ["한양대","입학처","2026"]'
-          />
-          <p className="mt-1 text-[11px] text-gray-400">
-            JSON 배열 문자열로 저장합니다. 예: []
-          </p>
-        </div>
+        {/* 결과(태그) 표시 */}
+        {progressStep === 3 && (
+          <div className="md:col-span-2">
+            <div className="text-xs font-semibold text-gray-700 mb-1">
+              AI 태그 결과 (tags_json)
+            </div>
+
+            <div className="flex flex-wrap gap-2 rounded border bg-white p-3">
+              {tags.length > 0 ? (
+                tags.map((t) => (
+                  <span key={t} className="px-2 py-1 text-xs rounded-full border bg-gray-50">
+                    #{t}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-gray-400">생성된 태그가 없습니다.</span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 파일 업로드 */}
         <div className="md:col-span-2">
@@ -564,19 +607,31 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
         <button
           type="button"
           onClick={onCancel}
-          className="h-10 px-4 text-sm rounded border bg-white hover:bg-gray-50"
-          disabled={saving}
+          disabled={isProcessing}
+          className="h-10 px-4 text-sm rounded border bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           취소
         </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="h-10 px-4 text-sm rounded bg-gray-900 text-white hover:bg-black disabled:opacity-50"
-          disabled={!canSubmit || saving}
-        >
-          {saving ? "저장 중..." : "저장"}
-        </button>
+
+        {!lockedAfterDone && (
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!canSubmit || saving || isProcessing}
+            className="h-10 px-4 text-sm rounded bg-gray-900 text-white hover:bg-black disabled:opacity-50"
+          >
+            {saving ? "저장 중..." : "저장"}
+          </button>
+        )}
+        {lockedAfterDone && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-10 px-4 text-sm rounded bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            완료 · 닫기
+          </button>
+        )}
       </div>
     </div>
   );

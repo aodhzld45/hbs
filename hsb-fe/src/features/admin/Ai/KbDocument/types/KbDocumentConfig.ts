@@ -18,7 +18,7 @@ export interface KbDocumentResponse {
     mimeType: string;
     sourceUrl: string;
     category: string;
-    tagsJson: string;
+    tagsJson: string | null;
 
     useTf?: 'Y' | 'N';
     delTf?: 'Y' | 'N';
