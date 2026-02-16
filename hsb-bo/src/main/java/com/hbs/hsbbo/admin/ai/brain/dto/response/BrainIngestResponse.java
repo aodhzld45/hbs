@@ -2,6 +2,8 @@ package com.hbs.hsbbo.admin.ai.brain.dto.response;
 
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Builder
@@ -19,4 +21,5 @@ public class BrainIngestResponse {
 
     private String summaryText;
     private String rawPreview;
+    private List<String> tags;
 }

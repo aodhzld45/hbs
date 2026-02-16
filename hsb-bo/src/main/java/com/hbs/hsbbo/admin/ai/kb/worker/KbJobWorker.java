@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.ai.kb.worker;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hbs.hsbbo.admin.ai.brain.client.BrainClient;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainIngestRequest;
 import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainIngestResponse;
@@ -23,6 +24,7 @@ import java.util.List;
 @Slf4j
 public class KbJobWorker {
 
+    private final ObjectMapper objectMapper;
     private final KbJobRepository kbJobRepository;
     private final KbDocumentRepository kbDocumentRepository;
     private final KbSourceService kbSourceService;
@@ -101,6 +103,7 @@ public class KbJobWorker {
                 String openaiFileId = safe(res.getOpenaiFileId());        // file_...
                 String summaryText  = safe(res.getSummaryText());         // 있으면 완료
                 String vsFileId     = safe(res.getVectorStoreFileId());
+                List<String> tags = res.getTags();
 
                 if (!openaiFileId.isEmpty()) {
                     doc.setVectorFileId(openaiFileId); // step2 신호
@@ -109,6 +112,7 @@ public class KbJobWorker {
                 // 요약이 있으면 "완료"
                 if (!summaryText.isEmpty()) {
                     doc.setIndexSummary(summaryText);
+                    doc.setTagsJson((tags == null || tags.isEmpty()) ? null : objectMapper.writeValueAsString(tags));
                     doc.setIndexedAt(LocalDateTime.now());
                     doc.setIndexError(null);
                     doc.setDocStatus("INDEXED");
@@ -125,6 +129,7 @@ public class KbJobWorker {
 
                 // 요약이 없으면: 아직 진행중(2단계)
                 doc.setIndexSummary(null);
+                doc.setTagsJson(null);
                 doc.setIndexError(null);
                 doc.setDocStatus("INDEXING"); // READY 말고 INDEXING
 
