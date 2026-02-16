@@ -94,6 +94,22 @@ public class KbDocumentService {
         String title = normalizeRequired(request.getTitle(), "title");
         String docType = normalizeRequired(request.getDocType(), "docType");
 
+        if ("FILE".equals(docType)) {
+            boolean fileSaved = applySingleFile(e, file);
+            if (!fileSaved || isBlank(e.getFilePath())) {
+                throw new IllegalArgumentException("FILE 문서는 파일 업로드가 필요합니다.");
+            }
+            e.setSourceUrl(null);
+        } else if ("URL".equals(docType)) {
+            if (file != null && !file.isEmpty()) {
+                throw new IllegalArgumentException("URL 문서는 파일 업로드를 허용하지 않습니다.");
+            }
+            e.setFilePath(null);
+            e.setSourceUrl(normalizeRequired(request.getSourceUrl(), "sourceUrl"));
+        } else {
+            throw new IllegalArgumentException("지원하지 않는 docType=" + docType);
+        }
+
         // 중복 방지: kbSourceId + title
         if (kbDocumentRepository.existsByKbSourceIdAndTitleAndDelTf(kbSourceId, title, "N")) {
             throw new IllegalArgumentException("이미 존재하는 문서 제목입니다. title=" + title);
@@ -153,10 +169,6 @@ public class KbDocumentService {
     public Long update(Long id, KbDocumentRequest request, MultipartFile file, String actor) {
         KbDocument e = kbDocumentRepository.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("KB Document를 찾을 수 없습니다. id=%d", id));
-
-        // 메타 변경 여부(벡터화 불필요)
-        boolean metaChanged = false;
-
         // 콘텐츠 변경 여부(벡터화 필요)
         boolean contentChanged = false;
 
