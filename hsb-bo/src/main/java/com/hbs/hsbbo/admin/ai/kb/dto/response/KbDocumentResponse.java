@@ -33,7 +33,7 @@ public class KbDocumentResponse {
     private String sourceUrl;
     private String category;
     private String tagsJson;
-
+    private String summaryPrompt;
 
     private String useTf;
 
@@ -67,6 +67,7 @@ public class KbDocumentResponse {
                 .sourceUrl(hd.getSourceUrl())
                 .category(hd.getCategory())
                 .tagsJson(hd.getTagsJson())
+                .summaryPrompt(hd.getSummaryPrompt())
                 .useTf(hd.getUseTf())
                 .regAdm(hd.getRegAdm())
                 .regDate(hd.getRegDate())

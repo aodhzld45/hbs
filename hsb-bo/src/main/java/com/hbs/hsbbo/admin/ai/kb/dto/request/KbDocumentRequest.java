@@ -64,6 +64,10 @@ public class KbDocumentRequest {
      */
     private String tagsJson;
 
+    /** ingest 시 요약 생성용 LLM 지시문. 비우면 Brain 기본값 사용 (최대 2000자 권장) */
+    @Size(max = 2000)
+    private String summaryPrompt;
+
     private String useTf;       // "Y"/"N" (null 허용: 기본값 처리)
     private String delTf;       // "N" 고정
 }

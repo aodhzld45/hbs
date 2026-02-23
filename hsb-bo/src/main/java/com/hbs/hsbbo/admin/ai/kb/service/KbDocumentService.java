@@ -111,6 +111,7 @@ public class KbDocumentService {
         // 카테고리/태그
         e.setCategory(normalize(request.getCategory()));
         e.setTagsJson(request.getTagsJson()); // JSON string 그대로
+        e.setSummaryPrompt(normalizeToNull(request.getSummaryPrompt()));
 
         if (e.getFilePath() == null) {
             // 파일이 없다면 URL 문서일 수 있음
@@ -210,6 +211,13 @@ public class KbDocumentService {
             if (!request.getTagsJson().equals(e.getTagsJson())) {
                 e.setTagsJson(request.getTagsJson());
                 metaChanged = true; // 태그는 메타
+            }
+        }
+        if (request.getSummaryPrompt() != null) {
+            String newPrompt = normalizeToNull(request.getSummaryPrompt());
+            if ((newPrompt == null && e.getSummaryPrompt() != null) || (newPrompt != null && !newPrompt.equals(e.getSummaryPrompt()))) {
+                e.setSummaryPrompt(newPrompt);
+                metaChanged = true;
             }
         }
 
@@ -346,6 +354,13 @@ public class KbDocumentService {
     private String defaultIfBlank(String s, String def) {
         String v = normalize(s);
         return (v == null) ? def : v;
+    }
+
+    /** trim 후 빈 문자열이면 null 반환 (summaryPrompt 등 optional 텍스트용) */
+    private String normalizeToNull(String s) {
+        if (s == null) return null;
+        String v = s.trim();
+        return v.isEmpty() ? null : v;
     }
 
     private String flag(String s) {

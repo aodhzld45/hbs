@@ -75,4 +75,8 @@ public class KbDocument extends AuditBase {
     @Column(name = "tags_json")
     private String tagsJson;
 
+    /** ingest 시 요약 생성용 LLM 지시문. 비우면 Brain 기본값 사용 */
+    @Column(name = "summary_prompt", columnDefinition = "TEXT")
+    private String summaryPrompt;
+
 }

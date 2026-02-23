@@ -20,4 +20,7 @@ public class BrainIngestRequest {
     private String docType;    // FILE/URL/TEXT
     private String category;
 
+    /** 요약 생성용 LLM 지시문. 비우면 Brain 기본 prompt 사용 */
+    private String summaryPrompt;
+
 }

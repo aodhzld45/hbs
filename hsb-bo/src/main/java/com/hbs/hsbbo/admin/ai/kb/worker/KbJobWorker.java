@@ -93,6 +93,7 @@ public class KbJobWorker {
                     .sourceUrl(doc.getSourceUrl())
                     .docType(doc.getDocType())
                     .category(doc.getCategory())
+                    .summaryPrompt(doc.getSummaryPrompt())
                     .build();
 
             // 7) Brain 서버 호출
@@ -117,9 +118,12 @@ public class KbJobWorker {
                     doc.setIndexError(null);
                     doc.setDocStatus("INDEXED");
 
-                    job.setJobStatus(KbJobStatus.SUCCESS); // 완료 상태
+                    job.setJobStatus(KbJobStatus.SUCCESS);
                     job.setFinishedAt(LocalDateTime.now());
                     job.setLastError(null);
+
+                    kbDocumentRepository.save(doc);
+                    kbJobRepository.save(job);
 
                     log.info("KbJob DONE. jobId={}, docId={}, vsId={}, openaiFileId={}, vsFileId={}",
                             job.getId(), doc.getId(), ensuredVsId, openaiFileId, vsFileId);
@@ -127,23 +131,21 @@ public class KbJobWorker {
                     return WorkerResult.SUCCESS;
                 }
 
-                // 요약이 없으면: 아직 진행중(2단계)
+                // Brain은 ok인데 요약이 비어 있음 → 완료 처리 (재시도 루프 방지, snake_case 파싱 이슈 등)
                 doc.setIndexSummary(null);
-                doc.setTagsJson(null);
+                doc.setTagsJson((tags == null || tags.isEmpty()) ? null : objectMapper.writeValueAsString(tags));
+                doc.setIndexedAt(LocalDateTime.now());
                 doc.setIndexError(null);
-                doc.setDocStatus("INDEXING"); // READY 말고 INDEXING
+                doc.setDocStatus("INDEXED");
 
-                // 중요: findReadyIngestJobs가 READY만 잡는 구조라면 RUNNING으로 두면 영원히 멈춤
-                job.setJobStatus(KbJobStatus.READY);
+                job.setJobStatus(KbJobStatus.SUCCESS);
+                job.setFinishedAt(LocalDateTime.now());
                 job.setLastError(null);
-                job.setTryCount((job.getTryCount() == null ? 0 : job.getTryCount()) + 1);
 
-                // finishedAt은 찍지 않음(완료 아님)
-                job.setFinishedAt(null); // 엔티티가 nullable이면. 아니라면 제거.
+                kbDocumentRepository.save(doc);
+                kbJobRepository.save(job);
 
-                log.info("KbJob RUNNING(accepted). jobId={}, docId={}, vsId={}, openaiFileId={}, vsFileId={}",
-                        job.getId(), doc.getId(), ensuredVsId, openaiFileId, vsFileId);
-
+                log.info("KbJob DONE(no summary). jobId={}, docId={}, vsId={}, openaiFileId={}", job.getId(), doc.getId(), ensuredVsId, openaiFileId);
                 return WorkerResult.SUCCESS;
             } else {
                 String msg = (res == null) ? "Brain ingest 응답 null"
