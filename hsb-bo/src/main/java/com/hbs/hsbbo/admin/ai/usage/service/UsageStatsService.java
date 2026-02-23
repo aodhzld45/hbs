@@ -1,10 +1,13 @@
 package com.hbs.hsbbo.admin.ai.usage.service;
 
 import com.hbs.hsbbo.admin.ai.usage.domain.type.Period;
+import com.hbs.hsbbo.admin.ai.usage.dto.TopQuestionProjection;
 import com.hbs.hsbbo.admin.ai.usage.dto.UsageStatsProjection;
 import com.hbs.hsbbo.admin.ai.usage.dto.request.UsageStatsRequest;
+import com.hbs.hsbbo.admin.ai.usage.dto.response.TopQuestionItem;
 import com.hbs.hsbbo.admin.ai.usage.dto.response.UsageStatsItem;
 import com.hbs.hsbbo.admin.ai.usage.dto.response.UsageStatsListResponse;
+import com.hbs.hsbbo.admin.ai.usage.repository.UsageLogRepository;
 import com.hbs.hsbbo.admin.ai.usage.repository.UsageStatsRepository;
 import com.hbs.hsbbo.common.util.ExcelUtil;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UsageStatsService {
     private final UsageStatsRepository usageStatsRepository;
+    private final UsageLogRepository usageLogRepository;
 
     public UsageStatsListResponse getUsageStats(UsageStatsRequest req) {
         // 1) 날짜 기본값 처리
@@ -113,6 +117,25 @@ public class UsageStatsService {
         } catch (Exception e) {
             throw new RuntimeException("UsageStats 엑셀 다운로드에 실패하였습니다.", e);
         }
+    }
+
+    /**
+     * 가장 많이 물어본 질문 TOP 20 (기간/테넌트/사이트키 필터 동일 적용)
+     */
+    public List<TopQuestionItem> getTopQuestions(UsageStatsRequest req) {
+        LocalDate fromDate = req.getFromDate();
+        LocalDate toDate = req.getToDate();
+        if (fromDate == null || toDate == null) {
+            toDate = LocalDate.now();
+            fromDate = toDate.minusDays(6);
+        }
+        LocalDateTime from = fromDate.atStartOfDay();
+        LocalDateTime to = toDate.plusDays(1).atStartOfDay();
+
+        String tenantId = (req.getTenantId() == null || req.getTenantId().isBlank()) ? "tenant-hsbs" : req.getTenantId();
+        List<TopQuestionProjection> list = usageLogRepository.findTop20Questions(
+                tenantId, req.getSiteKeyId(), from, to);
+        return list.stream().map(TopQuestionItem::from).toList();
     }
 
     private static String safe(Object v) { return v == null ? "" : String.valueOf(v); }

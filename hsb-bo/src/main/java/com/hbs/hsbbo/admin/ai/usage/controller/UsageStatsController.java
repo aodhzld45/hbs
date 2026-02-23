@@ -2,6 +2,7 @@ package com.hbs.hsbbo.admin.ai.usage.controller;
 
 import com.hbs.hsbbo.admin.ai.usage.domain.type.Period;
 import com.hbs.hsbbo.admin.ai.usage.dto.request.UsageStatsRequest;
+import com.hbs.hsbbo.admin.ai.usage.dto.response.TopQuestionItem;
 import com.hbs.hsbbo.admin.ai.usage.dto.response.UsageStatsListResponse;
 import com.hbs.hsbbo.admin.ai.usage.service.UsageStatsService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -74,6 +76,27 @@ public class UsageStatsController {
 
         // 4) 서비스 호출
         return usageStatsService.getUsageStats(req);
+    }
+
+    /**
+     * 가장 많이 물어본 질문 TOP 20 (기간/테넌트/사이트키 필터 적용)
+     * GET /api/ai/usage-stats/top-questions?fromDate=2025-01-01&toDate=2025-01-31&tenantId=...&siteKeyId=...
+     */
+    @GetMapping("/top-questions")
+    public List<TopQuestionItem> getTopQuestions(
+            @RequestParam(name = "tenantId", required = false) String tenantId,
+            @RequestParam(name = "fromDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(name = "toDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(name = "siteKeyId", required = false) Long siteKeyId
+    ) {
+        String effectiveTenantId = (tenantId == null || tenantId.isBlank()) ? "tenant-hsbs" : tenantId;
+        UsageStatsRequest req = UsageStatsRequest.builder()
+                .tenantId(effectiveTenantId)
+                .fromDate(fromDate)
+                .toDate(toDate)
+                .siteKeyId(siteKeyId)
+                .build();
+        return usageStatsService.getTopQuestions(req);
     }
 
     @GetMapping(value = "/export.xlsx",

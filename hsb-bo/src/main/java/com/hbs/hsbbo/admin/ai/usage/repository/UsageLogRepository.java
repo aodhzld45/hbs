@@ -1,6 +1,7 @@
 package com.hbs.hsbbo.admin.ai.usage.repository;
 
 import com.hbs.hsbbo.admin.ai.usage.domain.entity.UsageLog;
+import com.hbs.hsbbo.admin.ai.usage.dto.TopQuestionProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -64,4 +65,27 @@ public interface UsageLogRepository extends JpaRepository<UsageLog, Long> {
             ORDER BY l.regDate ASC
            """)
     List<UsageLog> findConversationLogs(@Param("conversationId") String conversationId);
+
+    /**
+     * 가장 많이 물어본 질문 TOP 20 (ai_usage_log.request_text 기준 집계, 동일 기간/테넌트/사이트키 필터)
+     */
+    @Query(value = """
+           SELECT TRIM(u.request_text) AS question, COUNT(*) AS cnt
+             FROM ai_usage_log u
+            WHERE u.del_tf = 'N'
+              AND u.request_text IS NOT NULL AND TRIM(u.request_text) != ''
+              AND (:from IS NULL OR u.reg_date >= :from)
+              AND (:to IS NULL OR u.reg_date < :to)
+              AND (:tenantId IS NULL OR u.tenant_id = :tenantId)
+              AND (:siteKeyId IS NULL OR u.site_key_id = :siteKeyId)
+            GROUP BY TRIM(u.request_text)
+            ORDER BY cnt DESC
+            LIMIT 20
+           """, nativeQuery = true)
+    List<TopQuestionProjection> findTop20Questions(
+            @Param("tenantId") String tenantId,
+            @Param("siteKeyId") Long siteKeyId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
 }
