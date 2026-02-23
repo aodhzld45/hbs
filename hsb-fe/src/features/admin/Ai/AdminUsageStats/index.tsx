@@ -4,7 +4,9 @@ import FiltersBar from './components/FiltersBar';
 import SummaryCard from './components/SummaryCard';
 import UsageChart from './components/UsageChart';
 import UsageTable from './components/UsageTable';
-import { fetchUsageStatsExcel } from './services/usageStatsApi';
+import TopQuestionsCard from './components/TopQuestionsCard';
+import { fetchUsageStatsExcel, fetchTopQuestions } from './services/usageStatsApi';
+import type { TopQuestionItem } from './services/usageStatsApi';
 
 // 공통 메뉴 목록 불러오기
 import {
@@ -19,6 +21,9 @@ import { useAuth } from "../../../../context/AuthContext";
 
 export default function AdminUsageStats() {
   const [downloading, setDownloading] = useState(false);
+  const [topQuestions, setTopQuestions] = useState<TopQuestionItem[]>([]);
+  const [topQuestionsLoading, setTopQuestionsLoading] = useState(false);
+  const [topQuestionsError, setTopQuestionsError] = useState<string | null>(null);
 
     // 공통 헤더/메뉴 관련
     const location = useLocation();
@@ -68,6 +73,31 @@ export default function AdminUsageStats() {
     totalCount,
     totalPages,
   } = useUsageStats();
+
+  // 가장 많이 물어본 질문 TOP 20 (필터 기간/테넌트/사이트키 적용)
+  const loadTopQuestions = React.useCallback(async () => {
+    setTopQuestionsLoading(true);
+    setTopQuestionsError(null);
+    try {
+      const list = await fetchTopQuestions({
+        tenantId: filters.tenantId,
+        fromDate: filters.fromDate,
+        toDate: filters.toDate,
+        siteKeyId: filters.siteKeyId,
+      });
+      setTopQuestions(list);
+    } catch (e) {
+      console.error(e);
+      setTopQuestionsError('TOP 20 질문 조회에 실패했습니다.');
+      setTopQuestions([]);
+    } finally {
+      setTopQuestionsLoading(false);
+    }
+  }, [filters.tenantId, filters.fromDate, filters.toDate, filters.siteKeyId]);
+
+  useEffect(() => {
+    loadTopQuestions();
+  }, [loadTopQuestions]);
 
   const onPrint = () => {
     window.print();
@@ -130,6 +160,15 @@ export default function AdminUsageStats() {
         onSearch={reload}
         loading={loading}
       />
+
+      <div className="mb-6">
+        <TopQuestionsCard
+          items={topQuestions}
+          loading={topQuestionsLoading}
+          error={topQuestionsError}
+        />
+      </div>
+
       <SummaryCard
         items={items}
         period={filters.period}

@@ -22,6 +22,12 @@ export interface UsageStatsQuery {
   size?: number;     // page size
 }
 
+/** 가장 많이 물어본 질문 1건 */
+export interface TopQuestionItem {
+  question: string;
+  count: number;
+}
+
 const buildParams = (query: UsageStatsQuery) => {
   const {
     tenantId,
@@ -41,6 +47,34 @@ const buildParams = (query: UsageStatsQuery) => {
   if (siteKeyId != null) params.siteKeyId = siteKeyId;
   if (channel) params.channel = channel;
   return params;
+};
+
+/** TOP 20 조회용 쿼리 (period/page/size 없음) */
+const buildTopQuestionsParams = (query: {
+  tenantId?: string;
+  fromDate?: string;
+  toDate?: string;
+  siteKeyId?: number;
+}) => {
+  const params: Record<string, string | number> = {};
+  if (query.tenantId) params.tenantId = query.tenantId;
+  if (query.fromDate) params.fromDate = query.fromDate;
+  if (query.toDate) params.toDate = query.toDate;
+  if (query.siteKeyId != null) params.siteKeyId = query.siteKeyId;
+  return params;
+};
+
+/**
+ * 가장 많이 물어본 질문 TOP 20 (기간/테넌트/사이트키 필터 적용)
+ */
+export const fetchTopQuestions = async (query: {
+  tenantId?: string;
+  fromDate?: string;
+  toDate?: string;
+  siteKeyId?: number;
+}): Promise<TopQuestionItem[]> => {
+  const params = buildTopQuestionsParams(query);
+  return okOrThrow(api.get<TopQuestionItem[]>(`${BASE}/top-questions`, { params }));
 };
 
 /**
