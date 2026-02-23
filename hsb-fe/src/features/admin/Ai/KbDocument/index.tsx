@@ -74,6 +74,7 @@ export default function AdminKbDocument() {
     setEditorOpen(false);
     setEditing(null);
     setUploadFile(null);
+    refetch(); // 닫을 때 목록 갱신 → 인덱싱 완료 등 최신 상태가 바로 반영되도록
   };
 
   /**

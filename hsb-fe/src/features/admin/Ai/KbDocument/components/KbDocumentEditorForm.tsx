@@ -20,6 +20,7 @@ const DEFAULT_FORM: KbDocumentRequest = {
   category: "",
   sourceUrl: "",
   tagsJson: "[]",
+  summaryPrompt: "",
   useTf: "Y",
   delTf: "N",
   // version 등 서버에서 관리하는 값이 있다면 Request에서 제외하는 게 보통입니다.
@@ -122,6 +123,7 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
         category: value.category ?? "",
         sourceUrl: value.sourceUrl ?? "",
         tagsJson: value.tagsJson ?? "[]",
+        summaryPrompt: value.summaryPrompt ?? "",
         useTf: value.useTf ?? "Y",
         delTf: value.delTf ?? "N",
       });
@@ -512,6 +514,25 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
             className="w-full h-10 border rounded px-2 text-sm"
             placeholder="https://..."
           />
+        </div>
+
+        {/* 요약 지시문 (선택) - ingest 시 LLM 요약에 사용 */}
+        <div className="md:col-span-2">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            요약 지시문 (선택)
+          </label>
+          <textarea
+            name="summaryPrompt"
+            value={form.summaryPrompt ?? ""}
+            onChange={handleChange}
+            rows={4}
+            maxLength={2000}
+            className="w-full border rounded px-2 py-1.5 text-sm resize-y"
+            placeholder="Bullet-summarize five key keywords in this document. For each keyword, provide a brief source textual explanation. Provide the entire response in English, followed by a full Korean translation."
+          />
+          <p className="mt-1 text-[11px] text-gray-400">
+            인덱싱 시 이 문서의 요약을 생성할 때 사용할 LLM 지시문입니다. 비우면 기본 지시문이 사용됩니다. (최대 2000자)
+          </p>
         </div>
 
         {/* 결과(태그) 표시 */}

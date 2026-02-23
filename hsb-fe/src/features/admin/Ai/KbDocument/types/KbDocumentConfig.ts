@@ -19,6 +19,7 @@ export interface KbDocumentResponse {
     sourceUrl: string;
     category: string;
     tagsJson: string | null;
+    summaryPrompt: string | null;
 
     useTf?: 'Y' | 'N';
     delTf?: 'Y' | 'N';
@@ -41,6 +42,8 @@ export type KbDocumentRequest = {
   sourceUrl?: string;   // URL 타입일 때 사용
   category?: string;
   tagsJson?: string;    // 기본 "[]"
+  /** ingest 시 요약 생성용 LLM 지시문. 비우면 Brain 기본값 사용 (최대 2000자) */
+  summaryPrompt?: string;
 
   useTf?: "Y" | "N";
   delTf?: "Y" | "N";
