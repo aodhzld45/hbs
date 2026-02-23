@@ -38,6 +38,7 @@ import BoardDetail from "./pages/Admin/Board/BoardDetail";
 import { UserMenuProvider } from './context/UserMenuContext';
 import UserRouteGuard from './components/Route/UserRouteGuard';
 import MaintenanceRouteGuard from './components/Route/MaintenanceRouteGuard';
+import ComingSoonPage from './components/Common/ComingSoonPage'
 
 // 사용자 페이지 imports
 import MainPage from './pages/MainPage';
@@ -90,6 +91,18 @@ function App() {
                   <Route path="/test/2depth" element={<SqlProblemTestPage />} />
                   <Route path="/test/kis" element={<KisPage />} />
                   <Route path="/test/ai" element={<AIPlayground />} />
+
+                  {/* 추가: 존재하지 않는 URL(오타/잘못된 경로) 처리 */}
+                  <Route
+                    path="*"
+                    element={
+                      <ComingSoonPage
+                        type="NOTICE"
+                        title="존재하지 않는 페이지입니다."
+                        description="입력하신 주소가 올바른지 확인해주세요."
+                      />
+                    }
+                  />
                 </Route>
               </Route>
 
