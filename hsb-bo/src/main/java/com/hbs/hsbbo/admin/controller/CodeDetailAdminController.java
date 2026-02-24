@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.service.CodeDetailAdminService;
 import com.hbs.hsbbo.common.dto.request.CodeDetailRequest;
 import com.hbs.hsbbo.common.dto.response.CodeDetailResponse;
@@ -25,11 +26,13 @@ public class CodeDetailAdminController {
         return codeDetailAdminService.getAllDetails(groupId);
     }
 
+    @AdminActionLog(action = "코드 상세 등록", detail = "")
     @PostMapping
-    public void createDetail(@RequestBody CodeDetailRequest req, String adminId) {
+    public void createDetail(@RequestBody CodeDetailRequest req, @RequestParam String adminId) {
         codeDetailAdminService.createDetail(req, adminId);
     }
 
+    @AdminActionLog(action = "코드 상세 순서 변경", detail = "id={id}")
     @PatchMapping("/{id}/order")
     public ResponseEntity<?> updateOrder(
             @PathVariable Long id,
@@ -40,6 +43,7 @@ public class CodeDetailAdminController {
         return ResponseEntity.ok().build();
     }
 
+    @AdminActionLog(action = "코드 상세 사용여부 변경", detail = "id={id}")
     @PatchMapping("/{id}/use-tf")
     public ResponseEntity<Void> updateGDetailUseTf(
             @PathVariable Long id,
@@ -51,17 +55,20 @@ public class CodeDetailAdminController {
         return ResponseEntity.ok().build();
     }
 
+    @AdminActionLog(action = "코드 상세 수정", detail = "id={id}")
     @PutMapping("/{id}")
-    public void updateDetail(@PathVariable Long id, @RequestBody CodeDetailRequest req, String adminId) {
+    public void updateDetail(@PathVariable Long id, @RequestBody CodeDetailRequest req, @RequestParam String adminId) {
         codeDetailAdminService.updateDetail(id, req, adminId);
     }
 
+    @AdminActionLog(action = "코드 상세 삭제", detail = "id={id}")
     @DeleteMapping("/{id}")
-    public void deleteDetail(@PathVariable Long id, String adminId) {
+    public void deleteDetail(@PathVariable Long id, @RequestParam String adminId) {
         codeDetailAdminService.deleteDetail(id, adminId);
     }
 
     // 엑셀 업로드
+    @AdminActionLog(action = "코드 상세 엑셀 업로드", detail = "groupId={groupId}")
     @PostMapping("/upload")
     public ResponseEntity<Void> uploadExcel(
             @RequestParam MultipartFile file,

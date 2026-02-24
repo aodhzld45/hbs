@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.controller.page;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.dto.request.page.PageSectionRequest;
 import com.hbs.hsbbo.admin.dto.response.page.PageSectionListResponse;
 import com.hbs.hsbbo.admin.service.page.PageSectionService;
@@ -33,6 +34,7 @@ public class PageSectionController {
     }
 
     // 페이지 섹션 등록
+    @AdminActionLog(action = "페이지 섹션 등록", detail = "")
     @PostMapping
     public ResponseEntity<?> createPageSection(
             @ModelAttribute PageSectionRequest request,
@@ -44,6 +46,7 @@ public class PageSectionController {
     }
 
     // 드래그앤 드랍 순서 변경
+    @AdminActionLog(action = "페이지 섹션 순서 변경", detail = "")
     @PutMapping("/order")
     public ResponseEntity<Void> updateSectionOrderRaw(
             @RequestBody List<PageSectionRequest> requestList) {
@@ -59,6 +62,7 @@ public class PageSectionController {
     }
 
     // 페이지 섹션 수정
+    @AdminActionLog(action = "페이지 섹션 수정", detail = "id={id}")
     @PutMapping("/{id}")
     public ResponseEntity<?> updatePageSection(
             @PathVariable Long id,
@@ -71,6 +75,7 @@ public class PageSectionController {
     }
 
     // 사용여부 변경
+    @AdminActionLog(action = "페이지 섹션 사용여부 변경", detail = "id={id}")
     @PatchMapping("/{id}/use-tf")
     public ResponseEntity<Long> updateUseTf(
             @PathVariable Long id,
@@ -83,6 +88,7 @@ public class PageSectionController {
     }
 
     // 삭제 (delTf = 'N')
+    @AdminActionLog(action = "페이지 섹션 삭제", detail = "id={id}")
     @DeleteMapping("/{id}")
     public ResponseEntity<Long> deletePage(
             @PathVariable Long id,

@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.dto.request.RoleMenuRequest;
 import com.hbs.hsbbo.admin.dto.response.RoleMenuResponse;
 import com.hbs.hsbbo.admin.service.AdminRoleMenuService;
@@ -23,6 +24,7 @@ public class AdminRoleMenuController {
     }
 
     // 2. 특정 권한 그룹(roleId)에 대해 메뉴 권한을 수정
+    @AdminActionLog(action = "역할 메뉴 권한 수정", detail = "roleId={roleId}")
     @PutMapping("/{roleId}/menus")
     public ResponseEntity<?> updateRoleMenus(
             @PathVariable Long roleId,

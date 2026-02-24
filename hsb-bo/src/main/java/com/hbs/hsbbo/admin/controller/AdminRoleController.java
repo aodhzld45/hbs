@@ -1,6 +1,6 @@
 package com.hbs.hsbbo.admin.controller;
 
-
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.domain.entity.AdminRole;
 import com.hbs.hsbbo.admin.service.AdminRoleService;
 import lombok.RequiredArgsConstructor;
@@ -23,18 +23,21 @@ public class AdminRoleController {
     }
     
     // 관리자 그룹 등록
+    @AdminActionLog(action = "관리자 역할 등록", detail = "")
     @PostMapping
     public AdminRole createAdminRole(@RequestBody AdminRole role) {
         return adminRoleService.createAdminRole(role);
     }
 
     // 관리자 그룹 수정
+    @AdminActionLog(action = "관리자 역할 수정", detail = "id={id}")
     @PutMapping("/{id}")
     public AdminRole updateAdminRole(@PathVariable Long id, @RequestBody AdminRole updated) {
         return adminRoleService.updateAdminRole(id, updated);
     }
 
     // 관리자 그룹 삭제
+    @AdminActionLog(action = "관리자 역할 삭제", detail = "id={id}")
     @PutMapping("/{id}/delete")
     public ResponseEntity<?> softDeleteAdminRole(@PathVariable Long id) {
         adminRoleService.softDeleteAdminRole(id);

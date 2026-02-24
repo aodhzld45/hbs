@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.domain.entity.AppCorsOrigin;
 import com.hbs.hsbbo.admin.dto.request.CorsOriginRequest;
 import com.hbs.hsbbo.admin.dto.response.CorsOriginListResponse;
@@ -59,6 +60,7 @@ public class CorsOriginController {
     }
 
     /** 생성 */
+    @AdminActionLog(action = "CORS Origin 등록", detail = "")
     @PostMapping
     public ResponseEntity<IdResponse> create(
             @Valid @RequestBody CorsOriginRequest req,
@@ -70,6 +72,7 @@ public class CorsOriginController {
     }
 
     /** 수정 */
+    @AdminActionLog(action = "CORS Origin 수정", detail = "id={id}")
     @PatchMapping("/{id}")
     public ResponseEntity<IdResponse> update(
             @PathVariable Long id,
@@ -81,6 +84,7 @@ public class CorsOriginController {
     }
 
     /** 사용 여부 변경 (Y/N) */
+    @AdminActionLog(action = "CORS Origin 사용여부 변경", detail = "id={id}")
     @PatchMapping("/{id}/use-tf")
     public ResponseEntity<IdResponse> updateUseTf(
             @PathVariable Long id,
@@ -92,6 +96,7 @@ public class CorsOriginController {
     }
 
     /** 소프트 삭제 (delTf = 'Y') */
+    @AdminActionLog(action = "CORS Origin 삭제", detail = "id={id}")
     @PatchMapping("/{id}/del-tf")
     public ResponseEntity<IdResponse> softDelete(
             @PathVariable Long id,

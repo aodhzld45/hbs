@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.ai.widgetconfig.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.ai.widgetconfig.dto.request.WidgetConfigRequest;
 import com.hbs.hsbbo.admin.ai.widgetconfig.dto.response.WidgetConfigListResponse;
 import com.hbs.hsbbo.admin.ai.widgetconfig.dto.response.WidgetConfigResponse;
@@ -39,6 +40,7 @@ public class WidgetConfigController {
     }
 
     // 생성
+    @AdminActionLog(action = "위젯 설정 등록", detail = "")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> create(
             @Valid @RequestPart("form") WidgetConfigRequest req,
@@ -50,6 +52,7 @@ public class WidgetConfigController {
     }
 
     // 수정
+    @AdminActionLog(action = "위젯 설정 수정", detail = "id={id}")
     @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> update(
             @PathVariable Long id,
@@ -62,6 +65,7 @@ public class WidgetConfigController {
     }
 
     // 사용 여부 토글(use_tf)
+    @AdminActionLog(action = "위젯 설정 사용여부 변경", detail = "id={id}")
     @PatchMapping("/{id}/use-tf")
     public ResponseEntity<Long> toggleUse(@PathVariable Long id,
                                           @RequestParam String actor) {
@@ -69,6 +73,7 @@ public class WidgetConfigController {
     }
 
     // 논리 삭제(del_tf='Y')
+    @AdminActionLog(action = "위젯 설정 삭제", detail = "id={id}")
     @PatchMapping("/{id}/del-tf")
     public ResponseEntity<Long> logicalDelete(@PathVariable Long id,
                                               @RequestParam String actor) {

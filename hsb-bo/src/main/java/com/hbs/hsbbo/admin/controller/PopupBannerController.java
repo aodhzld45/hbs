@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.dto.request.PopupBannerRequest;
 import com.hbs.hsbbo.admin.dto.response.PopupBannerListResponse;
 import com.hbs.hsbbo.admin.dto.response.PopupBannerResponse;
@@ -39,6 +40,7 @@ public class PopupBannerController {
     }
 
     // 등록
+    @AdminActionLog(action = "팝업 배너 등록", detail = "")
     @PostMapping
     public ResponseEntity<Long> createPopupBanner(
             @ModelAttribute PopupBannerRequest request,
@@ -49,6 +51,7 @@ public class PopupBannerController {
     }
 
     // 수정
+    @AdminActionLog(action = "팝업 배너 수정", detail = "id={id}")
     @PutMapping("/{id}")
     public ResponseEntity<Void> updatePopupBanner(
             @PathVariable Long id,
@@ -60,6 +63,7 @@ public class PopupBannerController {
     }
 
     // 순서 변경
+    @AdminActionLog(action = "팝업 배너 순서 변경", detail = "id={id}")
     @PutMapping("/{id}/order")
     public ResponseEntity<Void> updateBannerOrder(
             @PathVariable Long id,
@@ -71,6 +75,7 @@ public class PopupBannerController {
     }
 
     // 사용여부 변경
+    @AdminActionLog(action = "팝업 배너 사용여부 변경", detail = "id={id}")
     @PutMapping("/{id}/use-tf")
     public ResponseEntity<Void> updateUseTf(
             @PathVariable Long id,
@@ -82,6 +87,7 @@ public class PopupBannerController {
     }
 
     // 삭제 (delTf = 'N')
+    @AdminActionLog(action = "팝업 배너 삭제", detail = "id={id}")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePopupBanner(
             @PathVariable Long id,

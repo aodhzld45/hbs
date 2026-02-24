@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.ai.kb.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.ai.kb.dto.request.KbSourceRequest;
 import com.hbs.hsbbo.admin.ai.kb.dto.response.KbSourceListResponse;
 import com.hbs.hsbbo.admin.ai.kb.dto.response.KbSourceResponse;
@@ -40,6 +41,7 @@ public class KbSourceController {
     }
 
     // 등록
+    @AdminActionLog(action = "KB 소스 등록", detail = "id={id}")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<Long> create(
@@ -53,6 +55,7 @@ public class KbSourceController {
     }
 
     // 수정
+    @AdminActionLog(action = "KB 소스 수정", detail = "id={id}")
     @PutMapping("/{id}")
     public ResponseEntity<Long> update(
             @PathVariable Long id,
@@ -65,6 +68,7 @@ public class KbSourceController {
     }
 
     // 사용여부 토글
+    @AdminActionLog(action = "KB 소스 사용여부 변경", detail = "id={id}")
     @PatchMapping("/{id}/use-tf")
     public ResponseEntity<Long> toggleUse(@PathVariable Long id,
                                           @RequestParam String actor) {
@@ -74,6 +78,7 @@ public class KbSourceController {
     }
 
     // 논리 삭제(del_tf='Y')
+    @AdminActionLog(action = "KB 소스 삭제", detail = "id={id}")
     @PatchMapping("/{id}/del-tf")
     public ResponseEntity<Long> logicalDelete(@PathVariable Long id,
                                               @RequestParam String actor) {

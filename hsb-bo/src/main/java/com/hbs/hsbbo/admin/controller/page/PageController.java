@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.controller.page;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.domain.entity.page.CustomPage;
 import com.hbs.hsbbo.admin.dto.request.page.PageRequest;
 import com.hbs.hsbbo.admin.dto.response.page.PageResponse;
@@ -17,6 +18,7 @@ public class PageController {
     private final PageService pageService;
 
     // 페이지 등록
+    @AdminActionLog(action = "페이지 등록", detail = "")
     @PostMapping
     public ResponseEntity<?> createPage(@ModelAttribute PageRequest request,
                                         @RequestParam String adminId) {
@@ -39,6 +41,7 @@ public class PageController {
     }
 
     // 수정
+    @AdminActionLog(action = "페이지 수정", detail = "id={id}")
     @PutMapping("/{id}")
     public ResponseEntity<Long> updatePage(
             @PathVariable Long id,
@@ -51,6 +54,7 @@ public class PageController {
     }
 
     // 사용여부 변경
+    @AdminActionLog(action = "페이지 사용여부 변경", detail = "id={id}")
     @PutMapping("/{id}/use-tf")
     public ResponseEntity<Long> updateUseTf(
             @PathVariable Long id,
@@ -63,6 +67,7 @@ public class PageController {
     }
 
     // 삭제 (delTf = 'N')
+    @AdminActionLog(action = "페이지 삭제", detail = "id={id}")
     @DeleteMapping("/{id}")
     public ResponseEntity<Long> deletePage(
             @PathVariable Long id,

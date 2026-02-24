@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.dto.request.UserRoleRequest;
 import com.hbs.hsbbo.admin.dto.response.UserRoleResponse;
 import com.hbs.hsbbo.admin.service.AdminRoleUserService;
@@ -28,6 +29,7 @@ public class AdminRoleUserController {
 //    }
 
     // 특정 사용자에게 권한 부여
+    @AdminActionLog(action = "사용자 역할 부여", detail = "")
     @PutMapping
     public ResponseEntity<Void> assignRoleToUser(@RequestBody UserRoleRequest request) {
         adminRoleUserService.assignRoleToUser(request.getAdminId(), request.getRoleId());

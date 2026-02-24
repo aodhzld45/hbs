@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.ai.sitekey.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.ai.sitekey.domain.entity.SiteKey;
 import com.hbs.hsbbo.admin.ai.sitekey.dto.PagedResponse;
 import com.hbs.hsbbo.admin.ai.sitekey.dto.mapper.SiteKeyMapper;
@@ -29,6 +30,7 @@ public class SiteKeyController {
     private final SiteKeyRepository siteKeyRepository;
 
     //  사이트 키 등록
+    @AdminActionLog(action = "사이트 키 등록", detail = "")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public SiteKeyResponse create(
@@ -41,6 +43,7 @@ public class SiteKeyController {
     }
 
     // 사이트 키 수정
+    @AdminActionLog(action = "사이트 키 수정", detail = "id={id}")
     @PatchMapping("/{id}")
     public SiteKeyResponse update(
             @PathVariable Long id,
@@ -53,6 +56,7 @@ public class SiteKeyController {
     }
 
     // 간단 상태 변경
+    @AdminActionLog(action = "사이트 키 상태 변경", detail = "id={id}")
     @PatchMapping("/{id}/status")
     public SiteKeyResponse changeStatus(
             @PathVariable Long id,
@@ -65,6 +69,7 @@ public class SiteKeyController {
     }
 
     // 사용 여부 변경
+    @AdminActionLog(action = "사이트 키 사용여부 변경", detail = "id={id}")
     @PatchMapping("/{id}/use-tf")
     public ResponseEntity<Long> updateUseTf(
         @PathVariable Long id,
@@ -78,6 +83,7 @@ public class SiteKeyController {
     }
 
     // SiteKey 삭제 - 논리 삭제 (delTf = "Y")
+    @AdminActionLog(action = "사이트 키 삭제", detail = "id={id}")
     @PatchMapping("/{id}/del-tf")
     public ResponseEntity<Long> deleteSiteKey(
         @PathVariable Long id,

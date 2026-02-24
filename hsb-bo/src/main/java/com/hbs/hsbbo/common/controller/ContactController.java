@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.common.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.common.dto.request.ContactReplyRequest;
 import com.hbs.hsbbo.common.dto.request.ContactRequest;
 import com.hbs.hsbbo.common.dto.response.ContactListResponse;
@@ -101,6 +102,7 @@ public class ContactController {
         return ResponseEntity.ok(response);
     }
 
+    @AdminActionLog(action = "문의 삭제", detail = "id={id}")
     @PutMapping("/delete/{id}")
     public ResponseEntity<?> deleteContact(@PathVariable Long id) {
         contactService.deleteContact(id);

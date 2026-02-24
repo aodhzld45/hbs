@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.ai.promptprofile.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.ai.promptprofile.domain.entity.PromptProfile;
 import com.hbs.hsbbo.admin.ai.promptprofile.dto.request.PromptProfileRequest;
 import com.hbs.hsbbo.admin.ai.promptprofile.dto.response.PromptProfileListResponse;
@@ -65,6 +66,7 @@ public class PromptProfileController {
     }
 
     // 등록
+    @AdminActionLog(action = "프롬프트 프로필 등록", detail = "")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> create(
             @Valid @RequestPart("body") PromptProfileRequest body,
@@ -79,6 +81,7 @@ public class PromptProfileController {
     }
 
     // 수정
+    @AdminActionLog(action = "프롬프트 프로필 수정", detail = "id={id}")
     @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> update(
             @PathVariable Long id,
@@ -94,6 +97,7 @@ public class PromptProfileController {
     }
 
     // 사용여부 토글
+    @AdminActionLog(action = "프롬프트 프로필 사용여부 변경", detail = "id={id}")
     @PatchMapping("/{id}/use-tf")
     public ResponseEntity<Long> toggleUse(@PathVariable Long id,
                                           @RequestParam String actor) {
@@ -103,6 +107,7 @@ public class PromptProfileController {
     }
 
     // 논리 삭제(del_tf='Y')
+    @AdminActionLog(action = "프롬프트 프로필 삭제", detail = "id={id}")
     @PatchMapping("/{id}/del-tf")
     public ResponseEntity<Long> logicalDelete(@PathVariable Long id,
                                               @RequestParam String actor) {

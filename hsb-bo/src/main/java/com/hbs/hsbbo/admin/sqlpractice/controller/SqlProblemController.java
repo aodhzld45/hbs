@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.sqlpractice.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.sqlpractice.domain.type.ConstraintRule;
 import com.hbs.hsbbo.admin.sqlpractice.dto.request.ProblemRequest;
 import com.hbs.hsbbo.admin.sqlpractice.dto.response.ProblemDetailResponse;
@@ -21,6 +22,7 @@ public class SqlProblemController {
 
     private final SqlProblemService sqlProblemService;
 
+    @AdminActionLog(action = "SQL 문제 등록", detail = "")
     @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody ProblemRequest req,
                                     @RequestParam String adminId,
@@ -56,6 +58,7 @@ public class SqlProblemController {
     }
 
     /** 수정(JSON) */
+    @AdminActionLog(action = "SQL 문제 수정", detail = "id={id}")
     @PutMapping("/{id}")
     public void update(@PathVariable Long id,
                        @Valid @RequestBody ProblemRequest req,
@@ -64,14 +67,16 @@ public class SqlProblemController {
     }
 
     /** 소프트 삭제 */
+    @AdminActionLog(action = "SQL 문제 삭제", detail = "id={id}")
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id, @RequestParam String adminId) {
         sqlProblemService.softDeleteSqlProblem(id, adminId);
     }
 
     /** 사용 여부 토글/변경 */
+    @AdminActionLog(action = "SQL 문제 사용여부 변경", detail = "id={id}")
     @PatchMapping("/{id}/use-tf")
-    public void setUseTf(@PathVariable Long id, @RequestParam String useTf, String adminId) {
+    public void setUseTf(@PathVariable Long id, @RequestParam String useTf, @RequestParam String adminId) {
         sqlProblemService.toggleUseTf(id, useTf, adminId);
     }
 
@@ -80,6 +85,7 @@ public class SqlProblemController {
     //  - 프론트에서 multipart/form-data로 보낸다면 @ModelAttribute로 전환
     //  - 파일 업로드 없더라도 운영상 form-data를 선호하면 이 라우트를 사용
     // =========================
+    @AdminActionLog(action = "SQL 문제 등록(form)", detail = "")
     @PostMapping("/form")
     public ResponseEntity<?> createByForm(@Valid @ModelAttribute ProblemRequest req,
                                           @RequestParam String adminId,

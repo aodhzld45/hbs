@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.ai.kb.controller;
 
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.ai.kb.dto.request.KbDocumentRequest;
 import com.hbs.hsbbo.admin.ai.kb.dto.response.KbDocumentListResponse;
 import com.hbs.hsbbo.admin.ai.kb.dto.response.KbDocumentResponse;
@@ -46,6 +47,7 @@ public class KbDocumentController {
     }
 
     // 등록 (multipart: body + file)
+    @AdminActionLog(action = "KB 문서 등록", detail = "id={id}")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<KbDocumentResponse> create(
             @RequestParam(value = "actor") String actor,
@@ -57,6 +59,7 @@ public class KbDocumentController {
     }
 
     // 수정 (multipart: body + file)
+    @AdminActionLog(action = "KB 문서 수정", detail = "id={id}")
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<KbDocumentResponse> update(
             @PathVariable("id") Long id,
@@ -69,6 +72,7 @@ public class KbDocumentController {
     }
 
     // 사용 여부 토글
+    @AdminActionLog(action = "KB 문서 사용여부 변경", detail = "id={id}")
     @PatchMapping("/{id}/use-tf")
     public ResponseEntity<Long> toggleUse(
             @PathVariable("id") Long id,
@@ -79,6 +83,7 @@ public class KbDocumentController {
     }
 
     // 소프트 삭제(del_tf='Y')
+    @AdminActionLog(action = "KB 문서 삭제", detail = "id={id}")
     @PatchMapping("/{id}/del-tf")
     public ResponseEntity<Long> delete(
             @PathVariable("id") Long id,

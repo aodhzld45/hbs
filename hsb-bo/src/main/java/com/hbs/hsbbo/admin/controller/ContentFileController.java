@@ -1,6 +1,6 @@
 package com.hbs.hsbbo.admin.controller;
 
-
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.domain.entity.ContentFile;
 import com.hbs.hsbbo.admin.domain.type.ContentType;
 import com.hbs.hsbbo.admin.domain.type.FileType;
@@ -65,6 +65,7 @@ public class ContentFileController {
     }
     
     // 콘텐츠 등록
+    @AdminActionLog(action = "콘텐츠 등록", detail = "")
     @PostMapping(value = "/content-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadContents(
             @RequestPart(value = "file", required = false) MultipartFile file,
@@ -105,6 +106,7 @@ public class ContentFileController {
     }
 
     // s3 콘텐츠 업로드
+    @AdminActionLog(action = "콘텐츠 S3 업로드", detail = "")
     @PostMapping(value = "/s3-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> s3UploadContents(
             @RequestPart(value = "file", required = false) MultipartFile file,
@@ -149,6 +151,7 @@ public class ContentFileController {
 
 
     // 콘텐츠 수정
+    @AdminActionLog(action = "콘텐츠 수정", detail = "id={id}")
     @PutMapping(value = "/content-files/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateContent(
             @PathVariable Long id,
@@ -191,6 +194,7 @@ public class ContentFileController {
     }
 
     // 콘텐츠 삭제 (delTf = Y) - 실제 물리적 삭제가 아닌 논리적 삭제
+    @AdminActionLog(action = "콘텐츠 삭제", detail = "id={id}")
     @PutMapping("/content-files/{id}/delete")
     public ResponseEntity<?> softDeleteContent(@PathVariable Long id) {
         try {

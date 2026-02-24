@@ -1,6 +1,6 @@
 package com.hbs.hsbbo.admin.controller;
 
-
+import com.hbs.hsbbo.admin.aop.AdminActionLog;
 import com.hbs.hsbbo.admin.domain.type.BoardType;
 import com.hbs.hsbbo.admin.dto.request.BoardRequest;
 import com.hbs.hsbbo.admin.dto.response.BoardListResponse;
@@ -67,6 +67,7 @@ public class BoardController {
         return ResponseEntity.ok(response);
     }
 
+    @AdminActionLog(action = "게시글 등록", detail = "")
     @PostMapping("/board-create")
     public ResponseEntity<?> createBoard(
             @ModelAttribute BoardRequest request,
@@ -89,6 +90,7 @@ public class BoardController {
 //            System.out.println(" 첨부파일 없음");
 //        }
     }
+    @AdminActionLog(action = "게시글 수정", detail = "id={id}")
     @PutMapping("/board-update/{id}")
     public ResponseEntity<?> updateBoard(
             @PathVariable Long id,
@@ -113,12 +115,14 @@ public class BoardController {
         return ResponseEntity.ok("수정 성공");
     }
 
+    @AdminActionLog(action = "게시글 삭제", detail = "id={id}")
     @PutMapping("/board-delete/{id}")
     public ResponseEntity<?> deleteBoard(@PathVariable Long id) {
         boardService.deleteBoard(id);
         return ResponseEntity.ok("삭제 성공");
     }
 
+    @AdminActionLog(action = "게시글 사용여부 변경", detail = "id={id}")
     @PutMapping("/use-tf/{id}")
     public ResponseEntity<Long> updateUseTf(
             @PathVariable Long id,
