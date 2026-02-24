@@ -222,7 +222,7 @@ const CodeManager: React.FC = () => {
     formData.append("adminId", adminId!);
 
     try {
-      await uploadCodeDetailsExcel(formData);
+      await uploadCodeDetailsExcel(formData, adminId!);
       alert("엑셀 업로드가 완료되었습니다!");
       loadAllDetailTree(selectedGroup!.id);
     } catch (error) {

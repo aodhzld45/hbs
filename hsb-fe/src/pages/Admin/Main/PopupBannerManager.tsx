@@ -1,36 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../../components/Layout/AdminLayout';
-import { AdminMenu } from '../../../types/Admin/AdminMenu';
 import { useAuth } from '../../../context/AuthContext';
-
-import { useLocation } from "react-router-dom";
 import { FILE_BASE_URL } from '../../../config/config';
 import dayjs from 'dayjs';
 import Pagination from '../../../components/Common/Pagination';
-
-
+import { useCurrentPageTitle } from '../../../features/admin/Common/hooks/useCurrentPageTitle';
 import { PopupBannerItem } from '../../../types/Admin/PopupBannerItem';
 import PopupBannerModal from "../../../components/Admin/PopupBanner/PopupBannerModal";
-import { 
+import {
   fetchPopupBannerList,
   fetchPopupBannerOrder,
   updatePopupBannerUseTf,
   fetchPopupBannerDelete
 } from '../../../services/Admin/popupBannerApi';
 
-import {
-  fetchAdminMenus
-} from '../../../services/Admin/adminMenuApi';
-
 const PopupBannerManager: React.FC = () => {
-  const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
-  const [currentMenuTitle, setCurrentMenuTitle] = useState<string | null>(null);
-  const [error, setError] = useState<string>('');
-
+  const currentMenuTitle = useCurrentPageTitle();
   const admin = useAuth();
   const [adminId, setAdminId] = useState(admin.admin?.id || null);
   const [items, setItems] = useState<PopupBannerItem[]>([]);
-  
+
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PopupBannerItem | null>(null);
@@ -42,35 +31,7 @@ const PopupBannerManager: React.FC = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
 
-  const location = useLocation();
-
-  const loadMenus = async () => {
-    try {
-      const data = await fetchAdminMenus();
-      setMenus(data);
-
-      // 현재 URL과 일치하는 메뉴 찾기
-      const matched = data.find(
-        (menu) => menu.url === location.pathname
-      );
-
-      if (matched) {
-        setCurrentMenuTitle(matched.name);
-      } else {
-        setCurrentMenuTitle(null);
-      }
- 
-    } catch (err) {
-      console.error(err);
-      setError('메뉴 목록을 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 추후에 공통으로 분리 -> 현재 메뉴 불러오기.
   useEffect(() => {
-    loadMenus();
     setAdminId(admin.admin?.id || null);
   }, [admin.admin?.id]);
 

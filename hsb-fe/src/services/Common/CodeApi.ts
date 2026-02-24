@@ -103,11 +103,12 @@ export const deleteCodeDetail = async (id: number, adminId : string) => {
   });
 };
 
-export const uploadCodeDetailsExcel = async (formData: FormData) => {
+export const uploadCodeDetailsExcel = async (formData: FormData, adminId: string) => {
   return api.post(
     `/admin/code-details/upload`,
     formData,
     {
+      params: { adminId },
       headers: {
         "Content-Type": "multipart/form-data",
       },

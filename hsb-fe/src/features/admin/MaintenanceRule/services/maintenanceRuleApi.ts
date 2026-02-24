@@ -9,8 +9,13 @@ export const getMaintenanceConfig = async (): Promise<MaintenanceConfig> => {
     );
   };
 
-export const saveMaintenanceConfig = async (cfg: MaintenanceConfig): Promise<MaintenanceConfig> => {
-    return okOrThrow(
-        api.put<MaintenanceConfig>(BASE, cfg)
-    );
+export const saveMaintenanceConfig = async (
+  cfg: MaintenanceConfig,
+  actor?: string
+): Promise<MaintenanceConfig> => {
+  return okOrThrow(
+    api.put<MaintenanceConfig>(BASE, cfg, {
+      params: actor ? { actor } : undefined,
+    })
+  );
 };

@@ -5,8 +5,11 @@ import {
   MaintenanceRule,
 } from "../types/maintenanceRule";
 import { getMaintenanceConfig, saveMaintenanceConfig } from "../services/maintenanceRuleApi";
+import { useAuth } from "../../../../context/AuthContext";
 
 export function useMaintenanceConfig() {
+  const { admin } = useAuth();
+  const actorId = admin?.id ?? admin?.email ?? "system";
   const [config, setConfig] = useState<MaintenanceConfig>(DEFAULT_MAINTENANCE_CONFIG);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -35,18 +38,21 @@ export function useMaintenanceConfig() {
     try {
       setSaving(true);
       setError(null);
-      await saveMaintenanceConfig({
-        ...config,
-        pollIntervalSec: Number(config.pollIntervalSec ?? 15),
-        adminBypassPrefix: config.adminBypassPrefix ?? "/admin",
-        rules: config.rules ?? [],
-      });
+      await saveMaintenanceConfig(
+        {
+          ...config,
+          pollIntervalSec: Number(config.pollIntervalSec ?? 15),
+          adminBypassPrefix: config.adminBypassPrefix ?? "/admin",
+          rules: config.rules ?? [],
+        },
+        actorId
+      );
     } catch (e: any) {
       setError(e?.message ?? "저장 실패");
     } finally {
       setSaving(false);
     }
-  }, [config]);
+  }, [config, actorId]);
 
   useEffect(() => {
     load();

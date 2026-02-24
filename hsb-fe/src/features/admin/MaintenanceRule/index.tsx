@@ -1,5 +1,4 @@
 import { useMemo, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
 import MaintenanceConfigPanel from "./components/MaintenanceConfigPanel";
 import MaintenanceRuleTable from "./components/MaintenanceRuleTable";
 import MaintenanceRuleModal from "./components/MaintenanceRuleModal";
@@ -7,42 +6,15 @@ import MaintenanceRulePreview from "./components/MaintenanceRulePreview";
 import { useMaintenanceConfig } from "./hooks/useMaintenanceConfig";
 import { useRuleEditor } from "./hooks/useRuleEditor";
 import { MaintenanceRule } from "./types/maintenanceRule";
-
+import { useCurrentPageTitle } from "../../admin/Common/hooks/useCurrentPageTitle";
 import AdminLayout from "../../../components/Layout/AdminLayout";
 import { useAuth } from "../../../context/AuthContext";
-import { fetchAdminMenus } from "../../../services/Admin/adminMenuApi";
-import type { AdminMenu } from "../../../types/Admin/AdminMenu";
-
 
 export default function MaintenanceRulePage() {
-  /** ── 공통 헤더/메뉴 처리 ───────────────────────────────────────────── */
-  const location = useLocation();
+  const currentMenuTitle = useCurrentPageTitle();
   const { admin } = useAuth();
   const [adminId, setAdminId] = useState<string | null>(admin?.id || null);
   const actorId = String(admin?.id ?? admin?.email ?? "system");
-  const [currentMenuTitle, setCurrentMenuTitle] = useState<string | null>(null);
-  const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
-  const [menuLoading, setMenuLoading] = useState(true);
-  const [menuError, setMenuError] = useState<string>("");
-
-  // ===== 메뉴 로딩 =====
-  const loadMenus = async () => {
-    try {
-      const data = await fetchAdminMenus();
-      setMenus(data);
-      const matched = data.find((m) => m.url === location.pathname);
-      setCurrentMenuTitle(matched ? matched.name : null);
-    } catch (e) {
-      console.error(e);
-      setMenuError("메뉴 목록을 불러오는데 실패했습니다.");
-    } finally {
-      setMenuLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadMenus();
-  }, [location.pathname]);
 
   useEffect(() => {
     setAdminId(admin?.id || null);

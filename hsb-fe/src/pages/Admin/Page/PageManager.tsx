@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-// 공통 메뉴 목록 불러오기
-import {
-  fetchAdminMenus
-} from '../../../services/Admin/adminMenuApi';
-import { AdminMenu } from '../../../types/Admin/AdminMenu';
-import { useLocation } from "react-router-dom";
-
-// 관리자 정보 불러오기
+import { useCurrentPageTitle } from "../../../features/admin/Common/hooks/useCurrentPageTitle";
 import AdminLayout from "../../../components/Layout/AdminLayout";
 import { useAuth } from '../../../context/AuthContext';
 
@@ -27,49 +20,17 @@ interface Section {
 
 const PageManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const location = useLocation();
+  const currentMenuTitle = useCurrentPageTitle();
 
-  const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
-  const [currentMenuTitle, setCurrentMenuTitle] = useState<string | null>(null);
-  const [error, setError] = useState<string>('');
-
-  const  admin  = useAuth();
+  const admin = useAuth();
   const [adminId, setAdminId] = useState(admin.admin?.id || null);
 
   const [pageItem, setPageItem] = useState<PageItem[]>([]);
   const [editPageItem, setEditPageItem] = useState<PageItem | null>(null);
   const [showPageModal, setShowPageModal] = useState(false);
-
-  // 현재 선택된 페이지
   const [selectedPageId, setSelectedPageId] = useState<number | null>(null);
 
-  const loadMenus = async () => {
-    try {
-      const data = await fetchAdminMenus();
-      setMenus(data);
-
-      // 현재 URL과 일치하는 메뉴 찾기
-      const matched = data.find(
-        (menu) => menu.url === location.pathname
-      );
-
-      if (matched) {
-        setCurrentMenuTitle(matched.name);
-      } else {
-        setCurrentMenuTitle(null);
-      }
- 
-    } catch (err) {
-      console.error(err);
-      setError('메뉴 목록을 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 추후에 공통으로 분리 -> 현재 메뉴 불러오기.
   useEffect(() => {
-    loadMenus();
     setAdminId(admin.admin?.id || null);
   }, [admin.admin?.id]);
 

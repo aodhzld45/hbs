@@ -4,46 +4,15 @@ import CorsOriginTable from './components/CorsOriginTable';
 import CorsOriginFormModal from './components/CorsOriginFormModal';
 import type { CorsOrigin, CorsOriginRequest } from './types/CorsOrigin';
 import { useCorsOriginList, useCorsOriginDetail, useCorsOriginMutations } from './hooks/useCorsOrigin';
-import Pagination from "../../../components/Common/Pagination"; // 경로 확인
-
-// 공통 메뉴 목록 불러오기
-import { fetchAdminMenus } from '../../../services/Admin/adminMenuApi';
-import type { AdminMenu } from '../../../types/Admin/AdminMenu';
-import { useLocation } from "react-router-dom";
-
-// 관리자 정보 불러오기
+import Pagination from "../../../components/Common/Pagination";
+import { useCurrentPageTitle } from "../../admin/Common/hooks/useCurrentPageTitle";
 import AdminLayout from "../../../components/Layout/AdminLayout";
 import { useAuth } from "../../../context/AuthContext";
 
 export default function CorsOriginPage() {
-  /** ── 공통 헤더/메뉴 처리 ───────────────────────────────────────────── */
-  const location = useLocation();
+  const currentMenuTitle = useCurrentPageTitle();
   const { admin } = useAuth();
   const actorId = String(admin?.id ?? admin?.email ?? 'system');
-
-  const [menus, setMenus] = React.useState<(AdminMenu & { label?: string })[]>([]);
-  const [currentMenuTitle, setCurrentMenuTitle] = React.useState<string | null>(null);
-  const [menuLoading, setMenuLoading] = React.useState(true);
-  const [menuError, setMenuError] = React.useState<string>("");
-
-  const loadMenus = async () => {
-    try {
-      const data = await fetchAdminMenus();
-      setMenus(data);
-      const matched = data.find((m) => m.url === location.pathname);
-      setCurrentMenuTitle(matched ? matched.name : null);
-    } catch (e) {
-      console.error(e);
-      setMenuError("메뉴 목록을 불러오는데 실패했습니다.");
-    } finally {
-      setMenuLoading(false);
-    }
-  };
-
-  React.useEffect(() => {
-    void loadMenus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
 
   /** ── 목록 훅 (검색/필터/페이징/정렬 + 데이터 + 상태) ─────────────── */
   const {
@@ -124,7 +93,7 @@ export default function CorsOriginPage() {
   return (
     <AdminLayout>
       <div className="space-y-4">
-        <div className="text-xl font-semibold">CORS Origin 관리</div>
+        <div className="text-xl font-semibold">{currentMenuTitle}</div>
 
         {/* 검색바 */}
         <div className="bg-gray-50 p-3 rounded-lg flex flex-col gap-2 sm:flex-row sm:items-center">

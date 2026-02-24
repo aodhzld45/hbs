@@ -7,15 +7,8 @@ import UsageTable from './components/UsageTable';
 import TopQuestionsCard from './components/TopQuestionsCard';
 import { fetchUsageStatsExcel, fetchTopQuestions } from './services/usageStatsApi';
 import type { TopQuestionItem } from './services/usageStatsApi';
-
-// 공통 메뉴 목록 불러오기
-import {
-  fetchAdminMenus
-} from '../../../../services/Admin/adminMenuApi';
-import { AdminMenu } from '../../../../types/Admin/AdminMenu';
-import { useLocation, useSearchParams } from "react-router-dom";
-
-// 관리자 정보 불러오기
+import { useCurrentPageTitle } from '../../Common/hooks/useCurrentPageTitle';
+import { useSearchParams } from "react-router-dom";
 import AdminLayout from "../../../../components/Layout/AdminLayout";
 import { useAuth } from "../../../../context/AuthContext";
 
@@ -25,37 +18,13 @@ export default function AdminUsageStats() {
   const [topQuestionsLoading, setTopQuestionsLoading] = useState(false);
   const [topQuestionsError, setTopQuestionsError] = useState<string | null>(null);
 
-    // 공통 헤더/메뉴 관련
-    const location = useLocation();
-    const { admin } = useAuth();
-    const [adminId, setAdminId] = useState<string | null>(admin?.id || null);
-    const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
-    const [currentMenuTitle, setCurrentMenuTitle] = useState<string | null>(null);
-    const [menuLoading, setMenuLoading] = useState(true);
-    const [menuError, setMenuError] = useState<string>("");
-    
-    // ===== 메뉴 로딩 =====
-    const loadMenus = async () => {
-        try {
-        const data = await fetchAdminMenus();
-        setMenus(data);
-        const matched = data.find((m) => m.url === location.pathname);
-        setCurrentMenuTitle(matched ? matched.name : null);
-        } catch (e) {
-        console.error(e);
-        setMenuError("메뉴 목록을 불러오는데 실패했습니다.");
-        } finally {
-        setMenuLoading(false);
-        }
-    };
-  
-    useEffect(() => {
-    loadMenus();
-    }, [location.pathname]);
-  
-    useEffect(() => {
+  const currentMenuTitle = useCurrentPageTitle();
+  const { admin } = useAuth();
+  const [adminId, setAdminId] = useState<string | null>(admin?.id || null);
+
+  useEffect(() => {
     setAdminId(admin?.id || null);
-    }, [admin?.id]);
+  }, [admin?.id]);
 
 
   const {

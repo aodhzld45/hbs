@@ -1,14 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-// 공통 메뉴 목록 불러오기
-import {
-  fetchAdminMenus
-} from '../../../services/Admin/adminMenuApi';
-import { AdminMenu } from '../../../types/Admin/AdminMenu';
-import { useLocation } from "react-router-dom";
-
-// 관리자 정보 불러오기
+import { useCurrentPageTitle } from "../Common/hooks/useCurrentPageTitle";
 import AdminLayout from "../../../components/Layout/AdminLayout";
 import { useAuth } from '../../../context/AuthContext';
 
@@ -27,16 +20,10 @@ import { ProblemItem, ConstraintRule } from './types/ProblemItem';
 import { ProblemPayload } from "./types/ProblemPayload";
 
 const SqlProblemManager: React.FC = () => {
-  // 공통 헤더/메뉴 관련
-  const location = useLocation();
+  const currentMenuTitle = useCurrentPageTitle();
   const { admin } = useAuth();
   const [adminId, setAdminId] = useState<string | null>(admin?.id || null);
-  const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
-  const [currentMenuTitle, setCurrentMenuTitle] = useState<string | null>(null);
-  const [menuLoading, setMenuLoading] = useState(true);
-  const [menuError, setMenuError] = useState<string>("");
 
-  // 목록/검색/페이징 상태 (부모에서 관리)
   const [items, setItems] = useState<ProblemItem[]>([]);
   const [keyword, setKeyword] = useState<string>("");
   const [level, setLevel] = useState<number | undefined>(undefined);
@@ -59,30 +46,11 @@ const SqlProblemManager: React.FC = () => {
   const [editItem, setEditItem] = useState<ProblemItem | null>(null);
   
 
-  // ===== 메뉴 로딩 =====
-  const loadMenus = async () => {
-    try {
-      const data = await fetchAdminMenus();
-      setMenus(data);
-      const matched = data.find((m) => m.url === location.pathname);
-      setCurrentMenuTitle(matched ? matched.name : null);
-    } catch (e) {
-      console.error(e);
-      setMenuError("메뉴 목록을 불러오는데 실패했습니다.");
-    } finally {
-      setMenuLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadMenus();
-  }, [location.pathname]);
-
   useEffect(() => {
     setAdminId(admin?.id || null);
   }, [admin?.id]);
 
- // ===== 목록 조회 =====
+  // ===== 목록 조회 =====
  const loadList = async () => {
     setLoading(true);
     try {

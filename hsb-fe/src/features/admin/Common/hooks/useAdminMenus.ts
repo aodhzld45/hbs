@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
 import { fetchAdminMenus } from "../../../../services/Admin/adminMenuApi";
 import type { AdminMenu } from "../../../../types/Admin/AdminMenu";
+import { useCurrentPageTitle } from "./useCurrentPageTitle";
 
 export function useAdminMenus() {
-  const location = useLocation();
-
   const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
   const [menuLoading, setMenuLoading] = useState(true);
   const [menuError, setMenuError] = useState<string>("");
+
+  const currentMenuTitle = useCurrentPageTitle();
 
   const loadMenus = useCallback(async () => {
     try {
@@ -27,11 +27,6 @@ export function useAdminMenus() {
   useEffect(() => {
     void loadMenus();
   }, [loadMenus]);
-
-  const currentMenuTitle = useMemo(() => {
-    const matched = menus.find((m) => m.url === location.pathname);
-    return matched ? matched.name : null;
-  }, [menus, location.pathname]);
 
   return {
     menus,
