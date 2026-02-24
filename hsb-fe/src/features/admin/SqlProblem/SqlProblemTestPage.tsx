@@ -79,7 +79,7 @@ const handleSubmit = async () => {
     if (sendAs === "json") {
       // ✅ JSON: POST /api/sql-problems + adminId는 params로
       res = await api.post(
-        '/sql-problems',
+        '/admin/sql-problems',
         payload,
         { params: { adminId } }
       );
@@ -101,7 +101,7 @@ const handleSubmit = async () => {
       if (useTf) fd.append("useTf", useTf);
 
       res = await api.post(
-        '/sql-problems/form',
+        '/admin/sql-problems/form',
         fd,
         {
           params: { adminId },

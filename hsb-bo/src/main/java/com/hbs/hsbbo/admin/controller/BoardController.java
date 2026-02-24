@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -74,16 +73,8 @@ public class BoardController {
             @RequestPart(value = "files", required = false)List<MultipartFile> files
             ) {
 
-        try {
-            boardService.createBoard(request, files);
-            return ResponseEntity.ok("등록이 성공했습니다.");
-
-        } catch (Exception e) {
-            e.printStackTrace(); // 콘솔 확인용 로그
-            return ResponseEntity
-                    .status(500)
-                    .body("등록에 실패했습니다. ");
-        }
+        boardService.createBoard(request, files);
+        return ResponseEntity.ok("등록이 성공했습니다.");
 
 //        System.out.println("요청 처리 정보: " + request.toString());
 
@@ -118,22 +109,14 @@ public class BoardController {
 //            System.out.println("첨부파일 없음");
 //        }
 
-        try {
-            boardService.updateBoard(id, request, files);
-            return ResponseEntity.ok("수정 성공");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("수정 실패");
-        }
+        boardService.updateBoard(id, request, files);
+        return ResponseEntity.ok("수정 성공");
     }
 
     @PutMapping("/board-delete/{id}")
     public ResponseEntity<?> deleteBoard(@PathVariable Long id) {
-        try {
-            boardService.deleteBoard(id);
-            return ResponseEntity.ok("삭제 성공");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("삭제 실패");
-        }
+        boardService.deleteBoard(id);
+        return ResponseEntity.ok("삭제 성공");
     }
 
     @PutMapping("/use-tf/{id}")

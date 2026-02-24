@@ -15,7 +15,7 @@ import java.net.URI;
 
 @RestController
 @Slf4j
-@RequestMapping("/api/ai/kb-source")
+@RequestMapping("/api/admin/ai/kb-source")
 @RequiredArgsConstructor
 public class KbSourceController {
     private final KbSourceService kbSourceService;
@@ -49,7 +49,7 @@ public class KbSourceController {
     ){
         Long id = kbSourceService.create(req, actor);
 
-        return ResponseEntity.created(URI.create("/api/ai/kb-source/" + id)).body(id);
+        return ResponseEntity.created(URI.create("/api/admin/ai/kb-source/" + id)).body(id);
     }
 
     // 수정

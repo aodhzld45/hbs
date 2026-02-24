@@ -1,6 +1,6 @@
 import api, { okOrThrow } from "../../../../../services/api";
 import {KbSourceListResponse, KbSourceRequest, KbSourceResponse } from '../types/kbSourceConfig'
-const BASE = '/ai/kb-source'
+const BASE = '/admin/ai/kb-source'
 
     // 목록 필터 + 페이징
     export async function fetchKbSourceList(params?: {

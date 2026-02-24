@@ -24,12 +24,12 @@ export const fetchSiteKeyList = async (
         sort: query.sort || "regDate,desc",
     };
     return okOrThrow(
-        api.get<PagedResponse<SiteKeySummary>>("/ai/site-keys", { params })
+        api.get<PagedResponse<SiteKeySummary>>("/admin/ai/site-keys", { params })
     );
 }
 
 export async function fetchLinkedSiteKeys(widgetConfigId: number) {
-  const { data } = await api.get('/ai/site-keys/linked', { params: { widgetConfigId }});
+  const { data } = await api.get('/admin/ai/site-keys/linked', { params: { widgetConfigId }});
   return data as SiteKeySummary[];
 }
 
@@ -37,25 +37,25 @@ export async function fetchLinkedSiteKeys(widgetConfigId: number) {
 export const fetchSiteKeyDetail = async (
     id: number
     ): Promise<SiteKeyResponse> => {
-    return okOrThrow(api.get<SiteKeyResponse>(`/ai/site-keys/${id}`));
+    return okOrThrow(api.get<SiteKeyResponse>(`/admin/ai/site-keys/${id}`));
 }
 
 // 사이트키 생성 API 요청
 export const createSiteKey = (body: CreateRequest, actorId: string | number) =>
   okOrThrow<SiteKeyResponse>(
-    api.post("/ai/site-keys", body, { params: { actor: String(actorId) } })
+    api.post("/admin/ai/site-keys", body, { params: { actor: String(actorId) } })
 );
 
 // 사이트키 수정 API 요청
 export const updateSiteKey = (id: number, body: UpdateRequest, actorId: string | number) =>
   okOrThrow<SiteKeyResponse>(
-    api.patch(`/ai/site-keys/${id}`, body, { params: { actor: String(actorId) } })
+    api.patch(`/admin/ai/site-keys/${id}`, body, { params: { actor: String(actorId) } })
 );
 
 // 사이트키 상태 변경 API 요청
 export const changeSiteKeyStatus = (id: number, status: Status, notes: string | undefined, actorId: string | number) =>
   okOrThrow<SiteKeyResponse>(
-    api.patch(`/ai/site-keys/${id}/status`, { status, notes } as StatusRequest, {
+    api.patch(`/admin/ai/site-keys/${id}/status`, { status, notes } as StatusRequest, {
       params: { actor: String(actorId) }
     })
   );
@@ -63,7 +63,7 @@ export const changeSiteKeyStatus = (id: number, status: Status, notes: string | 
 // 사이트키 사용여부 변경 API 요청
 export const updateSiteKeyUseTf = (id: number, newUseTf: "Y" | "N", actorId: string | number) => {
   return okOrThrow<number>(
-    api.patch(`/ai/site-keys/${id}/use-tf`, null, {
+    api.patch(`/admin/ai/site-keys/${id}/use-tf`, null, {
       params: { newUseTf, actor: String(actorId) },
     })
   )
@@ -72,7 +72,7 @@ export const updateSiteKeyUseTf = (id: number, newUseTf: "Y" | "N", actorId: str
 // 사이트키 삭제 API 요청
 export const deleteSiteKey = (id: number, actorId: string | number) => {
   return okOrThrow<number>(
-    api.patch(`/ai/site-keys/${id}/del-tf`, null, {
+    api.patch(`/admin/ai/site-keys/${id}/del-tf`, null, {
       params: { actor: String(actorId) },
     })
   )
@@ -81,5 +81,5 @@ export const deleteSiteKey = (id: number, actorId: string | number) => {
 // (선택) 사이트키 검증 API 요청 - verify는 actor 안 받으면 기존대로
 export const verifySiteKey = (siteKey: string, clientDomain: string) =>
   okOrThrow<{ ok: boolean; status: Status }>(
-    api.post(`/ai/site-keys/verify`, { siteKey, clientDomain })
+    api.post(`/admin/ai/site-keys/verify`, { siteKey, clientDomain })
 );

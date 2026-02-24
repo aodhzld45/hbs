@@ -103,12 +103,8 @@ public class ContactController {
 
     @PutMapping("/delete/{id}")
     public ResponseEntity<?> deleteContact(@PathVariable Long id) {
-        try {
-            contactService.deleteContact(id);
-            return ResponseEntity.ok("삭제 성공");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("삭제 실패");
-        }
+        contactService.deleteContact(id);
+        return ResponseEntity.ok("삭제 성공");
     }
 
 }

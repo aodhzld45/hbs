@@ -71,7 +71,10 @@ public class SecurityConfig {
                                 "/api/v3/api-docs/**","/api/swagger-ui/**","/api/swagger-ui.html",  // /api 밑 경로 허용
                                 "/files/**","/api/kis/**").permitAll()
 
-                        // 관리자 API만 인증
+                        // 메인 화면 노출용 팝업 목록 (인증 없이 조회)
+                        .requestMatchers(HttpMethod.GET, "/api/admin/popup-banner/visible").permitAll()
+
+                        // 관리자 API 인증
                         .requestMatchers("/api/admin/**").authenticated()
                         .anyRequest().permitAll()
                 )

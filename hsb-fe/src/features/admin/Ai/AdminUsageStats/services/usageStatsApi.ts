@@ -6,7 +6,7 @@ import {
   Period,
 } from "../types/usageStats";
 
-const BASE = "/ai/usage-stats";
+const BASE = "/admin/ai/usage-stats";
 
 export interface UsageStatsQuery {
   tenantId?: string;

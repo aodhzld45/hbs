@@ -10,7 +10,7 @@ export const fetchPopupBannerList = async (
     page: number,
     size: number
   ): Promise<{items: PopupBannerItem[]; totalCount: number; totalPages: number;}> => {
-    const { data } = await api.get('/popup-banner/list', {
+    const { data } = await api.get('/admin/popup-banner/list', {
       params: {
         type,
         keyword,
@@ -25,7 +25,7 @@ export const fetchPopupBannerList = async (
  * 노출용 배너/팝업 목록 조회 (메인화면용)
  */
 export const fetchVisiblePopupBanners = async (): Promise<PopupBannerItem[]> => {
-  const { data } = await api.get('/popup-banner/visible');
+  const { data } = await api.get('/admin/popup-banner/visible');
   return data;
 };
 
@@ -36,7 +36,7 @@ export const fetchPopupBannerCreate = async (
   formData: FormData,
   adminId: string
 ): Promise<number> => {
-  const { data } = await api.post(`/popup-banner?adminId=${adminId}`, formData, {
+  const { data } = await api.post(`/admin/popup-banner?adminId=${adminId}`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -52,7 +52,7 @@ export const fetchPopupBannerUpdate = async (
   formData: FormData,
   adminId: string
 ): Promise<void> => {
-  await api.put(`/popup-banner/${id}?adminId=${adminId}`, formData, {
+  await api.put(`/admin/popup-banner/${id}?adminId=${adminId}`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -68,7 +68,7 @@ export const fetchPopupBannerOrder = async (
   adminId: string
 ): Promise<void> => {
   await api.put(
-    `/popup-banner/${id}/order`,
+    `/admin/popup-banner/${id}/order`,
     null,
     {
       params: {
@@ -88,7 +88,7 @@ export const updatePopupBannerUseTf = async (
   useTf: "Y" | "N",
   adminId: string
 ): Promise<void> => {
-  await api.put(`/popup-banner/${id}/use-tf`, null, {
+  await api.put(`/admin/popup-banner/${id}/use-tf`, null, {
     params: { useTf, adminId }
   });
 };
@@ -100,5 +100,5 @@ export const fetchPopupBannerDelete = async (
   id: number,
   adminId: string
 ): Promise<void> => {
-  await api.delete(`/popup-banner/${id}?adminId=${adminId}`);
+  await api.delete(`/admin/popup-banner/${id}?adminId=${adminId}`);
 };

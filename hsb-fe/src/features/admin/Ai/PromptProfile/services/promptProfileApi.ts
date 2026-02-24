@@ -1,7 +1,7 @@
 import api, { okOrThrow } from "../../../../../services/api";
 import { PromptProfile, PromptProfileListResponse, PromptProfileRequest } from '../types/promptProfileConfig';
 
-const BASE = '/ai/prompt-profiles';
+const BASE = '/admin/ai/prompt-profiles';
 
 // 프롬프트 프로필 목록 조회 API 요청
 export const fetchPromptProfileList = async (

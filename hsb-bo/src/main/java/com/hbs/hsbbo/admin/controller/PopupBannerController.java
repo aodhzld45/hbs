@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/popup-banner")
+@RequestMapping("/api/admin/popup-banner")
 public class PopupBannerController {
     @Autowired
     private final PopupBannerService popupBannerService;

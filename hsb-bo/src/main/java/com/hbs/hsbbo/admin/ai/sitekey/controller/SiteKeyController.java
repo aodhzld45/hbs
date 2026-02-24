@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/ai/site-keys")
+@RequestMapping("/api/admin/ai/site-keys")
 @RequiredArgsConstructor
 public class SiteKeyController {
 

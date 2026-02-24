@@ -2,7 +2,7 @@ import api from '../api'; // 공통 Axios 인스턴스
 
 // 대시보드 콘텐츠 통계
 export const fetchContentStats = async (startDate: Date, endDate: Date) => {
-    const res = await api.get('/stats/content', {
+    const res = await api.get('/admin/stats/content', {
       params: {
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
@@ -13,7 +13,7 @@ export const fetchContentStats = async (startDate: Date, endDate: Date) => {
 
 // 대시보드 댓글 통계
 export const fetchCommentStats = async (startDate: Date, endDate: Date) => {
-  const res = await api.get('/stats/comment', {
+  const res = await api.get('/admin/stats/comment', {
     params: {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
@@ -24,7 +24,7 @@ export const fetchCommentStats = async (startDate: Date, endDate: Date) => {
 
 // 대시보드 시간대별 방문자 수 통계
 export const fetchUserLogHour = async () => {
-  const res = await api.get('/stats/user-log') 
+  const res = await api.get('/admin/stats/user-log') 
 
   return res.data;
 }

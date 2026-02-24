@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-@RequestMapping("/api/ai/kb-document")
+@RequestMapping("/api/admin/ai/kb-document")
 
 public class KbDocumentController {
     private final KbDocumentService kbDocumentService;

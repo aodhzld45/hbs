@@ -14,7 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.net.URI;
 
 @RestController
-@RequestMapping("/api/ai/widget-configs")
+@RequestMapping("/api/admin/ai/widget-configs")
 @RequiredArgsConstructor
 public class WidgetConfigController {
 
@@ -46,7 +46,7 @@ public class WidgetConfigController {
             @RequestPart(value = "iconFile", required = false) MultipartFile iconFile
     ) {
         Long id = widgetConfigService.create(req, iconFile, actor);
-        return ResponseEntity.created(URI.create("/api/ai/widget-configs/" + id)).body(id);
+        return ResponseEntity.created(URI.create("/api/admin/ai/widget-configs/" + id)).body(id);
     }
 
     // 수정

@@ -20,7 +20,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/ai/usage-stats")
+@RequestMapping("/api/admin/ai/usage-stats")
 @RequiredArgsConstructor
 public class UsageStatsController {
 

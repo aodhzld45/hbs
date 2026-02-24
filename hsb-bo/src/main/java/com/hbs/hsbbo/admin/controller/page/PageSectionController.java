@@ -4,13 +4,11 @@ import com.hbs.hsbbo.admin.dto.request.page.PageSectionRequest;
 import com.hbs.hsbbo.admin.dto.response.page.PageSectionListResponse;
 import com.hbs.hsbbo.admin.service.page.PageSectionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -30,13 +28,8 @@ public class PageSectionController {
             @RequestParam(required = false) String useTf
         )
     {
-        try {
-            PageSectionListResponse responseList = pageSectionService.getPageSectionList(pageId, keyword, page, size, useTf);
-            return ResponseEntity.ok(responseList);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("message", "리스트 조회에 실패했습니다."));
-        }
+        PageSectionListResponse responseList = pageSectionService.getPageSectionList(pageId, keyword, page, size, useTf);
+        return ResponseEntity.ok(responseList);
     }
 
     // 페이지 섹션 등록
@@ -46,14 +39,8 @@ public class PageSectionController {
             @RequestParam String adminId,
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
-        try {
-            Long id = pageSectionService.createPageSection(request, adminId, files);
-            return ResponseEntity.ok(id);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("페이지 섹션 등록에 실패했습니다: " + e.getMessage());
-        }
+        Long id = pageSectionService.createPageSection(request, adminId, files);
+        return ResponseEntity.ok(id);
     }
 
     // 드래그앤 드랍 순서 변경
@@ -79,15 +66,8 @@ public class PageSectionController {
             @RequestParam String adminId,
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
-        try {
-            Long sectionId = pageSectionService.updatePageSection(id, request, files, adminId);
-
-            return ResponseEntity.ok(sectionId);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("페이지 섹션 수정에 실패했습니다: " + e.getMessage());
-        }
+        Long sectionId = pageSectionService.updatePageSection(id, request, files, adminId);
+        return ResponseEntity.ok(sectionId);
     }
 
     // 사용여부 변경

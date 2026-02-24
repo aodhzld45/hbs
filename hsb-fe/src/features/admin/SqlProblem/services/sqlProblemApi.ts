@@ -42,7 +42,7 @@ export const fetchProblemList = async (
   rule?: 'SELECT_ONLY' | 'DML_ALLOWED',
   useTf?: 'Y' | 'N'
 ): Promise<{ items: ProblemItem[]; totalCount: number; totalPages: number }> => {
-  const res = await api.get('/sql-problems', {
+  const res = await api.get('/admin/sql-problems', {
     params: {
       keyword,
       page,
@@ -62,7 +62,7 @@ export const fetchProblemCreate = async (
   adminId: string
 ): Promise<{ id: number }> => {
   const body = normalizePayload(payload);
-  const res = await api.post('/sql-problems', body, { params: { adminId } });
+  const res = await api.post('/admin/sql-problems', body, { params: { adminId } });
   return res.data; // { id }
 };
 
@@ -73,19 +73,19 @@ export const fetchProblemUpdate = async (
   adminId: string
 ): Promise<void> => {
   const body = normalizePayload(payload);
-  await api.put(`/sql-problems/${id}`, body, { params: { adminId } });
+  await api.put(`/admin/sql-problems/${id}`, body, { params: { adminId } });
 };
 
 // SQL 문제 상세보기
 export async function fetchProblemDetail(id: number): Promise<ProblemPayload> {
-  const { data } = await api.get(`/sql-problems/${id}`);
+  const { data } = await api.get(`/admin/sql-problems/${id}`);
   return data;
 }
 
 export async function fetchProblemToggleUseTf(id: number, next: "Y" | "N", adminId: string) {
   // @PatchMapping("/{id}/use-tf")
   // @RequestParam String useTf, String adminId
-  await api.patch(`/sql-problems/${id}/use-tf`, null, {
+  await api.patch(`/admin/sql-problems/${id}/use-tf`, null, {
     params: { useTf: next, adminId },
   });
 }

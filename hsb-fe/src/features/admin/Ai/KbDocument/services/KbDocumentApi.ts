@@ -1,6 +1,6 @@
 import api, { okOrThrow } from "../../../../../services/api";
 import {KbDocumentResponse, KbDocumentListResponse, KbDocumentRequest } from '../types/KbDocumentConfig'
-const BASE = '/ai/kb-document'
+const BASE = '/admin/ai/kb-document'
 
 // 공통
 function buildKbDocumentFormData(body: KbDocumentRequest, file?: File | null) {

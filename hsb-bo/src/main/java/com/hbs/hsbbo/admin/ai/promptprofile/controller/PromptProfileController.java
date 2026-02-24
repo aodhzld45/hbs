@@ -22,7 +22,7 @@ import java.util.List;
 
 @RestController
 @Slf4j
-@RequestMapping("/api/ai/prompt-profiles")
+@RequestMapping("/api/admin/ai/prompt-profiles")
 @RequiredArgsConstructor
 public class PromptProfileController {
     private final PromptProfileService promptProfileService;
@@ -75,7 +75,7 @@ public class PromptProfileController {
     ){
         Long id = promptProfileService.create(body, files, actor);
 
-        return ResponseEntity.created(URI.create("/api/ai/prompt-profiles/" + id)).body(id);
+        return ResponseEntity.created(URI.create("/api/admin/ai/prompt-profiles/" + id)).body(id);
     }
 
     // 수정

@@ -10,7 +10,7 @@ function buildFormData(form: WidgetConfigRequest, iconFile?: File | null) {
   return fd;
 }
 
-const BASE = '/ai/widget-configs';
+const BASE = '/admin/ai/widget-configs';
 
 // 위젯 설정 목록 조회 API 요청
 export const fetchWidgetConfigList = async (
@@ -71,7 +71,7 @@ export async function fetchWidgetConfigCreateWithFile(
   }
 
   // axios는 boundary 자동 설정 → Content-Type 지정 불필요
-  const res = await api.post<number>('/api/ai/widget-configs', fd, {
+  const res = await api.post<number>('/admin/ai/widget-configs', fd, {
     params: { actor: actorId },
   });
   return res.data;

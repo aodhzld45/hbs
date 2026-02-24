@@ -15,7 +15,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/sql-problems")
+@RequestMapping("/api/admin/sql-problems")
 @RequiredArgsConstructor
 public class SqlProblemController {
 
@@ -25,19 +25,13 @@ public class SqlProblemController {
     public ResponseEntity<?> create(@Valid @RequestBody ProblemRequest req,
                                     @RequestParam String adminId,
                                     UriComponentsBuilder uriBuilder) {
-        try {
-            req.normalize(); // 요청값 정규화 적용
-            Long id = sqlProblemService.createSqlProblem(req, adminId);
-            return ResponseEntity
-                    .created(uriBuilder.path("/{id}")
-                            .buildAndExpand(id)
-                            .toUri())
-                    .body(Map.of("id", id));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("문제 등록에 실패했습니다: " + e.getMessage());
-        }
+        req.normalize(); // 요청값 정규화 적용
+        Long id = sqlProblemService.createSqlProblem(req, adminId);
+        return ResponseEntity
+                .created(uriBuilder.path("/{id}")
+                        .buildAndExpand(id)
+                        .toUri())
+                .body(Map.of("id", id));
     }
 
     /** 목록/검색 + 페이징 */
@@ -90,16 +84,10 @@ public class SqlProblemController {
     public ResponseEntity<?> createByForm(@Valid @ModelAttribute ProblemRequest req,
                                           @RequestParam String adminId,
                                           UriComponentsBuilder uriBuilder) {
-        try {
-            Long id = sqlProblemService.createSqlProblem(req, adminId);
-            return ResponseEntity
-                    .created(uriBuilder.path("/api/sql-problems/{id}").buildAndExpand(id).toUri())
-                    .body(id);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("문제 등록(form-data)에 실패했습니다: " + e.getMessage());
-        }
+        Long id = sqlProblemService.createSqlProblem(req, adminId);
+        return ResponseEntity
+                .created(uriBuilder.path("/api/admin/sql-problems/{id}").buildAndExpand(id).toUri())
+                .body(id);
     }
 
 }

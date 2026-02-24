@@ -1,6 +1,9 @@
 package com.hbs.hsbbo.common.exception;
 
 
+import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -10,6 +13,8 @@ import com.hbs.hsbbo.common.exception.CommonException.*;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     public record ErrorResponse(String code, String message) {}
 
     @ExceptionHandler(BadRequestException.class)           // 400
@@ -46,6 +51,12 @@ public class GlobalExceptionHandler {
         return new ErrorResponse("NOT_FOUND", ex.getMessage());
     }
 
+    @ExceptionHandler(EntityNotFoundException.class)      // 404 (JPA/Services)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleEntityNotFound(EntityNotFoundException ex) {
+        return new ErrorResponse("NOT_FOUND", ex.getMessage());
+    }
+
     @ExceptionHandler(ConflictException.class)             // 409
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleConflict(ConflictException ex) {
@@ -73,6 +84,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)                     // 500
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleUnknown(Exception ex) {
+        log.error("Unexpected error", ex);
         return new ErrorResponse("INTERNAL_ERROR", "Unexpected error");
     }
 }
