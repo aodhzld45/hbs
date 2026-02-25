@@ -21,6 +21,9 @@ public class BrainChatRequest {
 
     private String conversationId; // 없으면 null → Brain이 새로 발급
 
+    /** BO가 kb_document로 조합한 지문 문자열. Brain은 이 문자열만 받아 system 프롬프트 앞에 붙인다. */
+    private String knowledgeContext;
+
     private List<BrainMessage> messages;
 
     private BrainOptions options;              // 모델/샘플링 옵션

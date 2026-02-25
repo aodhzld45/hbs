@@ -7,8 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
-
 
 public interface KbDocumentRepository extends JpaRepository<KbDocument, Long> {
     // 소프트 삭제 아닌 단건 조회
@@ -49,6 +49,12 @@ public interface KbDocumentRepository extends JpaRepository<KbDocument, Long> {
             Pageable pageable
     );
 
+    /** ID 목록·사용여부 조건으로 조회 (지문 조합용, order by id in 순서 유지하려면 호출 후 정렬) */
+    @Query("""
+            SELECT d FROM KbDocument d
+            WHERE d.id IN :ids AND d.delTf = 'N' AND d.useTf = 'Y'
+            """)
+    List<KbDocument> findByIdInAndDelTfAndUseTf(@Param("ids") List<Long> ids);
 
 }
 

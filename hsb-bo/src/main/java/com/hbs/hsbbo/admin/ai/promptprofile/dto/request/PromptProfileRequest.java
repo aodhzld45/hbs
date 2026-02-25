@@ -6,6 +6,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
@@ -66,5 +67,8 @@ public class PromptProfileRequest {
     private PromptStatus status;    // DRAFT/ACTIVE/ARCHIVED
     private String useTf;                 // "Y"/"N" (null 허용: 기본값 처리)
     private String delTf;                 // "N" 고정 권장
+
+    /** 이 프로필에서 지문으로 사용할 KB 문서 ID 목록. BO가 조회해 knowledgeContext로 조합 후 Brain에 전달. */
+    private List<Long> kbDocumentIds;
 
 }

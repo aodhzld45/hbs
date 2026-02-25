@@ -387,6 +387,22 @@ public class PromptProfileService {
                 e.setDelTf(flag(dto.getDelTf())); // 필요 시 사용, 보통은 logicalDelete()로 처리
             }
         }
+
+        // KB 문서 ID 목록 (지문 조합용)
+        if (dto.getKbDocumentIds() != null) {
+            e.setKbDocumentIdsJson(writeKbDocumentIdsJson(dto.getKbDocumentIds()));
+        } else if (isCreate) {
+            e.setKbDocumentIdsJson(null);
+        }
+    }
+
+    private String writeKbDocumentIdsJson(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return null;
+        try {
+            return om.writeValueAsString(ids);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("kbDocumentIds 직렬화 실패", ex);
+        }
     }
     private String normalizeName(String s) {
         if (s == null || s.isBlank()) {

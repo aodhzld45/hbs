@@ -1,11 +1,14 @@
 package com.hbs.hsbbo.admin.ai.promptprofile.dto.response;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hbs.hsbbo.admin.ai.promptprofile.domain.entity.PromptProfile;
 import com.hbs.hsbbo.admin.ai.promptprofile.domain.type.PromptStatus;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -48,6 +51,9 @@ public class PromptProfileResponse {
     private String upAdm;
     private LocalDateTime upDate;
 
+    /** 이 프로필에서 지문으로 사용할 KB 문서 ID 목록 */
+    private List<Long> kbDocumentIds;
+
     // 엔티티 → 응답 매핑
     public static PromptProfileResponse from(PromptProfile e) {
         return PromptProfileResponse.builder()
@@ -80,6 +86,18 @@ public class PromptProfileResponse {
                 .regDate(e.getRegDate())
                 .upAdm(e.getUpAdm())
                 .upDate(e.getUpDate())
+                .kbDocumentIds(parseKbDocumentIds(e.getKbDocumentIdsJson()))
                 .build();
+    }
+
+    private static final ObjectMapper OM = new ObjectMapper();
+
+    private static List<Long> parseKbDocumentIds(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            return OM.readValue(json, new TypeReference<>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 }

@@ -102,6 +102,11 @@ public class PromptProfile extends AuditBase {
     @Column(name = "status", nullable = false, columnDefinition = "ENUM('DRAFT','ACTIVE','ARCHIVED')")
     private PromptStatus status;
 
+    /** 이 프로필에서 지문으로 사용할 KB 문서 ID 목록 (JSON 배열, 예: [1,2,3]). BO가 조회해 knowledgeContext 문자열로 조합 후 Brain에 전달. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "kb_document_ids", columnDefinition = "json")
+    private String kbDocumentIdsJson;
+
     // 기본값 세팅
     @PrePersist
     protected void onCreate() {
