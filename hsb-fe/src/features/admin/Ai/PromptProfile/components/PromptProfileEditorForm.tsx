@@ -14,6 +14,8 @@ import {
   fetchSiteKeyList,
   fetchLinkedSiteKeys,
 } from "../../AdminSiteKeys/services/siteKeyApi";
+import { fetchKbDocumentList } from "../../KbDocument/services/KbDocumentApi";
+import type { KbDocumentResponse } from "../../KbDocument/types/KbDocumentConfig";
 
 type Props = {
   value?: PromptProfile | null; // 수정 시 전달, 신규는 undefined/null
@@ -47,6 +49,9 @@ const DEFAULT_FORM: PromptProfileRequest = {
   // 연결할 사이트키
   linkedSiteKeyId: null,
 
+  // 지문으로 사용할 KB 문서 ID 목록 (BO가 knowledgeContext로 조합 후 Brain에 전달)
+  kbDocumentIds: null,
+
   // 공통 플래그
   useTf: "Y",
   delTf: "N",
@@ -71,6 +76,10 @@ export default function PromptProfileEditorForm({
   const [siteKeys, setSiteKeys] = useState<SiteKeySummary[]>([]);
   const [loadingKeys, setLoadingKeys] = useState(false);
   const [keysError, setKeysError] = useState<string | null>(null);
+
+  // KB 문서 목록 (지문 선택용)
+  const [kbDocuments, setKbDocuments] = useState<KbDocumentResponse[]>([]);
+  const [loadingKbDocs, setLoadingKbDocs] = useState(false);
 
   // ==== 유효성 검사 ====
   const validate = (f: PromptProfileRequest): ErrorMap => {
@@ -201,6 +210,7 @@ export default function PromptProfileEditorForm({
       version: value.version ?? 1,
       status: value.status,
       linkedSiteKeyId: value.linkedSiteKeyId ?? null,
+      kbDocumentIds: value.kbDocumentIds ?? null,
       useTf: value.useTf ?? "Y",
       delTf: value.delTf ?? "N",
     });
@@ -232,6 +242,26 @@ export default function PromptProfileEditorForm({
         setKeysError(e?.message ?? "사이트키 조회 실패");
       } finally {
         setLoadingKeys(false);
+      }
+    })();
+  }, []);
+
+  // KB 문서 목록 로드 (지문 선택용)
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoadingKbDocs(true);
+        const res = await fetchKbDocumentList({
+          useTf: "Y",
+          page: 0,
+          size: 200,
+          sort: "regDate,desc",
+        });
+        setKbDocuments(res?.items ?? []);
+      } catch (e) {
+        console.warn("KB 문서 목록 로드 실패", e);
+      } finally {
+        setLoadingKbDocs(false);
       }
     })();
   }, []);
@@ -342,6 +372,14 @@ export default function PromptProfileEditorForm({
       ...prev,
       [name]: value,
     }));
+  };
+
+  const toggleKbDocumentId = (docId: number) => {
+    const current = form.kbDocumentIds ?? [];
+    const next = current.includes(docId)
+      ? current.filter((id) => id !== docId)
+      : [...current, docId].sort((a, b) => a - b);
+    setForm((prev) => ({ ...prev, kbDocumentIds: next.length ? next : null }));
   };
 
   // uploadKey 중복 체크(이미지/카드만)
@@ -661,6 +699,40 @@ export default function PromptProfileEditorForm({
             />
           </div>
         </div>
+      </div>
+
+      {/* 지문으로 사용할 KB 문서 선택 (BO가 knowledgeContext로 조합 후 Brain에 전달) */}
+      <div>
+        <label className="block text-xs font-medium text-gray-700 mb-1">
+          지문으로 사용할 KB 문서
+        </label>
+        <p className="text-[11px] text-gray-500 mb-2">
+          선택한 문서의 요약·태그로 지문을 조합해 Brain system 프롬프트 앞에 붙입니다. (미선택 시 지문 없음)
+        </p>
+        {loadingKbDocs ? (
+          <span className="text-[11px] text-gray-400">문서 목록 로딩 중...</span>
+        ) : kbDocuments.length === 0 ? (
+          <span className="text-[11px] text-gray-400">등록된 KB 문서가 없습니다.</span>
+        ) : (
+          <div className="max-h-48 overflow-y-auto border rounded p-2 space-y-1 bg-gray-50">
+            {kbDocuments.map((doc) => {
+              const checked = (form.kbDocumentIds ?? []).includes(doc.id);
+              return (
+                <label key={doc.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleKbDocumentId(doc.id)}
+                    className="rounded"
+                  />
+                  <span className="text-sm truncate">
+                    [{doc.id}] {doc.title ?? doc.originalFileName ?? "(제목 없음)"}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 시스템 / 가드레일 프롬프트 */}
