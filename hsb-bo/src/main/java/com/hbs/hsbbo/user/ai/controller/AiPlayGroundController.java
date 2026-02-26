@@ -17,6 +17,7 @@ import com.hbs.hsbbo.admin.ai.usage.service.UsageLogService;
 import com.hbs.hsbbo.admin.ai.widgetconfig.domain.entity.WidgetConfig;
 import com.hbs.hsbbo.admin.ai.widgetconfig.dto.response.WidgetConfigResponse;
 import com.hbs.hsbbo.admin.ai.widgetconfig.service.WidgetConfigService;
+import com.hbs.hsbbo.admin.ai.kb.service.KnowledgeContextService;
 import com.hbs.hsbbo.common.exception.CommonException;
 import com.hbs.hsbbo.common.exception.CommonException.TooManyRequestsException;
 import com.hbs.hsbbo.user.ai.dto.ChatRequest;
@@ -51,6 +52,7 @@ public class AiPlayGroundController {
     private final PromptProfileService promptProfileService;
     private final UsageLogService usageLogService;
     private final BrainClient brainClient;
+    private final KnowledgeContextService knowledgeContextService;
 
     //  HEAD /api/ai/ping : 유효 키면 204, 없거나 무효면 401/403
     @RequestMapping(value = "/ping", method = {RequestMethod.GET, RequestMethod.HEAD})
@@ -554,12 +556,15 @@ public class AiPlayGroundController {
                 .channel("widget")    // SaaS 위젯 채널
                 .build();
 
+        String knowledgeContext = knowledgeContextService.buildKnowledgeContext(profile.getKbDocumentIdsJson());
+
         BrainChatRequest brainReq = BrainChatRequest.builder()
                 .tenantId(profile.getTenantId())
                 .siteKey(keyInfo.getSiteKey())
                 .promptProfileId(profile.getId())
                 .widgetConfigId(widgetConfig.getId())
                 .conversationId(null)                              // TODO: 프론트에서 전달 시 매핑
+                .knowledgeContext(knowledgeContext.isEmpty() ? null : knowledgeContext)
                 .messages(brainMessages)
                 .options(options)
                 .meta(meta)
