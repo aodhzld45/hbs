@@ -4,6 +4,7 @@ import { ArrowUpRight, Youtube, ChevronsUp } from 'lucide-react';
 
 const sections = [
   { id: 'about',    label: 'About' },
+  { id: 'philosophy', label: 'Philosophy' },
   { id: 'projects', label: 'Projects' },
   { id: 'skills',   label: 'Skills' },
   { id: 'securitiesData', label: 'Securities Data' },

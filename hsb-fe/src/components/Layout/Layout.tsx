@@ -37,7 +37,7 @@ const Layout = ({ children }: LayoutProps) => {
       <main
         className={
           isMainPage
-            ? 'flex-1 w-full px-0 py-0' // 메인 페이지: 여백 없이 꽉 채움
+            ? 'flex-none w-full px-0 py-0' // 메인 페이지: 콘텐츠 높이만큼만 사용 → body 단일 스크롤
             : 'flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6' // 일반 페이지
         }
       >        
