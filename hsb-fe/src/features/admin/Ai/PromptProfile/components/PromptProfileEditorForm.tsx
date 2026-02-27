@@ -80,6 +80,8 @@ export default function PromptProfileEditorForm({
   // KB 문서 목록 (지문 선택용)
   const [kbDocuments, setKbDocuments] = useState<KbDocumentResponse[]>([]);
   const [loadingKbDocs, setLoadingKbDocs] = useState(false);
+  /** 지문 KB 문서 테이블: 제목으로만 필터 (LIKE, 클라이언트) */
+  const [kbDocTitleFilter, setKbDocTitleFilter] = useState("");
 
   // ==== 유효성 검사 ====
   const validate = (f: PromptProfileRequest): ErrorMap => {
@@ -714,24 +716,87 @@ export default function PromptProfileEditorForm({
         ) : kbDocuments.length === 0 ? (
           <span className="text-[11px] text-gray-400">등록된 KB 문서가 없습니다.</span>
         ) : (
-          <div className="max-h-48 overflow-y-auto border rounded p-2 space-y-1 bg-gray-50">
-            {kbDocuments.map((doc) => {
-              const checked = (form.kbDocumentIds ?? []).includes(doc.id);
-              return (
-                <label key={doc.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleKbDocumentId(doc.id)}
-                    className="rounded"
-                  />
-                  <span className="text-sm truncate">
-                    [{doc.id}] {doc.title ?? doc.originalFileName ?? "(제목 없음)"}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
+          <>
+            <div className="mb-2">
+              <input
+                type="text"
+                value={kbDocTitleFilter}
+                onChange={(e) => setKbDocTitleFilter(e.target.value)}
+                placeholder="문서 제목으로 검색"
+                className="w-full max-w-xs h-9 border border-gray-300 rounded px-2 text-sm placeholder:text-gray-400"
+                aria-label="문서 제목 검색"
+              />
+            </div>
+            <div className="max-h-64 overflow-y-auto border rounded bg-gray-50">
+              <table className="w-full text-sm border-collapse">
+                <thead className="sticky top-0 bg-gray-100 border-b border-gray-200 z-[1]">
+                  <tr>
+                    <th className="text-left py-2 px-3 w-9 font-medium text-gray-600">선택</th>
+                    <th className="text-left py-2 px-3 w-14 font-medium text-gray-600">ID</th>
+                    <th className="text-left py-2 px-3 min-w-[140px] font-medium text-gray-600">제목</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-600">미리보기</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {kbDocuments
+                    .filter((doc) => {
+                      const q = kbDocTitleFilter.trim().toLowerCase();
+                      if (!q) return true;
+                      const title = (doc.title ?? "").toLowerCase();
+                      return title.includes(q);
+                    })
+                    .map((doc) => {
+                  const checked = (form.kbDocumentIds ?? []).includes(doc.id);
+                  const previewText =
+                    (doc.indexSummary && doc.indexSummary.trim()) ||
+                    (doc.tagsJson && (() => {
+                      try {
+                        const tags = JSON.parse(doc.tagsJson) as string[];
+                        return Array.isArray(tags) && tags.length ? `태그: ${tags.join(", ")}` : null;
+                      } catch {
+                        return null;
+                      }
+                    })()) ||
+                    null;
+                  return (
+                    <tr
+                      key={doc.id}
+                      className={`border-b border-gray-100 last:border-0 hover:bg-gray-100/80 ${checked ? "bg-blue-50/60" : ""}`}
+                    >
+                      <td className="py-1.5 px-3 align-top pt-2">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleKbDocumentId(doc.id)}
+                          className="rounded cursor-pointer"
+                          aria-label={`문서 ${doc.id} 선택`}
+                        />
+                      </td>
+                      <td className="py-1.5 px-3 align-top text-gray-500 tabular-nums">{doc.id}</td>
+                      <td className="py-1.5 px-3 align-top font-medium text-gray-800 max-w-[200px]">
+                        <span className="line-clamp-2" title={doc.title ?? doc.originalFileName ?? ""}>
+                          {doc.title ?? doc.originalFileName ?? "(제목 없음)"}
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-3 align-top text-gray-600 max-w-[320px]">
+                        <span
+                          className="line-clamp-2 text-xs leading-relaxed"
+                          title={previewText ?? undefined}
+                        >
+                          {previewText ? (
+                            previewText.length > 120 ? `${previewText.slice(0, 120)}…` : previewText
+                          ) : (
+                            <span className="text-gray-400 italic">요약·태그 없음</span>
+                          )}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
