@@ -39,6 +39,20 @@ public class WidgetConfigRequest {
     @NotNull
     private Integer zIndex = 2_147_483_000;
 
+    // 레이아웃·스타일 (크기/둥글기)
+    private Integer panelBorderRadiusPx;
+    private Integer bubbleSizePx;
+    private Integer inputBorderRadiusPx;
+    private Integer sendButtonRadiusPx;
+
+    // 타이포·디자인
+    private String fontFamily;
+    private Integer fontSizeBasePx;
+    private Integer headerFontSizePx;
+    private String boxShadow;
+    private String bubbleBoxShadow;
+    private String sendButtonStyle;  // "text" | "icon" | "icon-text"
+
     public enum Position { right, left }
 
     // 색상/테마

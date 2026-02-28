@@ -35,6 +35,20 @@ public class WidgetConfigResponse {
     private Integer panelMaxHeightPx;
     private Integer zIndex;
 
+    // 레이아웃·스타일 (크기/둥글기)
+    private Integer panelBorderRadiusPx;
+    private Integer bubbleSizePx;
+    private Integer inputBorderRadiusPx;
+    private Integer sendButtonRadiusPx;
+
+    // 타이포·디자인
+    private String fontFamily;
+    private Integer fontSizeBasePx;
+    private Integer headerFontSizePx;
+    private String boxShadow;
+    private String bubbleBoxShadow;
+    private String sendButtonStyle;
+
     // 색상/테마
     private String bubbleBgColor;
     private String bubbleFgColor;
@@ -105,6 +119,17 @@ public class WidgetConfigResponse {
                 .panelWidthPx(e.getPanelWidthPx())
                 .panelMaxHeightPx(e.getPanelMaxHeightPx())
                 .zIndex(e.getZIndex())
+
+                .panelBorderRadiusPx(e.getPanelBorderRadiusPx())
+                .bubbleSizePx(e.getBubbleSizePx())
+                .inputBorderRadiusPx(e.getInputBorderRadiusPx())
+                .sendButtonRadiusPx(e.getSendButtonRadiusPx())
+                .fontFamily(e.getFontFamily())
+                .fontSizeBasePx(e.getFontSizeBasePx())
+                .headerFontSizePx(e.getHeaderFontSizePx())
+                .boxShadow(e.getBoxShadow())
+                .bubbleBoxShadow(e.getBubbleBoxShadow())
+                .sendButtonStyle(e.getSendButtonStyle())
 
                 .bubbleBgColor(e.getBubbleBgColor())
                 .bubbleFgColor(e.getBubbleFgColor())

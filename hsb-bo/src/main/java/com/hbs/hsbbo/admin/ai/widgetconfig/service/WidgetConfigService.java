@@ -280,6 +280,18 @@ public class WidgetConfigService {
         e.setPanelMaxHeightPx(r.getPanelMaxHeightPx());
         e.setZIndex(r.getZIndex());
 
+        // 레이아웃·스타일
+        e.setPanelBorderRadiusPx(r.getPanelBorderRadiusPx());
+        e.setBubbleSizePx(r.getBubbleSizePx());
+        e.setInputBorderRadiusPx(r.getInputBorderRadiusPx());
+        e.setSendButtonRadiusPx(r.getSendButtonRadiusPx());
+        e.setFontFamily(trim(r.getFontFamily()));
+        e.setFontSizeBasePx(r.getFontSizeBasePx());
+        e.setHeaderFontSizePx(r.getHeaderFontSizePx());
+        e.setBoxShadow(trim(r.getBoxShadow()));
+        e.setBubbleBoxShadow(trim(r.getBubbleBoxShadow()));
+        e.setSendButtonStyle(trim(r.getSendButtonStyle()));
+
         // 컬러
         e.setBubbleBgColor(trim(r.getBubbleBgColor()));
         e.setBubbleFgColor(trim(r.getBubbleFgColor()));

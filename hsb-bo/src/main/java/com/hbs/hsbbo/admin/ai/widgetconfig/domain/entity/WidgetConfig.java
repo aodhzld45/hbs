@@ -66,6 +66,38 @@ public class WidgetConfig extends AuditBase {
     @Column(name = "z_index", nullable = false)
     private Integer zIndex = 2_147_483_000;
 
+    // 레이아웃·스타일 (크기/둥글기)
+    @Column(name = "panel_border_radius_px")
+    private Integer panelBorderRadiusPx;
+
+    @Column(name = "bubble_size_px")
+    private Integer bubbleSizePx;
+
+    @Column(name = "input_border_radius_px")
+    private Integer inputBorderRadiusPx;
+
+    @Column(name = "send_button_radius_px")
+    private Integer sendButtonRadiusPx;
+
+    // 타이포·디자인
+    @Column(name = "font_family", length = 255)
+    private String fontFamily;
+
+    @Column(name = "font_size_base_px")
+    private Integer fontSizeBasePx;
+
+    @Column(name = "header_font_size_px")
+    private Integer headerFontSizePx;
+
+    @Column(name = "box_shadow", length = 500)
+    private String boxShadow;
+
+    @Column(name = "bubble_box_shadow", length = 500)
+    private String bubbleBoxShadow;
+
+    @Column(name = "send_button_style", length = 20)
+    private String sendButtonStyle;  // "text" | "icon" | "icon-text"
+
     // 색상/테마
     @Column(name = "bubble_bg_color", length = 20)
     private String bubbleBgColor;
