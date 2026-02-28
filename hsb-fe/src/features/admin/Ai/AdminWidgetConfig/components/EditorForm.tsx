@@ -10,6 +10,99 @@ import { useQuickReplies } from '../hooks/useQuickReplies';
 
 import ColorPickerField from './ColorPickerField';  // 재사용 가능한 컬러 피커 컴포넌트
 
+/** 슬라이더 + 숫자 입력 (크기/둥글기 등) */
+function SliderField(
+  props: {
+    label: string;
+    value: number | null;
+    onChange: (v: number | null) => void;
+    min: number;
+    max: number;
+    step?: number;
+    unit?: string;
+    placeholder?: string;
+  }
+) {
+  const { label, value, onChange, min, max, step = 1, unit = 'px', placeholder } = props;
+  const num = value ?? min;
+  const display = value ?? '';
+  return (
+    <div className="grid grid-cols-3 gap-2 items-center">
+      <label className="text-sm">{label}</label>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value == null ? min : Math.min(max, Math.max(min, value))}
+        onChange={(e) => onChange(+e.target.value)}
+        className="col-span-2 w-full"
+      />
+      <div className="flex items-center gap-1">
+        <input
+          type="number"
+          className="border rounded px-2 py-1 w-16"
+          min={min}
+          max={max}
+          step={step}
+          value={display}
+          placeholder={placeholder}
+          onChange={(e) => {
+            const v = e.target.value.trim();
+            if (v === '') { onChange(null); return; }
+            const n = +v;
+            if (!Number.isNaN(n)) onChange(n);
+          }}
+        />
+        {unit && <span className="text-xs text-gray-500">{unit}</span>}
+      </div>
+    </div>
+  );
+}
+
+/** 테마 프리셋 3종 — 색상 일괄 적용 */
+const WIDGET_THEME_PRESETS: Record<string, Partial<WidgetConfigRequest>> = {
+  defaultDark: {
+    primaryColor: '#4f46e5',
+    panelBgColor: '#111827',
+    panelTextColor: '#e5e7eb',
+    headerBgColor: '#0b0f1a',
+    headerBorderColor: '#1f2937',
+    inputBgColor: '#0f1422',
+    inputTextColor: '#e5e7eb',
+    bubbleBgColor: '#4f46e5',
+    bubbleFgColor: '#ffffff',
+    panelBorderRadiusPx: 16,
+    bubbleSizePx: 56,
+  },
+  light: {
+    primaryColor: '#4f46e5',
+    panelBgColor: '#f9fafb',
+    panelTextColor: '#111827',
+    headerBgColor: '#f3f4f6',
+    headerBorderColor: '#e5e7eb',
+    inputBgColor: '#ffffff',
+    inputTextColor: '#111827',
+    bubbleBgColor: '#4f46e5',
+    bubbleFgColor: '#ffffff',
+    panelBorderRadiusPx: 16,
+    bubbleSizePx: 56,
+  },
+  brandPurple: {
+    primaryColor: '#7c3aed',
+    panelBgColor: '#1e1b4b',
+    panelTextColor: '#e9d5ff',
+    headerBgColor: '#312e81',
+    headerBorderColor: '#4c1d95',
+    inputBgColor: '#312e81',
+    inputTextColor: '#e9d5ff',
+    bubbleBgColor: '#7c3aed',
+    bubbleFgColor: '#ffffff',
+    panelBorderRadiusPx: 16,
+    bubbleSizePx: 56,
+  },
+};
+
 type Props = {
   value?: WidgetConfig | null;      // id === 0(신규)일 때는 undefined/null 전달
   onSubmit: (data: WidgetConfigRequest, iconFile?: File | null) => void;
@@ -279,10 +372,34 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview,
             <label className="text-sm self-center">offsetY</label>
             <input type="number" className="col-span-2 border rounded px-2 py-1"
                   value={form.offsetY ?? 0} onChange={(e) => update('offsetY', +e.target.value)} />
-            <label className="text-sm self-center">panelWidthPx</label>
-            <input type="number" className="col-span-2 border rounded px-2 py-1"
-                  value={form.panelWidthPx ?? 360} onChange={(e) => update('panelWidthPx', +e.target.value)} />
           </div>
+          <SliderField
+            label="패널 너비(px)"
+            value={form.panelWidthPx ?? 360}
+            onChange={(v) => update('panelWidthPx', v ?? 360)}
+            min={280}
+            max={480}
+            step={10}
+          />
+          <SliderField
+            label="패널 최대 높이(px)"
+            value={form.panelMaxHeightPx ?? 0}
+            onChange={(v) => update('panelMaxHeightPx', v === 0 ? null : v)}
+            min={0}
+            max={700}
+            step={20}
+            placeholder="0=60vh"
+          />
+        </section>
+
+        {/* 레이아웃·스타일 (크기/둥글기) */}
+        <section className="space-y-3">
+          <h3 className="font-semibold">레이아웃·스타일</h3>
+          <p className="text-xs text-gray-500">패널·버블 크기와 모서리 둥글기를 설정합니다. (선택)</p>
+          <SliderField label="패널 둥글기(px)" value={form.panelBorderRadiusPx ?? null} onChange={(v) => update('panelBorderRadiusPx', v)} min={0} max={24} />
+          <SliderField label="버블 크기(px)" value={form.bubbleSizePx ?? null} onChange={(v) => update('bubbleSizePx', v)} min={36} max={96} />
+          <SliderField label="입력창 둥글기(px)" value={form.inputBorderRadiusPx ?? null} onChange={(v) => update('inputBorderRadiusPx', v)} min={0} max={20} />
+          <SliderField label="전송버튼 둥글기(px)" value={form.sendButtonRadiusPx ?? null} onChange={(v) => update('sendButtonRadiusPx', v)} min={0} max={20} />
         </section>
 
         {/* 문구/라벨 섹션 */}
@@ -388,6 +505,31 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview,
         {/* 색상 섹션 */}
         <section className="space-y-3">
           <h3 className="font-semibold">브랜딩 색상</h3>
+          <div className="flex flex-wrap gap-2">
+            <span className="text-sm text-gray-600 self-center">테마 프리셋:</span>
+            {[
+              { id: 'defaultDark', label: '기본 다크', className: 'bg-gray-800 text-white' },
+              { id: 'light', label: '라이트', className: 'bg-gray-100 text-gray-800 border border-gray-300' },
+              { id: 'brandPurple', label: '브랜드 보라', className: 'bg-violet-600 text-white' },
+            ].map(({ id, label, className }) => (
+              <button
+                key={id}
+                type="button"
+                className={`px-3 py-1.5 text-sm rounded ${className}`}
+                onClick={() => {
+                  const preset = WIDGET_THEME_PRESETS[id];
+                  if (!preset) return;
+                  setForm((f) => {
+                    const next = { ...f, ...preset };
+                    onChangePreview?.(next);
+                    return next;
+                  });
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           {([
             ['primaryColor', 'Primary'],
             ['panelBgColor', 'Panel BG'],
@@ -407,6 +549,46 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview,
               name={key}
             />
           ))}
+        </section>
+
+        {/* 타이포·디자인 */}
+        <section className="space-y-3">
+          <h3 className="font-semibold">타이포·디자인</h3>
+          <p className="text-xs text-gray-500">폰트, 그림자, 전송 버튼 모양 등 (선택)</p>
+          <div className="grid grid-cols-3 gap-2">
+            <label className="text-sm self-center">폰트 패밀리</label>
+            <select
+              className="col-span-2 border rounded px-2 py-2"
+              value={form.fontFamily ?? ''}
+              onChange={(e) => update('fontFamily', e.target.value || null)}
+            >
+              <option value="">기본(inherit)</option>
+              <option value="system-ui, sans-serif">시스템 기본</option>
+              <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
+              <option value="'Inter', sans-serif">Inter</option>
+              <option value="'Roboto', sans-serif">Roboto</option>
+            </select>
+            <SliderField label="본문 글자크기(px)" value={form.fontSizeBasePx ?? null} onChange={(v) => update('fontSizeBasePx', v)} min={12} max={20} />
+            <SliderField label="헤더 글자크기(px)" value={form.headerFontSizePx ?? null} onChange={(v) => update('headerFontSizePx', v)} min={12} max={24} />
+            <label className="text-sm self-center">전송 버튼 스타일</label>
+            <select
+              className="col-span-2 border rounded px-2 py-2"
+              value={form.sendButtonStyle ?? 'text'}
+              onChange={(e) => update('sendButtonStyle', (e.target.value as 'text' | 'icon' | 'icon-text') || 'text')}
+            >
+              <option value="text">텍스트(보내기)</option>
+              <option value="icon">아이콘만</option>
+              <option value="icon-text">아이콘+텍스트</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <label className="text-sm self-center">패널 그림자</label>
+            <input className="col-span-2 border rounded px-2 py-1 text-xs" placeholder="예: 0 20px 40px rgba(0,0,0,.35)"
+                  value={form.boxShadow ?? ''} onChange={(e) => update('boxShadow', e.target.value || null)} />
+            <label className="text-sm self-center">버블 그림자</label>
+            <input className="col-span-2 border rounded px-2 py-1 text-xs" placeholder="예: 0 10px 25px rgba(0,0,0,.2)"
+                  value={form.bubbleBoxShadow ?? ''} onChange={(e) => update('bubbleBoxShadow', e.target.value || null)} />
+          </div>
         </section>
 
         {/* 아이콘/로고 섹션 */}

@@ -21,6 +21,28 @@ export type WidgetConfig = {
   panelMaxHeightPx?: number | null;
   zIndex: number;
 
+  /** 패널/버블 등 모서리 둥글기(px). 관리자에서 설정 가능 */
+  panelBorderRadiusPx?: number | null;
+  /** 버블 버튼 크기(px) */
+  bubbleSizePx?: number | null;
+  /** 입력창/전송 버튼 모서리 둥글기(px) */
+  inputBorderRadiusPx?: number | null;
+  sendButtonRadiusPx?: number | null;
+
+  /** 타이포: 전체 폰트 패밀리 */
+  fontFamily?: string | null;
+  /** 기본 글자 크기(px) */
+  fontSizeBasePx?: number | null;
+  /** 헤더 타이틀 글자 크기(px) */
+  headerFontSizePx?: number | null;
+
+  /** 패널 box-shadow (CSS 값 문자열) */
+  boxShadow?: string | null;
+  /** 버블 버튼 box-shadow */
+  bubbleBoxShadow?: string | null;
+  /** 전송 버튼 표시: 텍스트 | 아이콘 | 아이콘+텍스트 */
+  sendButtonStyle?: 'text' | 'icon' | 'icon-text' | null;
+
   bubbleBgColor?: string;
   bubbleFgColor?: string;
   panelBgColor?: string;
