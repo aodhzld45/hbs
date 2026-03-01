@@ -25,6 +25,8 @@ export type WidgetConfig = {
   panelBorderRadiusPx?: number | null;
   /** 버블 버튼 크기(px) */
   bubbleSizePx?: number | null;
+  /** 버블 안 이모지/아이콘 크기(px) */
+  bubbleIconSizePx?: number | null;
   /** 입력창/전송 버튼 모서리 둥글기(px) */
   inputBorderRadiusPx?: number | null;
   sendButtonRadiusPx?: number | null;

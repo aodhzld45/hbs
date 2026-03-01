@@ -202,10 +202,10 @@ export default function KbDocumentList({
             <div className="mt-1 h-4" />
           </div>
 
-          {/* keyword */}
+          {/* 문서 제목 검색 (title LIKE) */}
           <div className="md:col-span-2">
             <label className="block text-xs font-medium text-gray-700 mb-1 h-4">
-              키워드
+              문서 제목
             </label>
             <input
               value={params.keyword ?? ""}
@@ -213,7 +213,7 @@ export default function KbDocumentList({
               onKeyDown={(e) => {
                 if (e.key === "Enter") onSearchClick();
               }}
-              placeholder="제목/파일명/URL"
+              placeholder="문서 제목으로 검색"
               className="w-full h-10 border rounded px-2 text-sm"
             />
             <div className="mt-1 h-4" />

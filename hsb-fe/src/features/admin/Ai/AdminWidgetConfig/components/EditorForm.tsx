@@ -398,6 +398,7 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview,
           <p className="text-xs text-gray-500">패널·버블 크기와 모서리 둥글기를 설정합니다. (선택)</p>
           <SliderField label="패널 둥글기(px)" value={form.panelBorderRadiusPx ?? null} onChange={(v) => update('panelBorderRadiusPx', v)} min={0} max={24} />
           <SliderField label="버블 크기(px)" value={form.bubbleSizePx ?? null} onChange={(v) => update('bubbleSizePx', v)} min={36} max={96} />
+          <SliderField label="버블 안 아이콘/이모지 크기(px)" value={form.bubbleIconSizePx ?? null} onChange={(v) => update('bubbleIconSizePx', v)} min={24} max={64} />
           <SliderField label="입력창 둥글기(px)" value={form.inputBorderRadiusPx ?? null} onChange={(v) => update('inputBorderRadiusPx', v)} min={0} max={20} />
           <SliderField label="전송버튼 둥글기(px)" value={form.sendButtonRadiusPx ?? null} onChange={(v) => update('sendButtonRadiusPx', v)} min={0} max={20} />
         </section>
