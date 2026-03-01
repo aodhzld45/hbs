@@ -38,6 +38,7 @@ public class WidgetConfigResponse {
     // 레이아웃·스타일 (크기/둥글기)
     private Integer panelBorderRadiusPx;
     private Integer bubbleSizePx;
+    private Integer bubbleIconSizePx;
     private Integer inputBorderRadiusPx;
     private Integer sendButtonRadiusPx;
 
@@ -122,6 +123,7 @@ public class WidgetConfigResponse {
 
                 .panelBorderRadiusPx(e.getPanelBorderRadiusPx())
                 .bubbleSizePx(e.getBubbleSizePx())
+                .bubbleIconSizePx(e.getBubbleIconSizePx())
                 .inputBorderRadiusPx(e.getInputBorderRadiusPx())
                 .sendButtonRadiusPx(e.getSendButtonRadiusPx())
                 .fontFamily(e.getFontFamily())

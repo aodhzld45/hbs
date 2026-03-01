@@ -42,6 +42,7 @@ public class WidgetConfigRequest {
     // 레이아웃·스타일 (크기/둥글기)
     private Integer panelBorderRadiusPx;
     private Integer bubbleSizePx;
+    private Integer bubbleIconSizePx;
     private Integer inputBorderRadiusPx;
     private Integer sendButtonRadiusPx;
 

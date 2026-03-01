@@ -73,6 +73,9 @@ public class WidgetConfig extends AuditBase {
     @Column(name = "bubble_size_px")
     private Integer bubbleSizePx;
 
+    @Column(name = "bubble_icon_size_px")
+    private Integer bubbleIconSizePx;
+
     @Column(name = "input_border_radius_px")
     private Integer inputBorderRadiusPx;
 

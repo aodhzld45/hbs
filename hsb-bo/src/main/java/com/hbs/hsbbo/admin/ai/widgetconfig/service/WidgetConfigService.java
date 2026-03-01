@@ -283,6 +283,7 @@ public class WidgetConfigService {
         // 레이아웃·스타일
         e.setPanelBorderRadiusPx(r.getPanelBorderRadiusPx());
         e.setBubbleSizePx(r.getBubbleSizePx());
+        e.setBubbleIconSizePx(r.getBubbleIconSizePx());
         e.setInputBorderRadiusPx(r.getInputBorderRadiusPx());
         e.setSendButtonRadiusPx(r.getSendButtonRadiusPx());
         e.setFontFamily(trim(r.getFontFamily()));
