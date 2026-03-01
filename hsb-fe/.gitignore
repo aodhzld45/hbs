@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 
+/public/sdk/*
 # testing
 /coverage
 

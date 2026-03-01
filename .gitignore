@@ -1,2 +1,4 @@
 hsb-bo/src/main/java/com/hbs/hsbbo/common/config/WebMvcConfig.java
 hsb-bo/src/main/java/com/hbs/hsbbo/common/config/SecurityConfig.java
+/docs
+stock.md
