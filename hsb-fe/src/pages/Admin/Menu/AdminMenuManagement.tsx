@@ -99,16 +99,20 @@ const AdminMenuManagement: React.FC = () => {
   // 생성 + 수정 통합 저장 핸들러
   const handleSaveMenu = async (menu: AdminMenu) => {
     try {
-      if (!menu.id || menu.id === 0) {
-        // 신규 등록
+      const isNew = !menu.id || menu.id === 0;
+      if (isNew) {
         await createAdminMenu(menu);
       } else {
-        // 수정
         await updateAdminMenu(menu.id as number, menu);
       }
       await loadMenus();
       setShowModal(false);
       setSelectedMenu(null);
+      alert(
+        isNew
+          ? `[${menu.name}] 정상적으로 등록되었습니다.`
+          : `[${menu.name}] 정상적으로 수정되었습니다.`
+      );
     } catch (err) {
       console.error(err);
       setError(menu.id ? '메뉴 수정에 실패했습니다.' : '메뉴 등록에 실패했습니다.');
@@ -267,6 +271,7 @@ const AdminMenuManagement: React.FC = () => {
       {showModal && (
         <AdminMenuModal
           menu={selectedMenu ?? undefined}
+          existingMenus={menus}
           onSave={handleSaveMenu}
           onCancel={() => {
             setShowModal(false);
