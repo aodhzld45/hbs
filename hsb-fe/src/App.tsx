@@ -1,4 +1,4 @@
-// src/App.tsx
+﻿// src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // 관리자 페이지 imports
@@ -24,6 +24,7 @@ import ContactDetail from "./features/admin/Contact/components/ContactDetail";
 
 import CorsOriginPage from "./features/admin/CorsOrigin";
 import MaintenanceRulePage from "./features/admin/MaintenanceRule";
+import BlockIpPage from './features/admin/BlockIp';
 
 import PopupBannerManager from './pages/Admin/Main/PopupBannerManager';
 
@@ -49,7 +50,7 @@ import ContentDetail from './components/Contents/ContentDetail';
 
 import ContactForm from './features/user/Contact/index';
 
-// 기본 ai 관리 부분분
+// 기본 ai 관리 부분
 import AIPlayground from './features/user/OpenAI/AIPlayground';
 import AdminSiteKeys from './features/admin/Ai/AdminSiteKeys';
 import AdminWidgetConfig from './features/admin/Ai/AdminWidgetConfig';
@@ -150,6 +151,7 @@ function App() {
 
                 <Route path="/admin/cors-origins" element={<CorsOriginPage />} />
                 <Route path="/admin/maintenance" element={<MaintenanceRulePage />} />
+                <Route path="/admin/block-ips" element={<BlockIpPage />} />
 
                 <Route path='/admin/main/popup-banner-manager' element={<PopupBannerManager />} />
               </Route>
