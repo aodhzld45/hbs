@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SecurityConfig {
 
+    private final BlockIpFilter blockIpFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsOriginProvider corsOriginProvider;
 
@@ -78,7 +79,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").authenticated()
                         .anyRequest().permitAll()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(blockIpFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }
