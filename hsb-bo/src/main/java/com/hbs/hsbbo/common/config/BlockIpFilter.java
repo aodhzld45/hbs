@@ -35,7 +35,7 @@ public class BlockIpFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.getWriter().write("{\"code\":\"FORBIDDEN\",\"message\":\"Access denied from blocked IP.\"}");
+            response.getWriter().write("{\"code\":\"BLOCKED_IP\",\"message\":\"접근이 차단되었습니다. 관리자에게 문의 바랍니다.\"}");
             return;
         }
 

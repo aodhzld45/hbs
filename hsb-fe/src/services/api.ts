@@ -9,13 +9,16 @@ const BASE_URL = RAW_BASE.replace(/\/+$/, '');
 const api = axios.create({
   baseURL: BASE_URL, // 여기서 추가로 '/api'를 붙이지 않기
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true, // 쿠키가 필요 없으면 false
+  withCredentials: false, // 쿠키가 필요 없으면 false
   timeout: 15000,
 });
 
 // ---- helper: FormData 판별 ----
 const isFormData = (v: any): v is FormData =>
   typeof FormData !== 'undefined' && v instanceof FormData;
+
+// 중복 차단 처리 방지 플래그
+let blockedIpHandling = false;
 
 // JWT 자동 첨부 + FormData 분기
 api.interceptors.request.use(
@@ -38,6 +41,40 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
+
+// 아이피 차단 우회
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    const code = error?.response?.data?.code;
+    const message =
+      error?.response?.data?.message || '접근이 차단되었습니다. 관리자에게 문의 바랍니다.';
+
+    if (status === 403 && code === 'BLOCKED_IP') {
+      if (!blockedIpHandling) {
+        blockedIpHandling = true;
+
+        try {
+          window.sessionStorage.setItem('blockedIpMessage', message);
+        } catch (e) {
+          console.warn('blockedIpMessage 저장 실패', e);
+        }
+
+        alert(message);
+
+        if (window.location.pathname !== '/blocked-ip') {
+          window.location.replace('/blocked-ip');
+        }
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+
+
 
 export default api;
 
