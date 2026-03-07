@@ -31,6 +31,11 @@ public class BoardConfigController {
         return ResponseEntity.ok(boardConfigService.getBoardConfig(id));
     }
 
+    @GetMapping("/code/{boardCode}")
+    public ResponseEntity<BoardConfigResponse> getBoardConfigByCode(@PathVariable String boardCode) {
+        return ResponseEntity.ok(boardConfigService.getBoardConfigByCode(boardCode));
+    }
+
     @AdminActionLog(action = "게시판 설정 등록", detail = "")
     @PostMapping
     public ResponseEntity<Long> createBoardConfig(

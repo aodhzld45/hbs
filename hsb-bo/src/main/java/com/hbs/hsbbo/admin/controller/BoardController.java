@@ -1,7 +1,6 @@
 package com.hbs.hsbbo.admin.controller;
 
 import com.hbs.hsbbo.admin.aop.AdminActionLog;
-import com.hbs.hsbbo.admin.domain.type.BoardType;
 import com.hbs.hsbbo.admin.dto.request.BoardRequest;
 import com.hbs.hsbbo.admin.dto.response.BoardListResponse;
 import com.hbs.hsbbo.admin.dto.response.BoardResponse;
@@ -9,7 +8,6 @@ import com.hbs.hsbbo.admin.service.BoardService;
 import com.hbs.hsbbo.common.util.ExcelUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -32,92 +30,56 @@ import java.util.function.Function;
 @RequestMapping("/api/board")
 public class BoardController {
 
-    @Autowired
     private final BoardService boardService;
 
     @GetMapping("/board-list")
     public ResponseEntity<BoardListResponse> getBoardList(
-            @RequestParam BoardType type,
+            @RequestParam String boardCode,
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String useTf // <- 사용자면 "Y", 관리자면 생략
-
+            @RequestParam(required = false) String useTf
     ) {
-        BoardListResponse result = boardService.getBoardList(type, keyword, page, size, useTf);
-
-
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(boardService.getBoardList(boardCode, keyword, page, size, useTf));
     }
 
-    //  상세 조회 API
     @GetMapping("/board-detail")
     public ResponseEntity<BoardResponse> getBoardDetail(
             @RequestParam Long id,
             @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             HttpServletRequest request
     ) {
-        // JWT 토큰이 없다면 일반 사용자라고 판단
-        boolean isAdmin = (authorizationHeader != null && authorizationHeader.startsWith("Bearer "));
-
+        boolean isAdmin = authorizationHeader != null && authorizationHeader.startsWith("Bearer ");
         BoardResponse response = isAdmin
-                ? boardService.getBoardDetail(id) // 관리자: 조회수 증가 없음
-                : boardService.getBoardDetailWithViewCount(id, request); // 사용자: 조회수 증가 포함
-
+                ? boardService.getBoardDetail(id)
+                : boardService.getBoardDetailWithViewCount(id, request);
         return ResponseEntity.ok(response);
     }
 
     @AdminActionLog(action = "게시글 등록", detail = "")
     @PostMapping("/board-create")
-    public ResponseEntity<?> createBoard(
+    public ResponseEntity<String> createBoard(
             @ModelAttribute BoardRequest request,
-            @RequestPart(value = "files", required = false)List<MultipartFile> files
-            ) {
-
+            @RequestPart(value = "files", required = false) List<MultipartFile> files
+    ) {
         boardService.createBoard(request, files);
-        return ResponseEntity.ok("등록이 성공했습니다.");
-
-//        System.out.println("요청 처리 정보: " + request.toString());
-
-//        if (files != null && !files.isEmpty()) {
-//            System.out.println(" 첨부파일 목록:");
-//            files.forEach(file -> {
-//                System.out.println(" - 파일명: " + file.getOriginalFilename());
-//                System.out.println("   사이즈: " + file.getSize() + " bytes");
-//                System.out.println("   ContentType: " + file.getContentType());
-//            });
-//        } else {
-//            System.out.println(" 첨부파일 없음");
-//        }
+        return ResponseEntity.ok("등록 성공");
     }
+
     @AdminActionLog(action = "게시글 수정", detail = "id={id}")
     @PutMapping("/board-update/{id}")
-    public ResponseEntity<?> updateBoard(
+    public ResponseEntity<String> updateBoard(
             @PathVariable Long id,
             @ModelAttribute BoardRequest request,
-            @RequestPart(value = "files", required = false)List<MultipartFile> files
+            @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
-//        System.out.println("요청 정보 id = " + id);
-//        System.out.println("요청 정보" +  request.toString());
-//
-//        if (files != null && !files.isEmpty()) {
-//            System.out.println("첨부파일 목록:");
-//            files.forEach(file -> {
-//                System.out.println(" - 파일명: " + file.getOriginalFilename());
-//                System.out.println("   사이즈: " + file.getSize() + " bytes");
-//                System.out.println("   ContentType: " + file.getContentType());
-//            });
-//        } else {
-//            System.out.println("첨부파일 없음");
-//        }
-
         boardService.updateBoard(id, request, files);
         return ResponseEntity.ok("수정 성공");
     }
 
     @AdminActionLog(action = "게시글 삭제", detail = "id={id}")
     @PutMapping("/board-delete/{id}")
-    public ResponseEntity<?> deleteBoard(@PathVariable Long id) {
+    public ResponseEntity<String> deleteBoard(@PathVariable Long id) {
         boardService.deleteBoard(id);
         return ResponseEntity.ok("삭제 성공");
     }
@@ -129,39 +91,38 @@ public class BoardController {
             @RequestParam String useTf,
             @RequestParam String adminId
     ) {
-        Long response = boardService.updateUseTf(id, useTf, adminId);
-
-        return ResponseEntity.ok(response);
-
+        return ResponseEntity.ok(boardService.updateUseTf(id, useTf, adminId));
     }
 
     @GetMapping("/export")
     public ResponseEntity<Resource> getBoardExcel(
-            @RequestParam BoardType type,
-            @RequestParam(required = false) String keyword
-    ){
-        BoardListResponse response = boardService.getBoardList(type, keyword, 0, 10, null);
-
+            @RequestParam String boardCode,
+            @RequestParam(required = false, defaultValue = "") String keyword
+    ) {
+        BoardListResponse response = boardService.getBoardList(boardCode, keyword, 0, 10000, null);
         List<BoardResponse> boards = response.getItems();
+        String boardName = boards.stream()
+                .map(BoardResponse::getBoardName)
+                .filter(name -> name != null && !name.isBlank())
+                .findFirst()
+                .orElse(boardCode.toUpperCase());
 
         String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        String sheetName = type.getDisplayName() + " 리스트";
-        String title = "[" + type.getDisplayName() + "] 리스트_" + today;
+        String sheetName = boardName + " 목록";
+        String title = "[" + boardName + "] 목록_" + today;
 
         List<String> headers = List.of("ID", "제목", "작성자", "등록일", "조회수", "노출여부");
         List<Function<BoardResponse, String>> extractors = List.of(
                 b -> String.valueOf(b.getId()),
                 BoardResponse::getTitle,
                 b -> Optional.ofNullable(b.getWriterName()).orElse("-"),
-                b -> b.getRegDate().toString(),
+                b -> b.getRegDate() != null ? b.getRegDate().toString() : "-",
                 b -> String.valueOf(b.getViewCount()),
-                b -> "Y".equals(b.getUseTf()) ? "보이기" : "숨김"
+                b -> "Y".equals(b.getUseTf()) ? "사용" : "미사용"
         );
 
-
         ByteArrayInputStream excelStream = ExcelUtil.generateExcel(sheetName, boards, headers, extractors);
-        String filename = URLEncoder.encode(title + ".xlsx", StandardCharsets.UTF_8)
-                .replaceAll("\\+", "%20");
+        String filename = URLEncoder.encode(title + ".xlsx", StandardCharsets.UTF_8).replaceAll("\\+", "%20");
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + filename + "\"; filename*=UTF-8''" + filename)

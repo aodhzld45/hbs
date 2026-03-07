@@ -29,6 +29,8 @@ public interface BoardConfigRepository extends JpaRepository<BoardConfig, Long> 
 
     Optional<BoardConfig> findByIdAndDelTf(Long id, String delTf);
 
+    Optional<BoardConfig> findByBoardCodeIgnoreCaseAndDelTf(String boardCode, String delTf);
+
     boolean existsByBoardCodeIgnoreCase(String boardCode);
 
     boolean existsByBoardCodeIgnoreCaseAndIdNot(String boardCode, Long id);

@@ -47,6 +47,12 @@ public class BoardConfigService {
         return BoardConfigResponse.from(boardConfig);
     }
 
+    public BoardConfigResponse getBoardConfigByCode(String boardCode) {
+        BoardConfig boardConfig = boardConfigRepository.findByBoardCodeIgnoreCaseAndDelTf(boardCode, "N")
+                .orElseThrow(() -> new EntityNotFoundException("게시판 설정이 존재하지 않습니다."));
+        return BoardConfigResponse.from(boardConfig);
+    }
+
     public Long createBoardConfig(BoardConfigRequest request, String adminId) {
         String normalizedBoardCode = normalizeBoardCode(request.getBoardCode());
         validateBoardCodeForCreate(normalizedBoardCode);

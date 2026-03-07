@@ -14,21 +14,23 @@ import java.util.stream.Collectors;
 @Setter
 @ToString
 public class BoardRequest {
-    private String boardType;
+    private String boardCode;
+    private String categoryCode;
     private String title;
     private String content;
     private String writerName;
     private String useTf;
-    private String existingFileIds; // "1,2,3"
+    private String existingFileIds;
 
-    private String noticeTf;      // "Y" or "N"
-    private Integer noticeSeq;    // 우선순위 (기본 0)
-    private LocalDateTime noticeStart; // 공지 시작일
-    private LocalDateTime noticeEnd; // 공지 만료일
-
+    private String noticeTf;
+    private Integer noticeSeq;
+    private LocalDateTime noticeStart;
+    private LocalDateTime noticeEnd;
 
     public List<Long> getExistingFileIdList() {
-        if (existingFileIds == null || existingFileIds.isBlank()) return Collections.emptyList();
+        if (existingFileIds == null || existingFileIds.isBlank()) {
+            return Collections.emptyList();
+        }
         return Arrays.stream(existingFileIds.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())

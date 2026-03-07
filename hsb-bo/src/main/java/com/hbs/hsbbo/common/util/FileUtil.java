@@ -96,11 +96,11 @@ public class FileUtil {
     *  게시판용 Path 관련
     */
 
-    public Path resolveBoardPath(String boardType) {
-        if (boardType == null || boardType.isBlank()) {
-            throw new IllegalArgumentException("boardType이 유효하지 않습니다.");
+    public Path resolveBoardPath(String boardCode) {
+        if (boardCode == null || boardCode.isBlank()) {
+            throw new IllegalArgumentException("boardCode이 유효하지 않습니다.");
         }
-        return Paths.get(fileStorageProperties.getUploadPath(), "board", boardType.toLowerCase());
+        return Paths.get(fileStorageProperties.getUploadPath(), "board", boardCode.toLowerCase());
     }
 
     public Path resolveContactPath(String contactType) {

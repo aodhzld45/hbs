@@ -14,7 +14,10 @@ import java.util.List;
 public class BoardResponse {
 
     private Long id;
-    private String boardType;
+    private Long boardConfigId;
+    private String boardCode;
+    private String boardName;
+    private String categoryCode;
     private String title;
     private String content;
     private String writerName;
@@ -24,8 +27,8 @@ public class BoardResponse {
     private Integer viewCount;
     private String noticeTf;
     private int noticeSeq;
-    private LocalDateTime noticeStart;  // 공지 시작일 (NULL 가능)
-    private LocalDateTime noticeEnd;  // 공지 만료일 (NULL 가능)
+    private LocalDateTime noticeStart;
+    private LocalDateTime noticeEnd;
     private String useTf;
     private String delTf;
     private String regAdm;
@@ -34,15 +37,16 @@ public class BoardResponse {
     private LocalDateTime upDate;
     private String delAdm;
     private LocalDateTime delDate;
-
-    private boolean hasFile; // 게시물 파일 유무 판단.
-
-    private List<BoardFileResponse> files; // 실제 파일 목록 (상세 전용 필드 / 목록에서는 null 또는 빈 리스트)
+    private boolean hasFile;
+    private List<BoardFileResponse> files;
 
     public static BoardResponse from(Board entity) {
         return new BoardResponse(
                 entity.getId(),
-                entity.getBoardType().name(),
+                entity.getBoardConfig() != null ? entity.getBoardConfig().getId() : null,
+                entity.getBoardConfig() != null ? entity.getBoardConfig().getBoardCode() : null,
+                entity.getBoardConfig() != null ? entity.getBoardConfig().getBoardName() : null,
+                entity.getCategoryCode(),
                 entity.getTitle(),
                 entity.getContent(),
                 entity.getWriterName(),
@@ -62,10 +66,8 @@ public class BoardResponse {
                 entity.getUpDate(),
                 entity.getDelAdm(),
                 entity.getDelDate(),
-                false,           // hasFile 기본값
-                null             // files 기본값
+                false,
+                null
         );
     }
-
-
 }

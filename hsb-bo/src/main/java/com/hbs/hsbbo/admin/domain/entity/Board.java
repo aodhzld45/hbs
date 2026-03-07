@@ -1,6 +1,5 @@
 package com.hbs.hsbbo.admin.domain.entity;
 
-import com.hbs.hsbbo.admin.domain.type.BoardType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,16 +13,19 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
+@ToString(exclude = {"boardConfig", "files"})
 public class Board {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "board_type", nullable = false, length = 50)
-    private BoardType boardType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "board_config_id", nullable = false)
+    private BoardConfig boardConfig;
+
+    @Column(name = "category_code", length = 50)
+    private String categoryCode;
 
     @Column(nullable = false, length = 200)
     private String title;
@@ -47,16 +49,16 @@ public class Board {
     private Integer viewCount = 0;
 
     @Column(name = "notice_tf", length = 1, nullable = false)
-    private String noticeTf = "N";   // 공지 여부 (Y/N)
+    private String noticeTf = "N";
 
     @Column(name = "notice_seq", nullable = false)
-    private int noticeSeq = 0;       // 공지 우선순위 (기본 0)
+    private int noticeSeq = 0;
 
     @Column(name = "notice_start")
-    private LocalDateTime noticeStart;  // 공지 시작일 (NULL 가능)
+    private LocalDateTime noticeStart;
 
     @Column(name = "notice_end")
-    private LocalDateTime noticeEnd;  // 공지 만료일 (NULL 가능)
+    private LocalDateTime noticeEnd;
 
     @Column(name = "use_tf", length = 1)
     private String useTf = "Y";
@@ -82,7 +84,6 @@ public class Board {
     @Column(name = "del_date")
     private LocalDateTime delDate;
 
-    // 게시판 첨부파일 연관관계
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BoardFile> files = new ArrayList<>();
 }
