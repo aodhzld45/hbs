@@ -48,7 +48,7 @@ interface CommentSectionProps {
     };
 
     loadComments();
-  }, [targetId]);
+  }, [targetId, targetType]);
 
   // 댓글 등록
   const handleCommentSubmit = async () => {

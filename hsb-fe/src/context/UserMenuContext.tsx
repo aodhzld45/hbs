@@ -13,22 +13,33 @@ const UserMenuContext = createContext<UserMenuContextType | undefined>(undefined
 const normalizePath = (p: string) => {
   const x = (p ?? "").trim();
   if (!x) return "";
-  // 쿼리/해시 들어오는 케이스 방어(혹시라도)
   const cleaned = x.split("?")[0].split("#")[0];
   const noTrail = cleaned.replace(/\/+$/, "");
   return noTrail === "" ? "/" : noTrail;
 };
 
+const withoutLeadingMenuSegment = (path: string) => {
+  const normalized = normalizePath(path);
+  const parts = normalized.split('/').filter(Boolean);
+  if (parts.length >= 2 && /^\d+$/.test(parts[0])) {
+    return '/' + parts.slice(1).join('/');
+  }
+  return normalized;
+};
+
 const deriveBases = (url: string) => {
-  const u = normalizePath(url);
+  const variants = new Set<string>();
+  const normalized = normalizePath(url);
+  const alias = withoutLeadingMenuSegment(normalized);
+
+  if (normalized) {
+    variants.add(normalized);
+  }
+  if (alias && alias !== normalized) {
+    variants.add(alias);
+  }
+
   const bases: string[] = [];
-  if (!u) return bases;
-
-  // 원본도 base로 포함
-  bases.push(u);
-
-  // 화면용 suffix가 있으면 상위 base도 허용
-  // (필요하면 suffix 추가)
   const suffixes = [
     "/list",
     "/detail",
@@ -38,14 +49,17 @@ const deriveBases = (url: string) => {
     "/edit",
   ];
 
-  for (const s of suffixes) {
-    if (u.endsWith(s)) {
-      const base = u.slice(0, -s.length);
-      if (base) bases.push(base);
+  variants.forEach((u) => {
+    bases.push(u);
+    for (const s of suffixes) {
+      if (u.endsWith(s)) {
+        const base = u.slice(0, -s.length);
+        if (base) bases.push(base);
+      }
     }
-  }
+  });
 
-  return bases;
+  return Array.from(new Set(bases));
 };
 
 function collectBaseSet(nodes: UserMenuNode[] | undefined, set: Set<string>) {
@@ -71,7 +85,6 @@ export function UserMenuProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadTree = async () => {
       try {
-        // onlyUsable = true → use_tf='Y' 인 메뉴만
         const data = await fetchUserMenuTree(true);
         setMenuTree(data);
       } catch (err) {
@@ -83,33 +96,27 @@ export function UserMenuProvider({ children }: { children: React.ReactNode }) {
     loadTree();
   }, []);
 
-  // menuTree로부터 “허용 base 경로 Set” 생성 (성능/일관성)
   const allowedBaseSet = useMemo(() => {
     const s = new Set<string>();
     collectBaseSet(menuTree, s);
     return s;
   }, [menuTree]);
 
-  // 최종 판정 로직
   const hasPathAccess = (path: string) => {
     const normalized = normalizePath(path);
-    if (!normalized) return false;
+    const alias = withoutLeadingMenuSegment(normalized);
+    const candidates = Array.from(new Set([normalized, alias]));
 
-    // "/"는 prefix로 취급하면 전체 허용이 되므로 별도 처리
-    if (normalized === "/") return allowedBaseSet.has("/") || false;
+    if (candidates.includes('/')) {
+      return allowedBaseSet.has('/');
+    }
 
-    // Set을 Array로 변환하여 for..of 루프를 지원하지 않는 환경에서 반복 가능하도록 수정
-    for (const base of Array.from(allowedBaseSet)) { // 수정된 부분
-      if (!base) continue;
-
-      // "/"는 prefix 제외
-      if (base === "/") continue;
-
-      // exact
-      if (normalized === base) return true;
-
-      // prefix (하위 전부 허용)
-      if (normalized.startsWith(base + "/")) return true;
+    for (const candidate of candidates) {
+      for (const base of Array.from(allowedBaseSet)) {
+        if (!base || base === '/') continue;
+        if (candidate === base) return true;
+        if (candidate.startsWith(base + '/')) return true;
+      }
     }
 
     return false;

@@ -1,92 +1,58 @@
 import api from '../api';
-import {BoardItem, BoardType} from '../../types/Admin/BoardItem'
+import { BoardItem } from '../../types/Admin/BoardItem';
 
-
-// 게시글 조회 API
 export const fetchBoardList = async (
-    type: BoardType,
-    keyword: string = '',
-    page: number,
-    size: number,
-    useTf?: any   // <- optional
+  boardCode: string,
+  keyword = '',
+  page: number,
+  size: number,
+  useTf?: string
+): Promise<{ items: BoardItem[]; notices: BoardItem[]; totalCount: number; totalPages: number }> => {
+  const params: Record<string, string | number> = { boardCode, keyword, page, size };
+  if (useTf) {
+    params.useTf = useTf;
+  }
+  const res = await api.get('/board/board-list', { params });
+  return res.data;
+};
 
-  ): Promise<{ items: BoardItem[]; notices: BoardItem[]; totalCount: number; totalPages: number; }> => {
-    try {
-      const params: any = { type, keyword, page, size };
-      if (useTf) params.useTf = useTf;  // 사용자일 때만 전송
-      const res = await api.get('/board/board-list', {params} );
-
-      return res.data;
-    } catch (error) {
-      console.error('게시글 조회 실패:', error);
-      throw error;
-    }
-  };
-
-
-// 게시글 상세 API
 export const fetchBoardDetail = async (id: number): Promise<BoardItem> => {
   const res = await api.get('/board/board-detail', { params: { id } });
   return res.data;
 };
 
-// 게시글 등록 API
 export const fetchBoardCreate = async (formData: FormData): Promise<string> => {
-  try {
-    const res = await api.post('/board/board-create', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return res.data; // 반드시 문자열 반환
-  } catch (error) {
-    console.error('게시글 등록 실패:', error);
-    throw error;
-  }
-};
-
-// 게시글 수정 API
-export const fetchBoardUpdate = async (formData: FormData, id: number) : Promise<string> => {
-  try {
-    const res = await api.put(`/board/board-update/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return res.data; // 반드시 문자열 반환
-  } catch (error) {
-    console.error('게시글 수정 실패:', error);
-    throw error;
-  }
-};
-
-// 게시글 삭제 API
-export const fetchBoardDelete = async (id: number): Promise<void> => {
-  const res = await api.put(`/board/board-delete/${id}`);
+  const res = await api.post('/board/board-create', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return res.data;
 };
 
-// 게시글 사용여부 변경 API
+export const fetchBoardUpdate = async (formData: FormData, id: number): Promise<string> => {
+  const res = await api.put(`/board/board-update/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+};
+
+export const fetchBoardDelete = async (id: number): Promise<void> => {
+  await api.put(`/board/board-delete/${id}`);
+};
+
 export const updateBoardUseTf = async (
   id: number,
-  useTf: "Y" | "N",
+  useTf: 'Y' | 'N',
   adminId: string
 ): Promise<number> => {
   const response = await api.put(`/board/use-tf/${id}`, null, {
-    params: { useTf, adminId }
+    params: { useTf, adminId },
   });
-  return response.data; 
+  return response.data;
 };
 
-// 게시글 자료 엑셀 다운로드 API
-export const fetchExcelDownload = async (type: string, keyword: string = '') => {
-  const response = await api.get('/board/export', {
-    params: { type, keyword },
-    responseType: 'blob', // 엑셀 다운로드용
+export const fetchExcelDownload = async (boardCode: string, keyword = '') => {
+  return api.get('/board/export', {
+    params: { boardCode, keyword },
+    responseType: 'blob',
   });
-  return response;
 };
-  
-
-
-

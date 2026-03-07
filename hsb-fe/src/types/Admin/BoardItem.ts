@@ -1,66 +1,57 @@
-export type BoardType = 'NOTICE' | 'EVENT' | 'FAQ' | 'DATA';
+export type BoardCode = string;
 
 export interface BoardItem {
-    id: number;
-    boardType: BoardType;
-
-    title: string;
-    content: string;
-    writerName: string;
-
-    imagePath?: string;
-    startDate?: string;
-    endDate?: string;
-
-    viewCount: number;
-
-    noticeTf?: 'Y'|'N';
-    noticeSeq?: number;
-    noticeStart?: string | null; // ISO 문자열 (백엔드 LocalDateTime)
-    noticeEnd?: string | null;
-
-    useTf: 'Y' | 'N';
-    delTf?: 'Y' | 'N';
-
-    regAdm?: string;
-    regDate: string;
-    upAdm?: string;
-    upDate?: string;
-    delAdm?: string;
-    delDate?: string;
-
-    hasFile?: boolean;
-    files?: BoardFileItem[];
+  id: number;
+  boardConfigId?: number;
+  boardCode: BoardCode;
+  boardName?: string;
+  categoryCode?: string | null;
+  title: string;
+  content: string;
+  writerName: string;
+  imagePath?: string;
+  startDate?: string;
+  endDate?: string;
+  viewCount: number;
+  noticeTf?: 'Y' | 'N';
+  noticeSeq?: number;
+  noticeStart?: string | null;
+  noticeEnd?: string | null;
+  useTf: 'Y' | 'N';
+  delTf?: 'Y' | 'N';
+  regAdm?: string;
+  regDate: string;
+  upAdm?: string;
+  upDate?: string;
+  delAdm?: string;
+  delDate?: string;
+  hasFile?: boolean;
+  files?: BoardFileItem[];
 }
 
 export interface BoardFileItem {
-    id: number;
-    boardId: number;
-    fileName: string;
-    originalFileName: string;
-    filePath: string;
-    fileSize: number;
-    fileType: string;
-    fileExtension: string;
-    dispSeq: number;
-    useTf: 'Y' | 'N';
-    delTf: 'Y' | 'N';
-    regAdm: string;
-    regDate: string;
-    upAdm: string;
-    upDate: string;
-    delAdm: string;
-    delDate: string;
+  id: number;
+  boardId: number;
+  fileName: string;
+  originalFileName: string;
+  filePath: string;
+  fileSize: number;
+  fileType: string;
+  fileExtension: string;
+  dispSeq: number;
+  useTf: 'Y' | 'N';
+  delTf: 'Y' | 'N';
+  regAdm?: string;
+  regDate?: string;
+  upAdm?: string;
+  upDate?: string;
+  delAdm?: string;
+  delDate?: string;
 }
 
-// 게시판 유형별 한글 이름 매핑
-export const BoardTypeTitleMap: Record<BoardType, string> = {
-    NOTICE: '공지사항',
-    EVENT: '이벤트',
-    FAQ: 'FAQ',
-    DATA: '자료실',
-  };
-
-
-
-
+export function getBoardDisplayName(boardCode?: string, boardName?: string | null): string {
+  if (boardName && boardName.trim()) {
+    return boardName;
+  }
+  return boardCode?.toUpperCase() ?? '게시판';
+}
