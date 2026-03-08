@@ -30,12 +30,14 @@ const BoardWrite = () => {
   const [selectedBoardCode, setSelectedBoardCode] = useState(initialBoardCode);
   const [boardConfig, setBoardConfig] = useState<BoardConfigItem | null>(null);
   const [existingFiles, setExistingFiles] = useState<(BoardFileItem | File)[]>([]);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [form, setForm] = useState<Partial<BoardItem>>({
     boardCode: initialBoardCode,
     title: '',
     content: '',
     writerName: '',
+    imagePath: '',
     useTf: 'Y',
     noticeTf: 'N',
     noticeSeq: 0,
@@ -89,6 +91,7 @@ const BoardWrite = () => {
           title: boardData.title,
           content: boardData.content,
           writerName: boardData.writerName,
+          imagePath: boardData.imagePath ?? '',
           useTf: boardData.useTf,
           noticeTf: boardData.noticeTf ?? 'N',
           noticeSeq: boardData.noticeSeq ?? 0,
@@ -128,6 +131,11 @@ const BoardWrite = () => {
         nextForm.categoryCode = null;
       }
 
+      if (boardConfig.skinType !== 'GALLERY') {
+        nextForm.imagePath = '';
+        setThumbnailFile(null);
+      }
+
       return nextForm;
     });
   }, [boardConfig]);
@@ -137,6 +145,30 @@ const BoardWrite = () => {
   const canUseNotice = boardConfig?.noticeTf === 'Y';
   const canUseFiles = boardConfig?.fileTf !== 'N';
   const canUseCategory = boardConfig?.categoryTf === 'Y';
+  const isGallerySkin = boardConfig?.skinType === 'GALLERY';
+  
+const thumbnailPreviewUrl = useMemo(() => {
+    // 1. 새로 선택한 파일이 있다면 브라우저 임시 URL 생성
+    if (thumbnailFile) {
+      return URL.createObjectURL(thumbnailFile);
+    }
+    
+    // 2. 새로 선택한 파일은 없지만, 기존에 저장된 이미지 경로가 있다면 서버 URL 조합
+    if (form.imagePath) {
+      return `${FILE_BASE_URL}/${form.imagePath}`;
+    }
+    
+    // 3. 둘 다 없다면 null 반환
+    return null;
+  }, [form.imagePath, thumbnailFile]);
+
+  useEffect(() => {
+    return () => {
+      if (thumbnailFile && thumbnailPreviewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(thumbnailPreviewUrl);
+      }
+    };
+  }, [thumbnailFile, thumbnailPreviewUrl]);
 
   const updateFiles = (prev: (BoardFileItem | File)[], newFiles: File[]): (BoardFileItem | File)[] => {
     const merged = [...prev];
@@ -161,6 +193,9 @@ const BoardWrite = () => {
     if (canUseCategory && !form.categoryCode) {
       return '카테고리를 선택해주세요.';
     }
+    if (isGallerySkin && !thumbnailFile && !form.imagePath) {
+      return '갤러리 스킨은 썸네일 이미지를 등록해야 합니다.';
+    }
     if (canUseNotice && form.noticeTf === 'Y' && form.noticeStart && form.noticeEnd) {
       if (new Date(form.noticeStart).getTime() > new Date(form.noticeEnd).getTime()) {
         return '공지 시작일은 종료일보다 늦을 수 없습니다.';
@@ -184,6 +219,7 @@ const BoardWrite = () => {
       formData.append('title', form.title ?? '');
       formData.append('content', form.content ?? '');
       formData.append('writerName', form.writerName ?? '');
+      formData.append('imagePath', String(form.imagePath ?? ''));
       formData.append('useTf', form.useTf ?? 'Y');
       formData.append('noticeTf', canUseNotice ? form.noticeTf ?? 'N' : 'N');
       formData.append('noticeSeq', String(form.noticeSeq ?? 0));
@@ -201,16 +237,16 @@ const BoardWrite = () => {
         }
       });
 
+      if (isGallerySkin && thumbnailFile) {
+        formData.append('thumbnail', thumbnailFile);
+      }
+
       const response = isEdit
         ? await fetchBoardUpdate(formData, Number(id))
         : await fetchBoardCreate(formData);
 
-      if (response.includes('성공')) {
-        alert(response);
-        navigate(`/admin/board/${selectedBoardCode}`);
-      } else {
-        alert(response);
-      }
+      alert(response);
+      navigate(`/admin/board/${selectedBoardCode}`);
     } catch (error) {
       console.error('게시글 저장 실패:', error);
       alert('게시글 저장에 실패했습니다.');
@@ -232,9 +268,11 @@ const BoardWrite = () => {
   const handleBoardCodeChange = (nextBoardCode: string) => {
     setSelectedBoardCode(nextBoardCode);
     setExistingFiles([]);
+    setThumbnailFile(null);
     setForm((prev) => ({
       ...prev,
       boardCode: nextBoardCode,
+      imagePath: '',
       categoryCode: null,
       noticeTf: 'N',
       noticeSeq: 0,
@@ -245,15 +283,17 @@ const BoardWrite = () => {
 
   return (
     <AdminLayout>
-      <div className="p-6 max-w-5xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6">{boardName} {isEdit ? '수정' : '등록'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-6 border p-6 bg-white rounded shadow">
-          <div className="grid grid-cols-5 gap-4 items-center">
+      <div className="mx-auto max-w-5xl p-6">
+        <h2 className="mb-6 text-2xl font-bold">
+          {boardName} {isEdit ? '수정' : '등록'}
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-6 rounded border bg-white p-6 shadow">
+          <div className="grid grid-cols-5 items-center gap-4">
             <label className="col-span-1 font-semibold">게시판</label>
             <select
               value={selectedBoardCode}
               onChange={(e) => handleBoardCodeChange(e.target.value)}
-              className="col-span-4 border px-3 py-2 rounded"
+              className="col-span-4 rounded border px-3 py-2"
               disabled={isEdit}
               required
             >
@@ -267,48 +307,48 @@ const BoardWrite = () => {
           </div>
 
           {canUseNotice && (
-            <div className="rounded-lg border p-4 bg-gray-50 space-y-4">
+            <div className="space-y-4 rounded-lg border bg-gray-50 p-4">
               <div className="flex flex-wrap items-center gap-4">
-                <label className="font-semibold w-24">공지 여부</label>
+                <label className="w-24 font-semibold">공지 여부</label>
                 <select
                   value={form.noticeTf ?? 'N'}
                   onChange={(e) => setForm((prev) => ({ ...prev, noticeTf: e.target.value as 'Y' | 'N' }))}
-                  className="border px-3 py-2 rounded w-40"
+                  className="w-40 rounded border px-3 py-2"
                 >
                   <option value="N">일반글</option>
                   <option value="Y">공지글</option>
                 </select>
 
-                <label className="font-semibold w-24">우선순위</label>
+                <label className="w-24 font-semibold">우선순위</label>
                 <input
                   type="number"
                   min={0}
                   max={9999}
                   value={form.noticeSeq ?? 0}
                   onChange={(e) => setForm((prev) => ({ ...prev, noticeSeq: Number(e.target.value) }))}
-                  className="border px-3 py-2 rounded w-32"
+                  className="w-32 rounded border px-3 py-2"
                   disabled={form.noticeTf !== 'Y'}
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="font-semibold block mb-1">공지 시작일</label>
+                  <label className="mb-1 block font-semibold">공지 시작일</label>
                   <input
                     type="datetime-local"
                     value={toInputValue(form.noticeStart)}
                     onChange={(e) => setForm((prev) => ({ ...prev, noticeStart: e.target.value || null }))}
-                    className="border px-3 py-2 rounded w-full"
+                    className="w-full rounded border px-3 py-2"
                     disabled={form.noticeTf !== 'Y'}
                   />
                 </div>
                 <div>
-                  <label className="font-semibold block mb-1">공지 종료일</label>
+                  <label className="mb-1 block font-semibold">공지 종료일</label>
                   <input
                     type="datetime-local"
                     value={toInputValue(form.noticeEnd)}
                     onChange={(e) => setForm((prev) => ({ ...prev, noticeEnd: e.target.value || null }))}
-                    className="border px-3 py-2 rounded w-full"
+                    className="w-full rounded border px-3 py-2"
                     disabled={form.noticeTf !== 'Y'}
                   />
                 </div>
@@ -316,13 +356,13 @@ const BoardWrite = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-5 gap-4 items-center">
+          <div className="grid grid-cols-5 items-center gap-4">
             <label className="col-span-1 font-semibold">제목</label>
             <input
               type="text"
               value={form.title ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-              className="col-span-4 border px-3 py-2 rounded"
+              className="col-span-4 rounded border px-3 py-2"
               required
             />
 
@@ -331,7 +371,7 @@ const BoardWrite = () => {
               type="text"
               value={form.writerName ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, writerName: e.target.value }))}
-              className="col-span-4 border px-3 py-2 rounded"
+              className="col-span-4 rounded border px-3 py-2"
               required
             />
 
@@ -341,7 +381,7 @@ const BoardWrite = () => {
                 <select
                   value={form.categoryCode ?? ''}
                   onChange={(e) => setForm((prev) => ({ ...prev, categoryCode: e.target.value || null }))}
-                  className="col-span-4 border px-3 py-2 rounded"
+                  className="col-span-4 rounded border px-3 py-2"
                 >
                   <option value="">카테고리 선택</option>
                   {categories
@@ -356,8 +396,31 @@ const BoardWrite = () => {
             )}
           </div>
 
+          {isGallerySkin && (
+            <div className="space-y-4 rounded-lg border bg-gray-50 p-4">
+              <div>
+                <label className="mb-2 block font-semibold">썸네일 이미지</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setThumbnailFile(e.target.files?.[0] ?? null)}
+                  className="block w-full rounded border bg-white px-3 py-2"
+                />
+                <p className="mt-2 text-sm text-gray-500">
+                  갤러리 스킨에서는 목록 카드에 표시할 대표 이미지를 등록합니다.
+                </p>
+              </div>
+
+              {thumbnailPreviewUrl && (
+                <div className="overflow-hidden rounded border bg-white p-3">
+                  <img src={thumbnailPreviewUrl} alt="썸네일 미리보기" className="h-40 w-56 rounded object-cover" />
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
-            <label className="block font-semibold mb-1">내용</label>
+            <label className="mb-1 block font-semibold">내용</label>
             <CKEditor
               editor={ClassicEditor as any}
               config={{ extraPlugins: [Base64UploadAdapterPlugin] }}
@@ -371,9 +434,9 @@ const BoardWrite = () => {
 
           {canUseFiles && (
             <div>
-              <label className="block mb-1 font-semibold">첨부파일 (최대 3개)</label>
+              <label className="mb-1 block font-semibold">첨부파일 (최대 3개)</label>
               <div className="mb-2">
-                <ul className="text-sm text-gray-700 space-y-1">
+                <ul className="space-y-1 text-sm text-gray-700">
                   {existingFiles.map((file, index) => (
                     <li key={file instanceof File ? `${file.name}-${index}` : file.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -423,7 +486,7 @@ const BoardWrite = () => {
                   setDragOver(true);
                 }}
                 onDragLeave={() => setDragOver(false)}
-                className={`border-2 border-dashed rounded px-4 py-6 text-center transition-colors ${
+                className={`rounded border-2 border-dashed px-4 py-6 text-center transition-colors ${
                   dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
                 }`}
               >
@@ -447,11 +510,11 @@ const BoardWrite = () => {
           )}
 
           <div>
-            <label className="font-semibold block mb-1">노출 여부</label>
+            <label className="mb-1 block font-semibold">노출 여부</label>
             <select
               value={form.useTf ?? 'Y'}
               onChange={(e) => setForm((prev) => ({ ...prev, useTf: e.target.value as 'Y' | 'N' }))}
-              className="border px-3 py-2 rounded"
+              className="rounded border px-3 py-2"
             >
               <option value="Y">사용</option>
               <option value="N">미사용</option>
@@ -459,10 +522,10 @@ const BoardWrite = () => {
           </div>
 
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-400 text-white rounded">
+            <button type="button" onClick={() => navigate(-1)} className="rounded bg-gray-400 px-4 py-2 text-white">
               취소
             </button>
-            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
               {isEdit ? '수정' : '등록'}
             </button>
           </div>

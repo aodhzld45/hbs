@@ -4,9 +4,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import AdminLayout from '../../../components/Layout/AdminLayout';
 import Pagination from '../../../components/Common/Pagination';
 import { BoardItem, getBoardDisplayName } from '../../../types/Admin/BoardItem';
+import { BoardConfigItem } from '../../../types/Admin/BoardConfigItem';
 import { fetchBoardList, fetchExcelDownload, updateBoardUseTf } from '../../../services/Admin/boardApi';
 import { fetchBoardConfigByCode } from '../../../services/Admin/boardConfigApi';
 import { useAuth } from '../../../context/AuthContext';
+import { FILE_BASE_URL } from '../../../config/config';
 
 const BoardManager: React.FC = () => {
   const navigate = useNavigate();
@@ -16,6 +18,7 @@ const BoardManager: React.FC = () => {
 
   const [adminId, setAdminId] = useState<string | null>(admin?.id ?? null);
   const [boardName, setBoardName] = useState<string>(normalizedBoardCode);
+  const [boardConfig, setBoardConfig] = useState<BoardConfigItem | null>(null);
   const [notices, setNotices] = useState<BoardItem[]>([]);
   const [boards, setBoards] = useState<BoardItem[]>([]);
   const [keyword, setKeyword] = useState('');
@@ -31,8 +34,14 @@ const BoardManager: React.FC = () => {
 
   useEffect(() => {
     fetchBoardConfigByCode(normalizedBoardCode)
-      .then((config) => setBoardName(config.boardName))
-      .catch(() => setBoardName(normalizedBoardCode));
+      .then((config) => {
+        setBoardConfig(config);
+        setBoardName(config.boardName);
+      })
+      .catch(() => {
+        setBoardConfig(null);
+        setBoardName(normalizedBoardCode);
+      });
   }, [normalizedBoardCode]);
 
   const loadBoardList = useCallback(async () => {
@@ -62,6 +71,8 @@ const BoardManager: React.FC = () => {
   useEffect(() => {
     loadBoardList();
   }, [loadBoardList]);
+
+  const isGallerySkin = boardConfig?.skinType === 'GALLERY';
 
   const handleToggleUseTf = async (board: BoardItem) => {
     if (!adminId) {
@@ -108,12 +119,44 @@ const BoardManager: React.FC = () => {
     }
   };
 
+const renderThumbnail = (board: BoardItem) => {
+    // 1. imagePath가 없으면 바로 '없음' 반환 (불필요한 서버 호출 방지)
+    if (!board.imagePath) {
+      return <span className="text-xs text-gray-400">없음</span>;
+    }
+
+    // 2. URL 조합 시 슬래시(//) 중복 방지 처리
+    // FILE_BASE_URL이 'http://localhost:8080/' 처럼 끝에 /가 붙어있을 경우를 대비
+    const baseUrl = FILE_BASE_URL.endsWith('/') 
+      ? FILE_BASE_URL.slice(0, -1) 
+      : FILE_BASE_URL;
+    
+    // board.imagePath가 /로 시작할 경우를 대비해 처리
+    const cleanPath = board.imagePath.startsWith('/') 
+      ? board.imagePath 
+      : `/${board.imagePath}`;
+
+    const imageSrc = `${baseUrl}${cleanPath}`;
+
+    return (
+      <img 
+        src={imageSrc} 
+        alt={board.title} 
+        className="mx-auto h-12 w-16 rounded border object-cover"
+        onError={(e) => {
+          // 이미지 로드 실패 시 엑박 대신 표시할 기본 처리 (선택)
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
+      />
+    );
+  };
+
   return (
     <AdminLayout>
       <div className="p-6">
-        <h2 className="text-2xl font-bold mb-4">{boardName} 관리</h2>
+        <h2 className="mb-4 text-2xl font-bold">{boardName} 관리</h2>
 
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <span className="text-gray-700">총 {totalCount}건</span>
           <div className="flex gap-2">
             <input
@@ -127,14 +170,14 @@ const BoardManager: React.FC = () => {
                 }
               }}
               placeholder="검색어 입력"
-              className="border px-3 py-2 rounded"
+              className="rounded border px-3 py-2"
             />
             <button
               onClick={() => {
                 setPage(0);
                 loadBoardList();
               }}
-              className="bg-gray-700 text-white px-4 rounded"
+              className="rounded bg-gray-700 px-4 text-white"
             >
               검색
             </button>
@@ -145,6 +188,7 @@ const BoardManager: React.FC = () => {
           <thead className="bg-gray-100">
             <tr>
               <th className="border p-2">No</th>
+              {isGallerySkin && <th className="w-24 border p-2">썸네일</th>}
               <th className="border p-2">제목</th>
               <th className="border p-2">작성자</th>
               <th className="border p-2">등록일</th>
@@ -155,15 +199,18 @@ const BoardManager: React.FC = () => {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-gray-500">데이터를 불러오는 중입니다...</td>
+                <td colSpan={isGallerySkin ? 7 : 6} className="py-8 text-center text-gray-500">
+                  데이터를 불러오는 중입니다...
+                </td>
               </tr>
             ) : (
               <>
                 {notices.map((notice) => (
-                  <tr key={`notice-${notice.id}`} className="text-center hover:bg-gray-50 bg-yellow-50">
-                    <td className="border p-2 text-rose-600 font-semibold">공지</td>
+                  <tr key={`notice-${notice.id}`} className="bg-yellow-50 text-center hover:bg-gray-50">
+                    <td className="border p-2 font-semibold text-rose-600">공지</td>
+                    {isGallerySkin && <td className="border p-2">{renderThumbnail(notice)}</td>}
                     <td
-                      className="border p-2 text-left text-blue-600 cursor-pointer hover:underline"
+                      className="border p-2 cursor-pointer text-left text-blue-600 hover:underline"
                       onClick={() => navigate(`/admin/board/${normalizedBoardCode}/detail/${notice.id}`)}
                     >
                       {notice.title}
@@ -174,7 +221,7 @@ const BoardManager: React.FC = () => {
                     <td className="border p-2">
                       <button
                         onClick={() => handleToggleUseTf(notice)}
-                        className={`px-3 py-1 rounded text-xs font-medium ${
+                        className={`rounded px-3 py-1 text-xs font-medium ${
                           notice.useTf === 'Y' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
                         }`}
                       >
@@ -186,14 +233,17 @@ const BoardManager: React.FC = () => {
 
                 {boards.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-400">표시할 게시물이 없습니다.</td>
+                    <td colSpan={isGallerySkin ? 7 : 6} className="py-8 text-center text-gray-400">
+                      표시할 게시물이 없습니다.
+                    </td>
                   </tr>
                 ) : (
                   boards.map((board, idx) => (
                     <tr key={board.id} className="text-center hover:bg-gray-50">
                       <td className="border p-2">{Math.max(totalCount - (page * size + idx), 0)}</td>
+                      {isGallerySkin && <td className="border p-2">{renderThumbnail(board)}</td>}
                       <td
-                        className="border p-2 text-left text-blue-600 cursor-pointer hover:underline"
+                        className="border p-2 cursor-pointer text-left text-blue-600 hover:underline"
                         onClick={() => navigate(`/admin/board/${normalizedBoardCode}/detail/${board.id}`)}
                       >
                         {board.title}
@@ -204,7 +254,7 @@ const BoardManager: React.FC = () => {
                       <td className="border p-2">
                         <button
                           onClick={() => handleToggleUseTf(board)}
-                          className={`px-3 py-1 rounded text-xs font-medium ${
+                          className={`rounded px-3 py-1 text-xs font-medium ${
                             board.useTf === 'Y' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
                           }`}
                         >
@@ -219,13 +269,13 @@ const BoardManager: React.FC = () => {
           </tbody>
         </table>
 
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={handleExcelDownload} className="bg-green-600 text-white px-4 py-2 rounded">
+        <div className="mt-4 flex justify-end gap-2">
+          <button onClick={handleExcelDownload} className="rounded bg-green-600 px-4 py-2 text-white">
             검색한 자료 엑셀로 받기
           </button>
           <button
             onClick={() => navigate(`/admin/board/${normalizedBoardCode}/write`)}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            className="rounded bg-blue-600 px-4 py-2 text-white"
           >
             등록
           </button>

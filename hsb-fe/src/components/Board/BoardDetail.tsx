@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Layout from '../Layout/Layout';
 import { useNavigate, useParams } from 'react-router-dom';
 import CommentSection from '../Common/CommentSection';
@@ -9,7 +9,7 @@ import { fetchBoardDetail } from '../../services/Admin/boardApi';
 import { fetchBoardConfigByCode } from '../../services/Admin/boardConfigApi';
 
 const BoardDetail = () => {
-  const { menuSegment, boardCode = 'NOTICE', id } = useParams();
+  const { boardCode = 'NOTICE', id } = useParams();
   const normalizedBoardCode = boardCode.toLowerCase();
   const navigate = useNavigate();
   const [board, setBoard] = useState<BoardItem | null>(null);
@@ -44,11 +44,6 @@ const BoardDetail = () => {
     loadDetail();
   }, [id, normalizedBoardCode]);
 
-  const basePath = useMemo(() => {
-    const effectiveBoardCode = (board?.boardCode || normalizedBoardCode).toUpperCase();
-    return menuSegment ? `/${menuSegment}/${effectiveBoardCode}` : `/${effectiveBoardCode}`;
-  }, [board?.boardCode, menuSegment, normalizedBoardCode]);
-
   if (loading) {
     return <div className="p-10 text-center text-gray-500">게시글을 불러오는 중입니다...</div>;
   }
@@ -60,6 +55,7 @@ const BoardDetail = () => {
   const effectiveBoardCode = (board.boardCode || normalizedBoardCode).toUpperCase();
   const boardName = getBoardDisplayName(effectiveBoardCode, boardConfig?.boardName ?? board.boardName);
   const canUseComment = boardConfig?.commentTf === 'Y';
+  const isGallerySkin = boardConfig?.skinType === 'GALLERY';
 
   return (
     <Layout>
@@ -76,6 +72,12 @@ const BoardDetail = () => {
         </div>
 
         <hr className="mb-6" />
+
+        {isGallerySkin && (
+          <div className="mb-8 overflow-hidden rounded-3xl bg-gray-100 dark:bg-gray-800">
+            <img src={`${FILE_BASE_URL}${board.imagePath}`} alt={board.title} className="max-h-[560px] w-full object-cover" />
+          </div>
+        )}
 
         {board.hasFile && Array.isArray(board.files) && board.files.length > 0 && (
           <div className="mb-8">
