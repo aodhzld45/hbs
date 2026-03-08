@@ -60,9 +60,10 @@ public class BoardController {
     @PostMapping("/board-create")
     public ResponseEntity<String> createBoard(
             @ModelAttribute BoardRequest request,
-            @RequestPart(value = "files", required = false) List<MultipartFile> files
+            @RequestPart(value = "files", required = false) List<MultipartFile> files,
+            @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail
     ) {
-        boardService.createBoard(request, files);
+        boardService.createBoard(request, files, thumbnail);
         return ResponseEntity.ok("등록 성공");
     }
 
@@ -71,9 +72,10 @@ public class BoardController {
     public ResponseEntity<String> updateBoard(
             @PathVariable Long id,
             @ModelAttribute BoardRequest request,
-            @RequestPart(value = "files", required = false) List<MultipartFile> files
+            @RequestPart(value = "files", required = false) List<MultipartFile> files,
+            @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail
     ) {
-        boardService.updateBoard(id, request, files);
+        boardService.updateBoard(id, request, files, thumbnail);
         return ResponseEntity.ok("수정 성공");
     }
 

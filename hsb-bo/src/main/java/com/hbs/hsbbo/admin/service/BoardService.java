@@ -122,7 +122,7 @@ public class BoardService {
         return getBoardDetail(id);
     }
 
-    public void createBoard(BoardRequest request, List<MultipartFile> files) {
+    public void createBoard(BoardRequest request, List<MultipartFile> files, MultipartFile thumbnail) {
         BoardConfig boardConfig = getBoardConfigByCode(request.getBoardCode());
         validateCategorySelection(boardConfig, request.getCategoryCode());
 
@@ -137,13 +137,14 @@ public class BoardService {
         board.setNoticeSeq(request.getNoticeSeq() == null ? 0 : request.getNoticeSeq());
         board.setNoticeStart(request.getNoticeStart());
         board.setNoticeEnd(request.getNoticeEnd());
+        board.setImagePath(saveThumbnail(boardConfig, thumbnail, emptyToNull(request.getImagePath())));
 
         Board saved = boardRepository.save(board);
         saveBoardFiles(saved, files);
     }
 
     @Transactional
-    public void updateBoard(Long id, BoardRequest request, List<MultipartFile> files) {
+    public void updateBoard(Long id, BoardRequest request, List<MultipartFile> files, MultipartFile thumbnail) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("게시글이 존재하지 않습니다."));
 
@@ -160,6 +161,7 @@ public class BoardService {
         board.setNoticeSeq(request.getNoticeSeq() == null ? 0 : request.getNoticeSeq());
         board.setNoticeStart(request.getNoticeStart());
         board.setNoticeEnd(request.getNoticeEnd());
+        board.setImagePath(saveThumbnail(boardConfig, thumbnail, emptyToNull(request.getImagePath())));
         board.setUpDate(LocalDateTime.now());
 
         boardRepository.save(board);
@@ -172,6 +174,15 @@ public class BoardService {
         }
 
         saveBoardFiles(board, files);
+    }
+
+    private String saveThumbnail(BoardConfig boardConfig, MultipartFile thumbnail, String currentImagePath) {
+        if (thumbnail == null || thumbnail.isEmpty()) {
+            return currentImagePath;
+        }
+
+        Path basePath = fileUtil.resolveBoardPath(boardConfig.getBoardCode());
+        return fileUtil.saveFile(basePath, thumbnail);
     }
 
     public Long updateUseTf(Long id, String useTf, String adminId) {

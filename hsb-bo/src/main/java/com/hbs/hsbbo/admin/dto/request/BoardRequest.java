@@ -19,6 +19,7 @@ public class BoardRequest {
     private String title;
     private String content;
     private String writerName;
+    private String imagePath;
     private String useTf;
     private String existingFileIds;
 
