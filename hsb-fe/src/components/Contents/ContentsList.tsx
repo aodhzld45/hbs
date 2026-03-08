@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import ContentsCard from './ContentsCard';
 import Layout from '../Layout/Layout';
 import { fetchFilteredContents } from '../../services/hbsApi';
