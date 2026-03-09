@@ -99,8 +99,8 @@ function App() {
                     element={
                       <ComingSoonPage
                         type="NOTICE"
-                        title="議댁옱?섏? ?딅뒗 ?섏씠吏?낅땲??"
-                        description="?낅젰?섏떊 二쇱냼媛 ?щ컮瑜몄? ?뺤씤?댁＜?몄슂."
+                        title="존재하지 않는 페이지입니다."
+                        description="입력하신 주소가 올바른지 확인해주세요."
                       />
                     }
                   />
