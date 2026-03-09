@@ -63,7 +63,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/ai/ping",
                                 "/api/ai/public/**",
-                                "/api/ai/complete2"
+                                "/api/ai/complete2",
+                                "/api/admin/board-config/code/**"
                         ).permitAll()
 
                         // 공개 엔드포인트
