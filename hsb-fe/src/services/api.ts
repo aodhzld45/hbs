@@ -17,9 +17,6 @@ const api = axios.create({
 const isFormData = (v: any): v is FormData =>
   typeof FormData !== 'undefined' && v instanceof FormData;
 
-// 중복 차단 처리 방지 플래그
-let blockedIpHandling = false;
-
 // JWT 자동 첨부 + FormData 분기
 api.interceptors.request.use(
   (config) => {
@@ -52,21 +49,13 @@ api.interceptors.response.use(
       error?.response?.data?.message || '접근이 차단되었습니다. 관리자에게 문의 바랍니다.';
 
     if (status === 403 && code === 'BLOCKED_IP') {
-      if (!blockedIpHandling) {
-        blockedIpHandling = true;
+      window.sessionStorage.setItem('blockedIpMessage', message);
 
-        try {
-          window.sessionStorage.setItem('blockedIpMessage', message);
-        } catch (e) {
-          console.warn('blockedIpMessage 저장 실패', e);
-        }
-
-        alert(message);
-
-        if (window.location.pathname !== '/blocked-ip') {
-          window.location.replace('/blocked-ip');
-        }
+      if (window.location.pathname !== '/blocked-ip') {
+        window.location.replace('/blocked-ip');
       }
+
+      return Promise.reject(error);
     }
 
     return Promise.reject(error);
