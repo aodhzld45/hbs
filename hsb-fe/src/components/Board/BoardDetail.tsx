@@ -75,7 +75,11 @@ const BoardDetail = () => {
 
         {isGallerySkin && (
           <div className="mb-8 overflow-hidden rounded-3xl bg-gray-100 dark:bg-gray-800">
-            <img src={`${FILE_BASE_URL}${board.imagePath}`} alt={board.title} className="max-h-[560px] w-full object-cover" />
+            <img
+              src={`${FILE_BASE_URL}${board.imagePath}`}
+              alt={board.title}
+              className="h-auto max-h-[70vh] w-full object-contain"
+            />
           </div>
         )}
 
