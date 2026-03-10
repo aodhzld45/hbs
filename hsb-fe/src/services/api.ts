@@ -49,10 +49,18 @@ api.interceptors.response.use(
       error?.response?.data?.message || '접근이 차단되었습니다. 관리자에게 문의 바랍니다.';
 
     if (status === 403 && code === 'BLOCKED_IP') {
-      window.sessionStorage.setItem('blockedIpMessage', message);
+      try {
+        const currentPath =
+          window.location.pathname + window.location.search + window.location.hash;
 
-      if (window.location.pathname !== '/blocked-ip') {
-        window.location.replace('/blocked-ip');
+        window.sessionStorage.setItem('blockedIpMessage', message);
+
+        if (window.location.pathname !== '/blocked-ip') {
+          window.sessionStorage.setItem('blockedIpFrom', currentPath);
+          window.location.replace('/blocked-ip');
+        }
+      } catch (e) {
+        console.warn('차단 정보 저장 실패', e);
       }
 
       return Promise.reject(error);

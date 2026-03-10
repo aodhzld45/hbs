@@ -18,7 +18,7 @@ import ContactManager from './features/admin/Contact';
 import ContactDetail from './features/admin/Contact/components/ContactDetail';
 import CorsOriginPage from './features/admin/CorsOrigin';
 import MaintenanceRulePage from './features/admin/MaintenanceRule';
-import BlockIpPage from './features/admin/BlockIp';
+import BlockIpPage from './components/Common/BlockedIpPage';
 import PopupBannerManager from './pages/Admin/Main/PopupBannerManager';
 import PageManager from './pages/Admin/Page/PageManager';
 import BoardManager from './pages/Admin/Board/BoardManager';
@@ -110,7 +110,8 @@ function App() {
               {/* 관리자 로그인 화면은 보호 라우트 바깥에 둔다.
                   비인증 상태에서도 접근 가능해야 하기 때문이다. */}
               <Route path="/admin/login" element={<AdminLogin />} />
-
+              <Route path="/blocked-ip" element={<BlockIpPage />} />
+              
               {/* 관리자 보호 영역.
                   보호 라우트가 사라진 것이 아니라, 현재는 모든 관리자 페이지를
                   PrivateRoute 하나로 묶어 공통 처리하는 구조다.
@@ -149,7 +150,6 @@ function App() {
                 <Route path="/admin/contact/detail/:id" element={<ContactDetail />} />
                 <Route path="/admin/cors-origins" element={<CorsOriginPage />} />
                 <Route path="/admin/maintenance" element={<MaintenanceRulePage />} />
-                <Route path="/admin/block-ips" element={<BlockIpPage />} />
                 <Route path="/admin/main/popup-banner-manager" element={<PopupBannerManager />} />
               </Route>
 

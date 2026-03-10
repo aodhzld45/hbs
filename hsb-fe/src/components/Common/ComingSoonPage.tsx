@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
-type NoticeType = "MAINTENANCE" | "COMING_SOON" | "NOTICE";
+type NoticeType = "MAINTENANCE" | "COMING_SOON" | "NOTICE" | "BLOCKED_IP";
 
 type Props = {
   type?: NoticeType;
   title?: string;
   description?: string;
-  expectedEndAt?: string; // ISO string
+  expectedEndAt?: string;
   helpText?: string;
   helpHref?: string;
 };
@@ -60,6 +60,12 @@ export default function ComingSoonPage({
           badge: "안내",
           badgeClass: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
         };
+      case "BLOCKED_IP":
+        return {
+          emoji: "⛔",
+          badge: "접근 차단 안내",
+          badgeClass: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200",
+        };
       default:
         return {
           emoji: "⚠️",
@@ -84,16 +90,21 @@ export default function ComingSoonPage({
       ? "현재 시스템 점검 중입니다."
       : type === "NOTICE"
         ? "안내사항"
-        : "현재 페이지는 준비중입니다.";
+        : type === "BLOCKED_IP"
+          ? "접근이 차단되었습니다."
+          : "현재 페이지는 준비중입니다.";
 
   const defaultDesc =
     type === "MAINTENANCE"
       ? "현재 시스템은 점검중입니다. 잠시 후 다시 시도해주세요."
       : type === "NOTICE"
         ? "안내 내용을 확인해주세요."
-        : "해당 페이지는 준비중이거나 접근이 제한될 수 있습니다.";
+        : type === "BLOCKED_IP"
+          ? "접근이 차단되었습니다. 관리자에게 문의 바랍니다."
+          : "해당 페이지는 준비중이거나 접근이 제한될 수 있습니다.";
 
   const isHome = location.pathname === "/";
+  const isBlockedIp = type === "BLOCKED_IP";
 
   return (
     <div
@@ -129,7 +140,7 @@ export default function ComingSoonPage({
           {description ?? defaultDesc}
         </p>
 
-        {endMs && (
+        {endMs && !isBlockedIp && (
           <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
             <p className="font-semibold text-slate-700 dark:text-slate-100">예상 종료</p>
             <p className="mt-1">{format(new Date(endMs), "yyyy-MM-dd HH:mm:ss")}</p>
@@ -144,7 +155,7 @@ export default function ComingSoonPage({
         )}
 
         {(helpText || helpHref) && (
-          <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+          <div className="mt-4 text-xs text-slate-500 dark:text-slate-400 break-all">
             {helpHref ? (
               <a
                 href={helpHref}
@@ -161,21 +172,23 @@ export default function ComingSoonPage({
         )}
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="
-              inline-flex items-center justify-center
-              rounded-xl border border-slate-300 bg-white/70 px-4 py-2.5 text-sm font-medium
-              text-slate-700 shadow-sm
-              hover:bg-slate-100 hover:border-slate-400
-              dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-100
-              dark:hover:bg-slate-800 dark:hover:border-slate-500
-              transition-colors
-            "
-          >
-            ← 이전 페이지
-          </button>
+          {!isBlockedIp && (
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="
+                inline-flex items-center justify-center
+                rounded-xl border border-slate-300 bg-white/70 px-4 py-2.5 text-sm font-medium
+                text-slate-700 shadow-sm
+                hover:bg-slate-100 hover:border-slate-400
+                dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-100
+                dark:hover:bg-slate-800 dark:hover:border-slate-500
+                transition-colors
+              "
+            >
+              ← 이전 페이지
+            </button>
+          )}
 
           <button
             type="button"
