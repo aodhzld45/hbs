@@ -172,7 +172,6 @@ export default function ComingSoonPage({
         )}
 
         <div className="mt-8 flex flex-wrap gap-3">
-          {!isBlockedIp && (
             <button
               type="button"
               onClick={() => navigate(-1)}
@@ -188,22 +187,23 @@ export default function ComingSoonPage({
             >
               ← 이전 페이지
             </button>
-          )}
 
-          <button
-            type="button"
-            onClick={() => (isHome ? window.location.reload() : navigate("/"))}
-            className="
-              inline-flex items-center justify-center
-              rounded-xl px-4 py-2.5 text-sm font-semibold
-              bg-indigo-600 text-white shadow-md
-              hover:bg-indigo-500
-              dark:bg-indigo-500 dark:hover:bg-indigo-400
-              transition-colors
-            "
-          >
-            {isHome ? "다시 시도" : "메인으로 이동"}
-          </button>
+          {!isBlockedIp && (
+            <button
+              type="button"
+              onClick={() => (isHome ? window.location.reload() : navigate("/"))}
+              className="
+                inline-flex items-center justify-center
+                rounded-xl px-4 py-2.5 text-sm font-semibold
+                bg-indigo-600 text-white shadow-md
+                hover:bg-indigo-500
+                dark:bg-indigo-500 dark:hover:bg-indigo-400
+                transition-colors
+              "
+            >
+              {isHome ? "다시 시도" : "메인으로 이동"}
+            </button>
+          )}
 
           <button
             type="button"
