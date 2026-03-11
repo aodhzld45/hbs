@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { useNavigate, useParams } from 'react-router-dom';
+import PageLoader from "../../../features/common/PageLoader";
+
 import AdminLayout from '../../../components/Layout/AdminLayout';
 import Pagination from '../../../components/Common/Pagination';
 import { BoardItem, getBoardDisplayName } from '../../../types/Admin/BoardItem';
@@ -17,7 +19,11 @@ const BoardManager: React.FC = () => {
   const { admin } = useAuth();
 
   const [adminId, setAdminId] = useState<string | null>(admin?.id ?? null);
-  const [boardName, setBoardName] = useState<string>(normalizedBoardCode);
+  
+  const [boardName, setBoardName] = useState<string>('');  
+
+  const [isBoardMetaLoading, setIsBoardMetaLoading] = useState(true);
+
   const [boardConfig, setBoardConfig] = useState<BoardConfigItem | null>(null);
   const [notices, setNotices] = useState<BoardItem[]>([]);
   const [boards, setBoards] = useState<BoardItem[]>([]);
@@ -33,6 +39,8 @@ const BoardManager: React.FC = () => {
   }, [admin?.id]);
 
   useEffect(() => {
+    setIsBoardMetaLoading(true);
+
     fetchBoardConfigByCode(normalizedBoardCode)
       .then((config) => {
         setBoardConfig(config);
@@ -41,6 +49,9 @@ const BoardManager: React.FC = () => {
       .catch(() => {
         setBoardConfig(null);
         setBoardName(normalizedBoardCode);
+      })
+      .finally(() => {
+        setIsBoardMetaLoading(false);
       });
   }, [normalizedBoardCode]);
 
@@ -154,134 +165,144 @@ const renderThumbnail = (board: BoardItem) => {
   return (
     <AdminLayout>
       <div className="p-6">
-        <h2 className="mb-4 text-2xl font-bold">{boardName} 관리</h2>
+        {isBoardMetaLoading ? (
+          <PageLoader message="데이터를 불러오는 중입니다." />
+        ) : (
+          <>
+            <h2 className="mb-4 text-2xl font-bold">{boardName} 관리</h2>
 
-        <div className="mb-4 flex items-center justify-between">
-          <span className="text-gray-700">총 {totalCount}건</span>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setPage(0);
-                  loadBoardList();
-                }
-              }}
-              placeholder="검색어 입력"
-              className="rounded border px-3 py-2"
-            />
-            <button
-              onClick={() => {
-                setPage(0);
-                loadBoardList();
-              }}
-              className="rounded bg-gray-700 px-4 text-white"
-            >
-              검색
-            </button>
-          </div>
-        </div>
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-gray-700">총 {totalCount}건</span>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setPage(0);
+                      loadBoardList();
+                    }
+                  }}
+                  placeholder="검색어 입력"
+                  className="rounded border px-3 py-2"
+                />
+                <button
+                  onClick={() => {
+                    setPage(0);
+                    loadBoardList();
+                  }}
+                  className="rounded bg-gray-700 px-4 text-white"
+                >
+                  검색
+                </button>
+              </div>
+            </div>
 
-        <table className="w-full table-auto border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border p-2">No</th>
-              {isGallerySkin && <th className="w-24 border p-2">썸네일</th>}
-              <th className="border p-2">제목</th>
-              <th className="border p-2">작성자</th>
-              <th className="border p-2">등록일</th>
-              <th className="border p-2">조회수</th>
-              <th className="border p-2">사용 여부</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr>
-                <td colSpan={isGallerySkin ? 7 : 6} className="py-8 text-center text-gray-500">
-                  데이터를 불러오는 중입니다...
-                </td>
-              </tr>
-            ) : (
-              <>
-                {notices.map((notice) => (
-                  <tr key={`notice-${notice.id}`} className="bg-yellow-50 text-center hover:bg-gray-50">
-                    <td className="border p-2 font-semibold text-rose-600">공지</td>
-                    {isGallerySkin && <td className="border p-2">{renderThumbnail(notice)}</td>}
-                    <td
-                      className="border p-2 cursor-pointer text-left text-blue-600 hover:underline"
-                      onClick={() => navigate(`/admin/board/${normalizedBoardCode}/detail/${notice.id}`)}
-                    >
-                      {notice.title}
-                    </td>
-                    <td className="border p-2">{notice.writerName || '-'}</td>
-                    <td className="border p-2">{notice.regDate ? format(new Date(notice.regDate), 'yyyy-MM-dd') : '-'}</td>
-                    <td className="border p-2">{notice.viewCount ?? 0}</td>
-                    <td className="border p-2">
-                      <button
-                        onClick={() => handleToggleUseTf(notice)}
-                        className={`rounded px-3 py-1 text-xs font-medium ${
-                          notice.useTf === 'Y' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
-                        }`}
-                      >
-                        {notice.useTf === 'Y' ? '사용' : '미사용'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-
-                {boards.length === 0 ? (
+            <table className="w-full table-auto border">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="border p-2">No</th>
+                  {isGallerySkin && <th className="w-24 border p-2">썸네일</th>}
+                  <th className="border p-2">제목</th>
+                  <th className="border p-2">작성자</th>
+                  <th className="border p-2">등록일</th>
+                  <th className="border p-2">조회수</th>
+                  <th className="border p-2">사용 여부</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading ? (
                   <tr>
-                    <td colSpan={isGallerySkin ? 7 : 6} className="py-8 text-center text-gray-400">
-                      표시할 게시물이 없습니다.
+                    <td colSpan={isGallerySkin ? 7 : 6} className="py-8 text-center text-gray-500">
+                      데이터를 불러오는 중입니다...
                     </td>
                   </tr>
                 ) : (
-                  boards.map((board, idx) => (
-                    <tr key={board.id} className="text-center hover:bg-gray-50">
-                      <td className="border p-2">{Math.max(totalCount - (page * size + idx), 0)}</td>
-                      {isGallerySkin && <td className="border p-2">{renderThumbnail(board)}</td>}
-                      <td
-                        className="border p-2 cursor-pointer text-left text-blue-600 hover:underline"
-                        onClick={() => navigate(`/admin/board/${normalizedBoardCode}/detail/${board.id}`)}
-                      >
-                        {board.title}
-                      </td>
-                      <td className="border p-2">{board.writerName || '-'}</td>
-                      <td className="border p-2">{board.regDate ? format(new Date(board.regDate), 'yyyy-MM-dd') : '-'}</td>
-                      <td className="border p-2">{board.viewCount ?? 0}</td>
-                      <td className="border p-2">
-                        <button
-                          onClick={() => handleToggleUseTf(board)}
-                          className={`rounded px-3 py-1 text-xs font-medium ${
-                            board.useTf === 'Y' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
-                          }`}
+                  <>
+                    {notices.map((notice) => (
+                      <tr key={`notice-${notice.id}`} className="bg-yellow-50 text-center hover:bg-gray-50">
+                        <td className="border p-2 font-semibold text-rose-600">공지</td>
+                        {isGallerySkin && <td className="border p-2">{renderThumbnail(notice)}</td>}
+                        <td
+                          className="cursor-pointer border p-2 text-left text-blue-600 hover:underline"
+                          onClick={() => navigate(`/admin/board/${normalizedBoardCode}/detail/${notice.id}`)}
                         >
-                          {board.useTf === 'Y' ? '사용' : '미사용'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                          {notice.title}
+                        </td>
+                        <td className="border p-2">{notice.writerName || '-'}</td>
+                        <td className="border p-2">
+                          {notice.regDate ? format(new Date(notice.regDate), 'yyyy-MM-dd') : '-'}
+                        </td>
+                        <td className="border p-2">{notice.viewCount ?? 0}</td>
+                        <td className="border p-2">
+                          <button
+                            onClick={() => handleToggleUseTf(notice)}
+                            className={`rounded px-3 py-1 text-xs font-medium ${
+                              notice.useTf === 'Y' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
+                            }`}
+                          >
+                            {notice.useTf === 'Y' ? '사용' : '미사용'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {boards.length === 0 ? (
+                      <tr>
+                        <td colSpan={isGallerySkin ? 7 : 6} className="py-8 text-center text-gray-400">
+                          표시할 게시물이 없습니다.
+                        </td>
+                      </tr>
+                    ) : (
+                      boards.map((board, idx) => (
+                        <tr key={board.id} className="text-center hover:bg-gray-50">
+                          <td className="border p-2">{Math.max(totalCount - (page * size + idx), 0)}</td>
+                          {isGallerySkin && <td className="border p-2">{renderThumbnail(board)}</td>}
+                          <td
+                            className="cursor-pointer border p-2 text-left text-blue-600 hover:underline"
+                            onClick={() => navigate(`/admin/board/${normalizedBoardCode}/detail/${board.id}`)}
+                          >
+                            {board.title}
+                          </td>
+                          <td className="border p-2">{board.writerName || '-'}</td>
+                          <td className="border p-2">
+                            {board.regDate ? format(new Date(board.regDate), 'yyyy-MM-dd') : '-'}
+                          </td>
+                          <td className="border p-2">{board.viewCount ?? 0}</td>
+                          <td className="border p-2">
+                            <button
+                              onClick={() => handleToggleUseTf(board)}
+                              className={`rounded px-3 py-1 text-xs font-medium ${
+                                board.useTf === 'Y' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
+                              }`}
+                            >
+                              {board.useTf === 'Y' ? '사용' : '미사용'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </>
                 )}
-              </>
-            )}
-          </tbody>
-        </table>
+              </tbody>
+            </table>
 
-        <div className="mt-4 flex justify-end gap-2">
-          <button onClick={handleExcelDownload} className="rounded bg-green-600 px-4 py-2 text-white">
-            검색한 자료 엑셀로 받기
-          </button>
-          <button
-            onClick={() => navigate(`/admin/board/${normalizedBoardCode}/write`)}
-            className="rounded bg-blue-600 px-4 py-2 text-white"
-          >
-            등록
-          </button>
-        </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={handleExcelDownload} className="rounded bg-green-600 px-4 py-2 text-white">
+                검색한 자료 엑셀로 받기
+              </button>
+              <button
+                onClick={() => navigate(`/admin/board/${normalizedBoardCode}/write`)}
+                className="rounded bg-blue-600 px-4 py-2 text-white"
+              >
+                등록
+              </button>
+            </div>
 
-        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+            <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
+        )}
       </div>
     </AdminLayout>
   );

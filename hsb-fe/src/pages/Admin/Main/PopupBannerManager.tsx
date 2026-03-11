@@ -14,18 +14,21 @@ import {
   fetchPopupBannerDelete
 } from '../../../services/Admin/popupBannerApi';
 
+import PageLoader from "../../../features/common/PageLoader";
+
 const PopupBannerManager: React.FC = () => {
   const currentMenuTitle = useCurrentPageTitle();
   const admin = useAuth();
   const [adminId, setAdminId] = useState(admin.admin?.id || null);
   const [items, setItems] = useState<PopupBannerItem[]>([]);
-
+  
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PopupBannerItem | null>(null);
 
   const [type, setType] = useState<string>("popup");
   const [keyword, setKeyword] = useState<string>("");
+
   const [page, setPage] = useState<number>(0);
   const [size, setSize] = useState<number>(10);
   const [totalPages, setTotalPages] = useState(0);
@@ -36,7 +39,6 @@ const PopupBannerManager: React.FC = () => {
   }, [admin.admin?.id]);
 
   const loadList = async () => {
-    setLoading(true);
     try {
       const res = await fetchPopupBannerList(type, keyword, page, size);
       setItems(res.items);
@@ -93,16 +95,21 @@ const PopupBannerManager: React.FC = () => {
   return (
     <AdminLayout>
       <div className="p-6">
-        <h2 className="text-2xl font-bold mb-6">{currentMenuTitle}</h2>
-        <div className="flex justify-between items-center mb-4">
+      {loading ? (
+          <PageLoader message="데이터를 불러오는 중입니다." />
+        ) : (
+        <>
+          <h2 className="text-2xl font-bold mb-6">{currentMenuTitle}</h2>
+
+          <div className="flex justify-between items-center mb-4">
             <span className="text-gray-700">총 {totalCount}개</span>
     
             <div className="flex gap-2">
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="border px-3 py-2"
-          >
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="border px-3 py-2"
+              >
             <option value="popup">팝업</option>
             <option value="banner">배너</option>
           </select>
@@ -136,9 +143,6 @@ const PopupBannerManager: React.FC = () => {
 
         </div>
 
-        {loading ? (
-          <p>로딩 중...</p>
-        ) : (
           <table className="w-full table-auto border">
             <thead className="bg-gray-100">
               <tr>
@@ -248,8 +252,7 @@ const PopupBannerManager: React.FC = () => {
             </tbody>
 
           </table>
-        )}
-
+    
           <div className="flex justify-end gap-2 mt-4">
             <button
               onClick={() => {
@@ -276,6 +279,8 @@ const PopupBannerManager: React.FC = () => {
             type={type}
           />
         )}
+     </>
+    )}
 
       </div>
     </AdminLayout>
