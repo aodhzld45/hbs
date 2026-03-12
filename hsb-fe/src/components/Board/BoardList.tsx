@@ -8,6 +8,7 @@ import { BoardConfigItem } from '../../types/Admin/BoardConfigItem';
 import { fetchBoardList } from '../../services/Admin/boardApi';
 import { fetchBoardConfigByCode } from '../../services/Admin/boardConfigApi';
 import { FILE_BASE_URL } from '../../config/config';
+import PageLoader from '../../features/common/PageLoader';
 
 const BoardList = () => {
   const { boardCode = 'NOTICE' } = useParams();
@@ -23,7 +24,7 @@ const BoardList = () => {
   const [size] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchBoardConfigByCode(normalizedBoardCode)
@@ -39,7 +40,6 @@ const BoardList = () => {
 
   const loadBoardList = useCallback(async () => {
     try {
-      setIsLoading(true);
       const res = await fetchBoardList(normalizedBoardCode, keyword, page, size, 'Y');
       setNotices(res.notices ?? []);
       setBoards(res.items ?? []);
@@ -49,11 +49,13 @@ const BoardList = () => {
       if (representative) {
         setBoardName(getBoardDisplayName(representative.boardCode, representative.boardName));
       }
+
+      setIsLoading(false);
+
     } catch (error) {
       console.error('게시글 목록 조회 실패:', error);
       alert('게시글 목록을 불러오지 못했습니다.');
     } finally {
-      setIsLoading(false);
     }
   }, [keyword, normalizedBoardCode, page, size]);
 
@@ -116,6 +118,14 @@ const BoardList = () => {
       </button>
     );
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <PageLoader message="데이터를 불러오는 중입니다." />
+      </Layout>
+    )
+  }
 
   return (
     <Layout>

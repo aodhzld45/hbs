@@ -6,22 +6,37 @@ import { HbsContent, ContentType } from '../../types/Contents/HbsContent';
 import { FILE_BASE_URL } from '../../config/config';
 import Layout from '../Layout/Layout';
 import CommentSection from '../Common/CommentSection';
-
+import PageLoader from '../../features/common/PageLoader';
 
 const ContentDetail = () => {
     const { fileType, contentType, fileId } = useParams<{ fileId?: string; fileType?: string; contentType?: string }>();
     const [content, setContent] = useState<HbsContent | null>(null);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const safeContentType = (contentType?.toUpperCase() ?? 'NONE') as ContentType;
 
     useEffect(() => {
         if (fileId) {
           fetchHbsDetail(Number(fileId)).then(setContent).catch(console.error);
+          setLoading(false);
         }
       }, [fileId]);
 
-    if (!content) return <div>로딩 중...</div>;
+    if (loading) {
+      return (
+        <Layout>
+          <PageLoader />
+        </Layout>
+      )
+    }
 
+    if (!content) {
+      return(
+      <Layout>
+        <PageLoader />
+      </Layout>
+      )
+    }
 
     return (
         <Layout>

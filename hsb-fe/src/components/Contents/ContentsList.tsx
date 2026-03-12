@@ -5,12 +5,14 @@ import Layout from '../Layout/Layout';
 import { fetchFilteredContents } from '../../services/hbsApi';
 import { HbsContent, ContentTypeTitleMap, ContentType, FileType } from '../../types/Contents/HbsContent';
 import Pagination from '../Common/Pagination';
+import PageLoader from '../../features/common/PageLoader';
 
 const ContentsList = () => {
   const [contents, setContents] = useState<HbsContent[]>([]);
   const { fileType, contentType } = useParams<{ fileType?: string; contentType?: string }>();
   const safeFileType = fileType?.toUpperCase() ?? '' as FileType;
   const safeContentType = contentType?.toUpperCase() ?? '' as ContentType;
+  const [loading, setLoding] = useState(true);
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(0);
   const [size] = useState(10);
@@ -23,6 +25,7 @@ const ContentsList = () => {
       setContents(res.items);
       setTotalCount(res.totalCount);
       setTotalPages(res.totalPages);
+      setLoding(false);
     } catch (e) {
       console.error(e);
       alert('콘텐츠 로드 실패');
@@ -36,6 +39,14 @@ const ContentsList = () => {
   useEffect(() => {
     loadContents();
   }, [safeFileType, safeContentType, page]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <PageLoader message="데이터를 불러오는 중입니다." />
+      </Layout>
+    )
+  }
 
   return (
     <Layout>

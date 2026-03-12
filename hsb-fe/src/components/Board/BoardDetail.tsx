@@ -7,6 +7,7 @@ import { BoardItem, getBoardDisplayName } from '../../types/Admin/BoardItem';
 import { BoardConfigItem } from '../../types/Admin/BoardConfigItem';
 import { fetchBoardDetail } from '../../services/Admin/boardApi';
 import { fetchBoardConfigByCode } from '../../services/Admin/boardConfigApi';
+import PageLoader from "../../features/common/PageLoader"; 
 
 const BoardDetail = () => {
   const { boardCode = 'NOTICE', id } = useParams();
@@ -45,7 +46,11 @@ const BoardDetail = () => {
   }, [id, normalizedBoardCode]);
 
   if (loading) {
-    return <div className="p-10 text-center text-gray-500">게시글을 불러오는 중입니다...</div>;
+    return (
+      <Layout>
+        <PageLoader/>
+      </Layout>
+    )
   }
 
   if (!board) {
