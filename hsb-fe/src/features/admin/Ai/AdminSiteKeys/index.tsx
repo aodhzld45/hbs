@@ -7,6 +7,7 @@ import Pagination from "../../../../components/Common/Pagination"; // ← 공통
 import { useAdminPageHeader } from "../../Common/hooks/useAdminPageHeader";
 
 import { updateSiteKeyUseTf, deleteSiteKey } from "./services/siteKeyApi";
+import PageLoader from "../../../common/PageLoader";
 
 
 export default function AdminSiteKeys() {
@@ -75,6 +76,14 @@ export default function AdminSiteKeys() {
     if (mode === "create") await create(payload as CreateRequest);
     else if (selected?.id) await update(selected.id, payload as UpdateRequest);
   };
+  
+  if (loading) {
+    return (
+      <AdminLayout>
+        <PageLoader message="데이터를 불러오는 중입니다." />
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>

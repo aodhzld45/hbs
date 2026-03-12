@@ -21,6 +21,7 @@ import {
 
 import PromptProfileTable from "./components/PromptProfileTable";
 import PromptProfileEditorForm from "./components/PromptProfileEditorForm";
+import PageLoader from "../../../common/PageLoader";
 
 export default function AdminPromptProfile() {
   /* 공통 헤더/메뉴 처리 */
@@ -29,6 +30,9 @@ export default function AdminPromptProfile() {
   /* 리스트/검색 상태 */
   const [keyword, setKeyword] = useState("");
   const [modelFilter, setModelFilter] = useState("");
+
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [searchModelFilter, setSearchModelFilter] = useState("");
 
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(20);
@@ -47,12 +51,13 @@ export default function AdminPromptProfile() {
       setLoading(true);
       setListError(null);
       const res = await fetchPromptProfileList(
-        keyword,
-        modelFilter,
+        searchKeyword,
+        searchModelFilter,
         overridePage ?? page,
         size,
         sort,
       );
+
       setData(res);
       setTotalCount(res.totalCount ?? 0);
       setTotalPages(res.totalPages ?? 0);
@@ -67,28 +72,36 @@ export default function AdminPromptProfile() {
     }
   };
 
-    const refresh = useCallback(async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetchPromptProfileList(keyword, modelFilter, page, size, sort);
-        setData(res);
-      } catch (e) {
-        setError(e);
-      } finally {
-        setLoading(false);
-      }
-    }, [keyword, modelFilter, page, size, sort]);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchPromptProfileList(
+        searchKeyword,
+        searchModelFilter,
+        page,
+        size,
+        sort
+      );
+      setData(res);
+    } catch (e) {
+      setError(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchKeyword, searchModelFilter, page, size, sort]);
 
   // 최초 로딩 + 필터 변경 시 재조회
   useEffect(() => {
     loadList(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyword, modelFilter, size, sort]);
+  }, [searchKeyword, searchModelFilter, size, sort]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    loadList(0);
+    setPage(0);
+    setSearchKeyword(keyword);
+    setSearchModelFilter(modelFilter);
   };
 
   /** ── 모달/폼 상태 ─────────────────────────────────────────────────── */
@@ -166,6 +179,13 @@ export default function AdminPromptProfile() {
     }
   };
 
+  if (loading) {
+    return (
+      <AdminLayout>
+        <PageLoader message="데이터를 불러오는 중입니다." />
+      </AdminLayout>
+    );
+  }
   /** ── 렌더링 ───────────────────────────────────────────────────────── */
   return (
     <AdminLayout>

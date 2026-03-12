@@ -19,7 +19,10 @@ export const useSiteKeys = () => {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (override?: Partial<ListQuery>) => {
-    setLoading(true); setError(null);
+
+    setLoading(true); 
+    setError(null);
+
     try {
       const merged = { ...query, ...(override || {}) };
       const res = await fetchSiteKeyList(merged);

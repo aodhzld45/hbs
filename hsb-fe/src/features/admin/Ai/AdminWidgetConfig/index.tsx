@@ -13,6 +13,7 @@ import { useSearchParams } from 'react-router-dom';
 import { fetchWidgetConfigCreateWithFile, fetchWidgetConfigUpdateWithFile, fetchWidgetConfigCreateMultipart, fetchWidgetConfigUpdateMultipart, updateWidgetConfigUseTf, fetchWidgetConfigDelete } from "./services/widgetConfigApi";
 import { useWidgetConfigDetail, useWidgetConfigList, useWidgetConfigMutations } from './hooks/useWidgetConfig';
 import type { WidgetConfigRequest } from './types/widgetConfig';
+import PageLoader from '../../../common/PageLoader';
 
 export default function AdminWidgetConfig() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -36,6 +37,10 @@ export default function AdminWidgetConfig() {
 
   // 상세 훅 (선택된 경우만)
   const detail = useWidgetConfigDetail(selectedId ?? undefined);
+
+  const isPageLoading =
+  (selectedId === null && list.loading) ||
+  (selectedId !== null && selectedId !== 0 && detail.loading);
  
   const openCreate = () => {
     const next = new URLSearchParams(searchParams);
@@ -119,6 +124,14 @@ export default function AdminWidgetConfig() {
       setWelcomeBlocksJson(null);
     }
   }, [detail.data, selectedId]);
+
+  if (isPageLoading) {
+    return (
+      <AdminLayout>
+        <PageLoader message="데이터를 불러오는 중입니다." />
+      </AdminLayout>
+    );
+  }
 
   return (
   <AdminLayout>
