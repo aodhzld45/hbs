@@ -8,9 +8,9 @@ import TopQuestionsCard from './components/TopQuestionsCard';
 import { fetchUsageStatsExcel, fetchTopQuestions } from './services/usageStatsApi';
 import type { TopQuestionItem } from './services/usageStatsApi';
 import { useCurrentPageTitle } from '../../Common/hooks/useCurrentPageTitle';
-import { useSearchParams } from "react-router-dom";
 import AdminLayout from "../../../../components/Layout/AdminLayout";
 import { useAuth } from "../../../../context/AuthContext";
+import PageLoader from "../../../common/PageLoader";
 
 export default function AdminUsageStats() {
   const [downloading, setDownloading] = useState(false);
@@ -97,6 +97,14 @@ export default function AdminUsageStats() {
       setDownloading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <PageLoader />
+      </AdminLayout>
+    )
+  }
 
   return (
     <AdminLayout>

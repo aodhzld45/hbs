@@ -59,11 +59,6 @@ const SummaryCard: React.FC<Props> = ({ items, period, loading = false, error })
         <h2 className="text-base font-semibold text-gray-800">
           {periodLabel} 사용 요약
         </h2>
-        {loading && (
-          <span className="text-xs text-gray-500">
-            로딩 중...
-          </span>
-        )}
         {error && !loading && (
           <span className="text-xs text-red-500">
             {error}

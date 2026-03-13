@@ -289,9 +289,7 @@ export default function AdminPromptProfile() {
           <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
             <div className="bg-white rounded-lg shadow-xl w-[900px] max-h-[90vh] overflow-y-auto p-4">
               {detailLoading ? (
-                <div className="py-10 text-center text-sm text-gray-500">
-                  로딩 중...
-                </div>
+                <div></div>
               ) : (
                 <PromptProfileEditorForm
                   value={editing}
