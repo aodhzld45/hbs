@@ -262,13 +262,6 @@ export default function KbDocumentList({
           </thead>
 
           <tbody className="divide-y">
-            {loading && (
-              <tr>
-                <td colSpan={9} className="px-3 py-10 text-center text-gray-400">
-                  조회 중...
-                </td>
-              </tr>
-            )}
 
             {!loading && items.length === 0 && (
               <tr>

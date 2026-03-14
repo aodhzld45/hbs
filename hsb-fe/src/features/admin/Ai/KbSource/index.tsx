@@ -10,7 +10,7 @@ import { useKbSourceList } from "./hooks/useKbSourceList";
 import { KbSourceRequest, KbSourceResponse } from "./types/kbSourceConfig";
 import KbSourceEditorForm from "./components/KbSourceEditorForm";
 import { createKbSource, fetchKbSource, updateKbSource, toggleKbSourceUseTf, deleteKbSourceSoft } from "./services/kbSourceApi";
-
+import PageLoader from "../../../common/PageLoader";
 
 export default function AdminKbSourse() {
   /* 공통 헤더/메뉴 처리 */
@@ -103,19 +103,22 @@ export default function AdminKbSourse() {
           </div>
         )}
 
-
-        <KbSourceList
-          params={params}
-          setParams={setParams}
-          data={data}
-          loading={loading}
-          error={error}
-          onRefetch={refetch}
-          onOpenCreate={openCreate} 
-          onOpenEdit={openEdit}
-          onClickDelete={handleDelete}
-          onToggleUse={handleToggleUse}
-        />
+        {loading ? (
+          <PageLoader />
+        ) : (
+          <KbSourceList
+            params={params}
+            setParams={setParams}
+            data={data}
+            loading={loading}
+            error={error}
+            onRefetch={refetch}
+            onOpenCreate={openCreate}
+            onOpenEdit={openEdit}
+            onClickDelete={handleDelete}
+            onToggleUse={handleToggleUse}
+          />
+        )}
 
         <Pagination
           currentPage={page}

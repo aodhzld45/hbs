@@ -6,6 +6,7 @@ import { useAdminPageHeader } from "../../Common/hooks/useAdminPageHeader";
 
 import KbDocumentList from "./components/KbDocumentList";
 import KbDocumentEditorForm from "./components/KbDocumentEditorForm";
+import PageLoader from "../../../common/PageLoader";
 
 import { useKbDocumentList } from "./hooks/useKbDocumentList";
 
@@ -147,18 +148,22 @@ export default function AdminKbDocument() {
           </div>
         )}
 
-        <KbDocumentList
-          params={params}
-          setParams={setParams}
-          data={data}
-          loading={loading}
-          error={error}
-          onOpenCreate={openCreate}
-          onOpenEdit={openEdit}
-          onClickDelete={handleDelete}
-          onToggleUse={handleToggleUse}
-        />
-
+        {loading ? (
+          <PageLoader />
+        ) : (
+          <KbDocumentList
+            params={params}
+            setParams={setParams}
+            data={data}
+            loading={loading}
+            error={error}
+            onOpenCreate={openCreate}
+            onOpenEdit={openEdit}
+            onClickDelete={handleDelete}
+            onToggleUse={handleToggleUse}
+          />
+        )}
+        
         <Pagination
           currentPage={page}
           totalPages={totalPages}

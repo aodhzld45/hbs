@@ -226,14 +226,6 @@ export default function KbSourceList({
             </button>
           </div>
         </div>
-
-        {/* 하단 상태 메시지 */}
-        <div className="mt-2 min-h-[18px]">
-          {error && <span className="text-xs text-red-500">{error}</span>}
-          {loading && !error && (
-            <span className="text-xs text-gray-400">조회 중...</span>
-          )}
-        </div>
       </div>
 
       {/* 테이블 */}
@@ -252,14 +244,6 @@ export default function KbSourceList({
           </thead>
 
           <tbody className="divide-y">
-            {loading && (
-              <tr>
-                <td colSpan={7} className="px-3 py-10 text-center text-gray-400">
-                  조회 중...
-                </td>
-              </tr>
-            )}
-
             {!loading && items.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-3 py-10 text-center text-gray-400">
