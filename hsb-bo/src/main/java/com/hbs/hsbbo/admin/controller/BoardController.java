@@ -56,7 +56,7 @@ public class BoardController {
         return ResponseEntity.ok(response);
     }
 
-    @AdminActionLog(action = "게시글 등록", detail = "")
+    @AdminActionLog(action = "게시글 등록", detail = "boardCode={boardCode}, title={title}")
     @PostMapping("/board-create")
     public ResponseEntity<String> createBoard(
             @ModelAttribute BoardRequest request,
@@ -67,7 +67,7 @@ public class BoardController {
         return ResponseEntity.ok("등록 성공");
     }
 
-    @AdminActionLog(action = "게시글 수정", detail = "id={id}")
+    @AdminActionLog(action = "게시글 수정", detail = "id={id}, boardCode={boardCode}, title={title}")
     @PutMapping("/board-update/{id}")
     public ResponseEntity<String> updateBoard(
             @PathVariable Long id,
@@ -86,7 +86,7 @@ public class BoardController {
         return ResponseEntity.ok("삭제 성공");
     }
 
-    @AdminActionLog(action = "게시글 사용여부 변경", detail = "id={id}")
+    @AdminActionLog(action = "게시글 사용여부 변경", detail = "id={id}, useTf={useTf}\"" )
     @PutMapping("/use-tf/{id}")
     public ResponseEntity<Long> updateUseTf(
             @PathVariable Long id,

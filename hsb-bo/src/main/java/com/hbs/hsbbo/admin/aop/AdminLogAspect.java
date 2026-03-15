@@ -223,6 +223,11 @@ public class AdminLogAspect {
         for (Field field : clazz.getDeclaredFields()) {
             field.setAccessible(true);
             try {
+                // @LogExclude가 붙은 필드는 로그에서 제외
+                if (field.isAnnotationPresent(LogExclude.class)) {
+                    continue;
+                }
+
                 Object value = field.get(obj);
                 result.put(field.getName(), value);
             } catch (IllegalAccessException ignored) {
@@ -266,7 +271,7 @@ public class AdminLogAspect {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        mapper.configure(com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
         List<Object> serializableArgs = new ArrayList<>();
         Object[] args = joinPoint.getArgs();
@@ -289,12 +294,52 @@ public class AdminLogAspect {
 
             // LoginRequest인 경우 비밀번호 마스킹
             if (arg instanceof LoginRequest loginRequest) {
-                if (loginRequest.getPassword() != null) {
-                    loginRequest.setPassword("*****");
-                }
+                Map<String, Object> safeMap = new HashMap<>();
+                safeMap.put("id", loginRequest.getId());
+                safeMap.put("password", "*****");
+                serializableArgs.add(safeMap);
+                continue;
             }
 
-            serializableArgs.add(arg);
+            // Map은 그대로 key-value 순회하되 필요한 것만 저장
+            if (arg instanceof Map<?, ?> mapArg) {
+                Map<String, Object> safeMap = new HashMap<>();
+                for (Map.Entry<?, ?> entry : mapArg.entrySet()) {
+                    safeMap.put(String.valueOf(entry.getKey()), entry.getValue());
+                }
+                serializableArgs.add(safeMap);
+                continue;
+            }
+
+            // List 처리
+            if (arg instanceof List<?> listArg) {
+                List<Object> safeList = new ArrayList<>();
+                for (Object item : listArg) {
+                    if (item == null) {
+                        safeList.add(null);
+                    } else if (item instanceof org.springframework.web.multipart.MultipartFile file) {
+                        Map<String, Object> fileInfo = new HashMap<>();
+                        fileInfo.put("fileName", file.getOriginalFilename());
+                        fileInfo.put("size", file.getSize());
+                        safeList.add(fileInfo);
+                    } else if (isPrimitiveOrWrapper(item.getClass()) || item instanceof String) {
+                        safeList.add(item);
+                    } else {
+                        safeList.add(extractFields(item));
+                    }
+                }
+                serializableArgs.add(safeList);
+                continue;
+            }
+
+            // 단순 타입은 그대로
+            if (isPrimitiveOrWrapper(arg.getClass()) || arg instanceof String) {
+                serializableArgs.add(arg);
+                continue;
+            }
+
+            // DTO/엔티티는 직접 직렬화하지 않고 extractFields 결과만 저장
+            serializableArgs.add(extractFields(arg));
         }
 
         try {

@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.dto.request;
 
+import com.hbs.hsbbo.admin.aop.LogExclude;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -17,6 +18,7 @@ public class BoardRequest {
     private String boardCode;
     private String categoryCode;
     private String title;
+    @LogExclude
     private String content;
     private String writerName;
     private String imagePath;
