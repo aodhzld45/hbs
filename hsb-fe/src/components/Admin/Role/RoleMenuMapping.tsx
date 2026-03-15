@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { RoleGroup, MenuMapping } from '../../../types/Admin/RoleGroup';
+import PageLoader from '../../../features/common/PageLoader';
 import {
   fetchMenus,
   fetchRoleMenus,
@@ -197,7 +198,7 @@ const RoleMenuMapping: React.FC<RoleMenuMappingProps> = ({
         {selectedRoleId == null ? (
           <p className="text-gray-500">좌측에서 권한 그룹을 선택해주세요.</p>
         ) : loading ? (
-          <div className="py-8 text-gray-500">로딩 중...</div>
+          <div><PageLoader /></div>
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-3 mb-4">

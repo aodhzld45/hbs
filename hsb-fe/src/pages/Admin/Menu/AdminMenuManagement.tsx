@@ -14,6 +14,7 @@ import AdminMenuModal from '../../../components/Admin/Menu/AdminMenuModal';
 
 import { flattenMenuTree } from '../../../utils/menuTreeFlattener';
 import { buildMenuTree } from '../../../utils/buildMenuTree';
+import PageLoader from '../../../features/common/PageLoader';
 
 const AdminMenuManagement: React.FC = () => {
   const [menus, setMenus] = useState<(AdminMenu & { label?: string })[]>([]);
@@ -28,9 +29,7 @@ const AdminMenuManagement: React.FC = () => {
     try {
       const data = await fetchAdminMenus();
       const tree = buildMenuTree(data);
-
       const flattened = flattenMenuTree(tree as { id: number; name: string; children?: any[] }[]);
-
       const menuMap = new Map(data.map(menu => [menu.id, menu]));
       const merged = flattened.map(f => ({
         ...menuMap.get(f.id),
@@ -147,7 +146,14 @@ const AdminMenuManagement: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="text-center py-8">로딩 중...</div>;
+  if (loading) {
+    return(
+      <AdminLayout>
+        <PageLoader />
+      </AdminLayout>
+    )
+  }
+
   if (error) return <div className="text-red-500 text-center py-8">{error}</div>;
 
   return (

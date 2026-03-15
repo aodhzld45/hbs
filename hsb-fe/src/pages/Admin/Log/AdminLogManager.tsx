@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import Pagination from '../../../components/Common/Pagination';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import PageLoader from '../../../features/common/PageLoader'; 
 
 import {
     AdminLogItem,
@@ -177,7 +178,7 @@ const handleExcelDownload = async () => {
             {isLoading ? (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-gray-500">
-                  데이터를 불러오는 중입니다...
+                  <PageLoader />
                 </td>
               </tr>
             ) : logs.length === 0 ? (

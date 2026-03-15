@@ -8,6 +8,7 @@ import {
   softDeleteRoleGroup,
 } from '../../../services/Admin/roleApi';
 import { ToastType } from './Toast';
+import PageLoader from '../../../features/common/PageLoader';
 
 type SortKey = 'id' | 'name' | 'useTf';
 type SortOrder = 'asc' | 'desc';
@@ -157,7 +158,7 @@ const RoleGroupList: React.FC<RoleGroupListProps> = ({
       </div>
 
       {loading ? (
-        <div className="py-8 text-center text-gray-500">로딩 중...</div>
+        <><PageLoader /></>
       ) : (
         <table className="w-full border text-sm">
           <thead>

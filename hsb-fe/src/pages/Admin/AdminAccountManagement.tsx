@@ -10,6 +10,7 @@ import { fetchAdminAccounts, registerAdmin, updateAdmin, deleteAdmin  } from '..
 import { fetchRoleGroups } from '../../services/Admin/roleApi';
 
 import AdminAccountCreateModal from '../../components/Admin/Account/AdminAccountCreateModal';
+import PageLoader from "../../features/common/PageLoader";
 
 const AdminAccountManagement: React.FC = () => {
   const [admins, setAdmins] = useState<Admin[]>([]);
@@ -98,7 +99,7 @@ const AdminAccountManagement: React.FC = () => {
     }
   }
 
-  if (loading) return <div className="text-center py-8">로딩 중...</div>;
+  if (loading) return <AdminLayout><PageLoader /></AdminLayout>;
   if (error) return <div className="text-red-500 text-center py-8">{error}</div>;
 
   return (

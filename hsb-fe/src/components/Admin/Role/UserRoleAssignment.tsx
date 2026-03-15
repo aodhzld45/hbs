@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { fetchUserRoles, updateUserRole } from '../../../services/Admin/roleApi';
 import { RoleGroup, UserRoleAssign } from '../../../types/Admin/RoleGroup';
 import { ToastType } from './Toast';
-
+import PageLoader from '../../../features/common/PageLoader';
 interface UserRoleAssignmentProps {
   roles: RoleGroup[];
   rolesLoading: boolean;
@@ -171,7 +171,7 @@ const UserRoleAssignment: React.FC<UserRoleAssignmentProps> = ({
       </div>
 
       {loading ? (
-        <div className="py-8 text-center text-gray-500">로딩 중...</div>
+        <><PageLoader /></>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full border text-sm">

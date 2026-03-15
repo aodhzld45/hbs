@@ -3,6 +3,8 @@ import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { usePermission } from '../../context/PermissionContext';
+import PageLoader from '../../features/common/PageLoader';
+import AdminLayout from '../Layout/AdminLayout';
 
 const PrivateRoute: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -12,7 +14,11 @@ const PrivateRoute: React.FC = () => {
 
   // 세션 상태 확인 중에는 로딩 UI 또는 null 렌더링
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <AdminLayout>
+        <PageLoader />
+      </AdminLayout>
+    );
   }
 
   if (!isAuthenticated) {
