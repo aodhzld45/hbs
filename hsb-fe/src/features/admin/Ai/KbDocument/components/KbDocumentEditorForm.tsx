@@ -275,12 +275,33 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
     }
   }, [progressStep]);
 
+  const ALLOWED_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"];
+
+  const getFileExtension = (fileName: string) => {
+    const lastDotIndex = fileName.lastIndexOf(".");
+    if (lastDotIndex === -1) return "";
+    return fileName.slice(lastDotIndex).toLowerCase();
+  };
+
   const handleSubmit = async () => {
     setErr(null);
 
     if (!canSubmit) {
       setErr("KB Source / 제목은 필수입니다.");
       return;
+    }
+
+    if (form.docType === "IMAGE") {
+      if (!file) {
+        setErr("IMAGE 타입은 이미지 파일 업로드가 필요합니다.");
+        return;
+      }
+
+      const ext = getFileExtension(file.name);
+      if (!ALLOWED_IMAGE_EXTENSIONS.includes(ext)) {
+        setErr("허용되지 않은 이미지 확장자입니다. png, jpg, jpeg, webp, gif, bmp 파일만 업로드 가능합니다.");
+        return;
+      }
     }
 
     try {
@@ -465,8 +486,7 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
             className="w-full h-10 border rounded px-2 text-sm bg-white"
           >
             <option value="FILE">FILE</option>
-            <option value="URL">URL</option>
-            <option value="TEXT">TEXT</option>
+            <option value="IMAGE">IMAGE</option>
           </select>
         </div>
 
@@ -587,7 +607,7 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
               type="file"
               onChange={handleFileChange}
               className="block w-full text-sm"
-              accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.json"
+              accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.json,.jpg,.jpeg,.png,.gif,.bmp,.webp"
             />
 
             {/* 선택된 파일 표시 */}
