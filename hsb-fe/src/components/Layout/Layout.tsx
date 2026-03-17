@@ -1,49 +1,48 @@
 // src/components/Layout/Layout.tsx
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom'; // 추가
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import { usePageLogger } from '../../hooks/usePageLogger';
+import { useThemeStore } from '../../store/useThemeStore';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout = ({ children }: LayoutProps) => {
-  const location = useLocation(); // 현재 경로 확인
+  const location = useLocation();
   const isMainPage = location.pathname === '/';
 
-  const [isDark, setIsDark] = useState(() => {
-    const stored = localStorage.getItem('dark-mode');
-    if (stored !== null) return stored === 'true';
-    return isMainPage; // 메인페이지면 true로 시작
-  });
+  const isDark = useThemeStore((state) => state.isDark);
+  const initializeTheme = useThemeStore((state) => state.initializeTheme);
+  const toggleDark = useThemeStore((state) => state.toggleDark);
 
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    initializeTheme();
+  }, [initializeTheme]);
 
-    localStorage.setItem('dark-mode', String(isDark));
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
   }, [isDark]);
 
   usePageLogger();
 
   return (
-    <div className="flex flex-col min-h-screen bg-white dark:bg-[#121212] text-gray-800 dark:text-gray-800">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-[#121212] text-gray-800 dark:text-gray-100">
       {!isMainPage && <Header />}
+
       <main
         className={
           isMainPage
-            ? 'flex-none w-full px-0 py-0' // 메인 페이지: 콘텐츠 높이만큼만 사용 → body 단일 스크롤
-            : 'flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6' // 일반 페이지
+            ? 'flex-none w-full px-0 py-0'
+            : 'flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6'
         }
-      >        
+      >
         {children}
       </main>
-      <Footer isDark={isDark} toggleDark={() => setIsDark(!isDark)} />
+
+      <Footer isDark={isDark} toggleDark={toggleDark} />
     </div>
   );
 };
