@@ -1,8 +1,10 @@
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+
+
+// import { useAuth } from '../../context/AuthContext'
+import { useAuthStore } from "../../store/useAuthStore"; 
 import { fetchAdminLogin, fetchGetIp } from '../../services/Admin/adminApi';
-import axios from 'axios';
 
 interface LoginForm {
   id: string;
@@ -16,7 +18,10 @@ const AdminLogin = () => {
   });
   const [error, setError] = useState<string>('');
   const navigate = useNavigate();
-  const { isAuthenticated, login } = useAuth();
+  // const { isAuthenticated, login } = useAuth();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const login = useAuthStore((state) => state.login);
+
   const [ip, setIp] = useState<string>('');
   
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
 
 import ContentManager from './pages/Admin/Content/ContentManager';
 import ContentManagerDetail from './pages/Admin/Content/ContentManagerDetail';
@@ -48,16 +49,19 @@ import TestPage from './pages/User/TestPage';
 import SqlProblemTestPage from './features/admin/SqlProblem/SqlProblemTestPage';
 import KisPage from './features/user/Kis';
 import PrivateRoute from './components/Admin/PrivateRoute';
-import { AuthProvider } from './context/AuthContext';
-import { PermissionProvider } from './context/PermissionContext';
+// import { AuthProvider } from './context/AuthContext';
+import { PermissionProvider } from './context/PermissionContext'
+import { useAuthStore } from './store/useAuthStore';
 
 function App() {
+    useEffect(() => {
+      useAuthStore.getState().checkSession();
+    }, []);
+
   return (
     // 관리자 인증 세션을 최상단에서 관리한다.
     // PrivateRoute와 관리자 전용 화면들이 이 컨텍스트를 사용해 로그인 상태를 판단한다.
-    <AuthProvider>
-      {/* 인증과 별개로 "메뉴별 접근 권한"을 관리한다.
-          로그인만 되어 있다고 관리자 전체 접근을 허용하지 않기 위해 분리되어 있다. */}
+    // <AuthProvider>
       <PermissionProvider>
         {/* 애플리케이션 전체 라우팅 루트. */}
         <Router>
@@ -162,7 +166,7 @@ function App() {
           </UserMenuProvider>
         </Router>
       </PermissionProvider>
-    </AuthProvider>
+    // </AuthProvider>
   );
 }
 

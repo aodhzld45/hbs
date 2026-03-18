@@ -1,13 +1,19 @@
 // src/components/PrivateRoute.tsx
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+// import { useAuth } from '../../context/AuthContext';
+import { useAuthStore } from '../../store/useAuthStore';
 import { usePermission } from '../../context/PermissionContext';
 import PageLoader from '../../features/common/PageLoader';
 import AdminLayout from '../Layout/AdminLayout';
 
 const PrivateRoute: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+
+  // const { isAuthenticated, isLoading } = useAuth();
+
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
+
   const { menuPermissions, isLoaded } = usePermission();
   const location = useLocation();
   const pathname = location.pathname;

@@ -1,14 +1,20 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, LogOut, User, ExternalLink } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+// import { useAuth } from '../../context/AuthContext';
+
+import { useAuthStore } from '../../store/useAuthStore';
+
 
 interface Props {
   toggleSidebar: () => void;
 }
 
 const AdminHeader: React.FC<Props> = ({ toggleSidebar }) => {
-  const { admin, logout } = useAuth();
+
+  const admin = useAuthStore((state) => state.admin);
+  const logout = useAuthStore((state) => state.logout);
+
   const navigate = useNavigate();
 
   const [open, setOpen] = useState(false);

@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { fetchRoleMenus } from '../../services/Admin/roleApi';
-import { useAuth } from '../../context/AuthContext';
+
+// import { useAuth } from '../../context/AuthContext';
 import { usePermission } from '../../context/PermissionContext';
 import { MenuPermission } from '../../types/Admin/RoleGroup';
+import { useAuthStore } from '../../store/useAuthStore';
 
 interface Props {
   isOpen: boolean;
@@ -22,17 +24,18 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
 
   const [selectedParent, setSelectedParent] = useState<number | null>(null);
   const location = useLocation();
-  const auth = useAuth();
+  const admin = useAuthStore((state) => state.admin);
+
+  // const auth = useAuth();
 
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
-
 
   /** 권한 기반 메뉴 로딩 */
   useEffect(() => {
     const loadData = async () => {
       try {
-        if (!isLoaded && auth.admin?.groupId) {
-          const roleMenuRes = await fetchRoleMenus(auth.admin.groupId);
+        if (!isLoaded && admin?.groupId) {
+          const roleMenuRes = await fetchRoleMenus(admin.groupId);
           const readPermissions = roleMenuRes.menuPermissions?.filter((m) => m.read) || [];
           setMenuPermissions(readPermissions);
           setIsLoaded(true);
@@ -42,7 +45,7 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
       }
     };
     loadData();
-  }, [auth.admin?.groupId, isLoaded, refreshToken]);
+  }, [admin?.groupId, isLoaded, refreshToken, setMenuPermissions, setIsLoaded]);
 
   const permissions = menuPermissions || [];
 
