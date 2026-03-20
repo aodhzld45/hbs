@@ -41,6 +41,18 @@ public class KbDocument extends AuditBase {
     @Column(name = "index_summary", columnDefinition = "LONGTEXT")
     private String indexSummary;
 
+    @Column(name = "welcome_title", length = 255)
+    private String welcomeTitle;
+
+    @Column(name = "welcome_intro", columnDefinition = "TEXT")
+    private String welcomeIntro;
+
+    @Column(name = "welcome_questions_json", columnDefinition = "json")
+    private String welcomeQuestionsJson;
+
+    @Column(name = "welcome_keywords_json", columnDefinition = "json")
+    private String welcomeKeywordsJson;
+
     private String title;
 
     @Column(name = "doc_type", nullable = false)

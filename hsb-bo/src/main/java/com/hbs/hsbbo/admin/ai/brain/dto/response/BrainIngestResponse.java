@@ -32,8 +32,26 @@ public class BrainIngestResponse {
     @JsonProperty("summaryText")
     @JsonAlias("summary_text")
     private String summaryText;
+
     @JsonProperty("rawPreview")
     @JsonAlias("raw_preview")
     private String rawPreview;
+
+    @JsonProperty("welcomeTitle")
+    @JsonAlias("welcome_title")
+    private String welcomeTitle;
+
+    @JsonProperty("welcomeIntro")
+    @JsonAlias("welcome_intro")
+    private String welcomeIntro;
+
+    @JsonProperty("welcomeQuestions")
+    @JsonAlias("welcome_questions")
+    private List<String> welcomeQuestions;
+
+    @JsonProperty("welcomeKeywords")
+    @JsonAlias("welcome_keywords")
+    private List<String> welcomeKeywords;
+
     private List<String> tags;
 }

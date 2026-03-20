@@ -79,6 +79,13 @@ public class FastApiBrainClient implements BrainClient{
                 log.info("[Brain ingest summary] {}", safeBody(resp.getSummaryText()));
             }
 
+            log.info("[Brain ingest welcome] title={}, intro={}, questions={}, keywords={}",
+                    resp.getWelcomeTitle(),
+                    resp.getWelcomeIntro(),
+                    resp.getWelcomeQuestions(),
+                    resp.getWelcomeKeywords()
+            );
+
             return resp;
 
         } catch (Exception e) {

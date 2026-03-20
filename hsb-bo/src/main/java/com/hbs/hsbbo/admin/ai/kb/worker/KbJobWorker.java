@@ -1,5 +1,6 @@
 package com.hbs.hsbbo.admin.ai.kb.worker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hbs.hsbbo.admin.ai.brain.client.BrainClient;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainIngestRequest;
@@ -104,39 +105,14 @@ public class KbJobWorker {
                 String openaiFileId = safe(res.getOpenaiFileId());        // file_...
                 String summaryText  = safe(res.getSummaryText());         // 있으면 완료
                 String vsFileId     = safe(res.getVectorStoreFileId());
+
                 List<String> tags = res.getTags();
 
                 if (!openaiFileId.isEmpty()) {
                     doc.setVectorFileId(openaiFileId); // step2 신호
                 }
 
-                // 요약이 있으면 "완료"
-                if (!summaryText.isEmpty()) {
-                    doc.setIndexSummary(summaryText);
-                    doc.setTagsJson((tags == null || tags.isEmpty()) ? null : objectMapper.writeValueAsString(tags));
-                    doc.setIndexedAt(LocalDateTime.now());
-                    doc.setIndexError(null);
-                    doc.setDocStatus("INDEXED");
-
-                    job.setJobStatus(KbJobStatus.SUCCESS);
-                    job.setFinishedAt(LocalDateTime.now());
-                    job.setLastError(null);
-
-                    kbDocumentRepository.save(doc);
-                    kbJobRepository.save(job);
-
-                    log.info("KbJob DONE. jobId={}, docId={}, vsId={}, openaiFileId={}, vsFileId={}",
-                            job.getId(), doc.getId(), ensuredVsId, openaiFileId, vsFileId);
-
-                    return WorkerResult.SUCCESS;
-                }
-
-                // Brain은 ok인데 요약이 비어 있음 → 완료 처리 (재시도 루프 방지, snake_case 파싱 이슈 등)
-                doc.setIndexSummary(null);
-                doc.setTagsJson((tags == null || tags.isEmpty()) ? null : objectMapper.writeValueAsString(tags));
-                doc.setIndexedAt(LocalDateTime.now());
-                doc.setIndexError(null);
-                doc.setDocStatus("INDEXED");
+                applyIngestMetadataToDocument(doc, res);
 
                 job.setJobStatus(KbJobStatus.SUCCESS);
                 job.setFinishedAt(LocalDateTime.now());
@@ -145,8 +121,11 @@ public class KbJobWorker {
                 kbDocumentRepository.save(doc);
                 kbJobRepository.save(job);
 
-                log.info("KbJob DONE(no summary). jobId={}, docId={}, vsId={}, openaiFileId={}", job.getId(), doc.getId(), ensuredVsId, openaiFileId);
+                log.info("KbJob DONE. jobId={}, docId={}, vsId={}, openaiFileId={}, vsFileId={}",
+                        job.getId(), doc.getId(), ensuredVsId, openaiFileId, vsFileId);
+
                 return WorkerResult.SUCCESS;
+
             } else {
                 String msg = (res == null) ? "Brain ingest 응답 null"
                         : (res.getMessage() == null ? "Brain ingest 실패" : res.getMessage());
@@ -175,6 +154,39 @@ public class KbJobWorker {
 
         log.warn("KbJob FAILED. jobId={}, tryCount={}, msg={}",
                 job.getId(), job.getTryCount(), msg);
+    }
+
+    private void applyIngestMetadataToDocument(
+            KbDocument doc,
+            BrainIngestResponse res
+    ) throws JsonProcessingException {
+        String summaryText = safe(res.getSummaryText());
+        List<String> tags = res.getTags();
+
+        String welcomeTitle = safe(res.getWelcomeTitle());
+        String welcomeIntro = safe(res.getWelcomeIntro());
+        List<String> welcomeQuestions = res.getWelcomeQuestions();
+        List<String> welcomeKeywords = res.getWelcomeKeywords();
+
+        doc.setIndexSummary(summaryText.isEmpty() ? null : summaryText);
+        doc.setTagsJson((tags == null || tags.isEmpty()) ? null : objectMapper.writeValueAsString(tags));
+
+        doc.setWelcomeTitle(welcomeTitle.isEmpty() ? null : welcomeTitle);
+        doc.setWelcomeIntro(welcomeIntro.isEmpty() ? null : welcomeIntro);
+        doc.setWelcomeQuestionsJson(
+                (welcomeQuestions == null || welcomeQuestions.isEmpty())
+                        ? null
+                        : objectMapper.writeValueAsString(welcomeQuestions)
+        );
+        doc.setWelcomeKeywordsJson(
+                (welcomeKeywords == null || welcomeKeywords.isEmpty())
+                        ? null
+                        : objectMapper.writeValueAsString(welcomeKeywords)
+        );
+
+        doc.setIndexedAt(LocalDateTime.now());
+        doc.setIndexError(null);
+        doc.setDocStatus("INDEXED");
     }
 
     private String normalize(String s) {

@@ -35,6 +35,11 @@ public class KbDocumentResponse {
     private String tagsJson;
     private String summaryPrompt;
 
+    private String welcomeTitle;
+    private String welcomeIntro;
+    private String welcomeQuestionsJson;
+    private String welcomeKeywordsJson;
+
     private String useTf;
 
     private String regAdm;
@@ -68,6 +73,10 @@ public class KbDocumentResponse {
                 .category(hd.getCategory())
                 .tagsJson(hd.getTagsJson())
                 .summaryPrompt(hd.getSummaryPrompt())
+                .welcomeTitle(hd.getWelcomeTitle())
+                .welcomeIntro(hd.getWelcomeIntro())
+                .welcomeQuestionsJson(hd.getWelcomeQuestionsJson())
+                .welcomeKeywordsJson(hd.getWelcomeKeywordsJson())
                 .useTf(hd.getUseTf())
                 .regAdm(hd.getRegAdm())
                 .regDate(hd.getRegDate())
