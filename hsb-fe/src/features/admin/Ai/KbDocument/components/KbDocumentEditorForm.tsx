@@ -330,6 +330,31 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
     }
   })();
 
+  const welcomeTitle = detail?.welcomeTitle?.trim() || "";
+  const welcomeIntro = detail?.welcomeIntro?.trim() || "";
+
+  const welcomeQuestions: string[] = (() => {
+    try {
+      const raw = detail?.welcomeQuestionsJson?.trim();
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  })();
+
+  const welcomeKeywords: string[] = (() => {
+    try {
+      const raw = detail?.welcomeKeywordsJson?.trim();
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  })();
+
   return (
     <div className="space-y-4">
       {/* 헤더 */}
@@ -418,6 +443,66 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
               </div>
             </div>
           )}
+
+          {progressStep === 3 && (
+          <div className="md:col-span-2">
+            <div className="text-xs font-semibold text-gray-700 mb-1">
+              AI 웰컴 메타 결과
+            </div>
+
+            <div className="rounded border bg-white p-3 space-y-3">
+              <div>
+                <div className="text-[11px] font-medium text-gray-500 mb-1">welcome_title</div>
+                <div className="text-sm text-gray-800">
+                  {welcomeTitle || <span className="text-gray-400">생성된 제목이 없습니다.</span>}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[11px] font-medium text-gray-500 mb-1">welcome_intro</div>
+                <div className="text-sm text-gray-800 whitespace-pre-wrap">
+                  {welcomeIntro || <span className="text-gray-400">생성된 소개문이 없습니다.</span>}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[11px] font-medium text-gray-500 mb-1">welcome_questions</div>
+                <div className="flex flex-wrap gap-2">
+                  {welcomeQuestions.length > 0 ? (
+                    welcomeQuestions.map((q, idx) => (
+                      <span
+                        key={`${idx}-${q}`}
+                        className="px-2 py-1 text-xs rounded-full border bg-blue-50 text-blue-700"
+                      >
+                        {q}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-gray-400">생성된 질문이 없습니다.</span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[11px] font-medium text-gray-500 mb-1">welcome_keywords</div>
+                <div className="flex flex-wrap gap-2">
+                  {welcomeKeywords.length > 0 ? (
+                    welcomeKeywords.map((k) => (
+                      <span
+                        key={k}
+                        className="px-2 py-1 text-xs rounded-full border bg-emerald-50 text-emerald-700"
+                      >
+                        #{k}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-gray-400">생성된 키워드가 없습니다.</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         </div>
       )}
 

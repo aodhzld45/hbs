@@ -8,6 +8,12 @@ export interface KbDocumentResponse {
     indexedAt: string | null;
     indexError: string | null;
     indexSummary: string | null;
+
+    welcomeTitle?: string;
+    welcomeIntro?: string;
+    welcomeQuestionsJson?: string;
+    welcomeKeywordsJson?: string;
+
     docType: string;
     docStatus: string;
     version: number;
@@ -19,10 +25,12 @@ export interface KbDocumentResponse {
     sourceUrl: string;
     category: string;
     tagsJson: string | null;
+
     summaryPrompt: string | null;
 
     useTf?: 'Y' | 'N';
     delTf?: 'Y' | 'N';
+
     regAdm: string;
     regDate: string; // ISO 8601 형식의 문자열 (LocalDateTime 대응)
     upAdm: string;
