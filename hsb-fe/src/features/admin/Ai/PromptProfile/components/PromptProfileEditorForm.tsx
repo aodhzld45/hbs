@@ -308,6 +308,11 @@ export default function PromptProfileEditorForm({
     [siteKeys],
   );
 
+  const selectedKbDocs = useMemo(() => {
+    const selectedIds = new Set(form.kbDocumentIds ?? []);
+    return kbDocuments.filter((doc) => selectedIds.has(doc.id));
+  }, [kbDocuments, form.kbDocumentIds]);
+
   const clearFieldError = (name: string) => {
     setErrors((prev) => {
       if (!prev[name as keyof ErrorMap]) return prev;
@@ -828,7 +833,11 @@ export default function PromptProfileEditorForm({
         </div>
       </div>
 
-      <WelcomeBlocksEditor blocks={welcomeBlocks} setBlocks={setWelcomeBlocks} />        
+      <WelcomeBlocksEditor
+        blocks={welcomeBlocks}
+        setBlocks={setWelcomeBlocks}
+        selectedKbDocs={selectedKbDocs}
+      />
 
       {/* 스타일/툴/정책 JSON */}
       <div className="grid grid-cols-3 gap-4">
