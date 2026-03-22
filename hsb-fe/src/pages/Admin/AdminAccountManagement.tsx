@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../components/Layout/AdminLayout';  
 import { Admin } from '../../types/Admin/Admin';
-import { useAuth } from '../../context/AuthContext';
+
+import { useAuthStore } from '../../store/useAuthStore';
 
 import { RoleGroup } from '../../types/Admin/RoleGroup'
 import { fetchAdminAccounts, registerAdmin, updateAdmin, deleteAdmin  } from '../../services/Admin/adminApi';
@@ -14,7 +15,7 @@ import PageLoader from "../../features/common/PageLoader";
 
 const AdminAccountManagement: React.FC = () => {
   const [admins, setAdmins] = useState<Admin[]>([]);
-  const { admin } = useAuth();
+  const admin = useAuthStore((state) => state.admin);
   const [loading, setLoading] = useState<boolean>(true);
 
   const [error, setError] = useState<string>('');

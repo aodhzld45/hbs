@@ -8,7 +8,7 @@ import {
 } from '../../../services/Admin/userMenuApi';
 
 import { flattenMenuTree } from '../../../utils/menuTreeFlattener';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 
 type Props = {
@@ -41,7 +41,7 @@ const defaultForm: FormState = {
 
 const UserMenuForm: React.FC<Props> = ({ treeData, initialForm, onSuccess }) => {
   const [form, setForm] = useState<FormState>({ ...defaultForm, ...initialForm });
-  const { admin } = useAuth();
+  const admin = useAuthStore((state) => state.admin);
 
   useEffect(() => {
     if (initialForm) {

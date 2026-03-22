@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useAuth } from '../../../context/AuthContext';
+
+import { useAuthStore } from '../../../store/useAuthStore';
 
 import AdminLayout from '../../../components/Layout/AdminLayout';
 import { CodeGroup } from "../../../types/Common/CodeGroup";
@@ -33,9 +34,10 @@ const CodeManager: React.FC = () => {
     id: number;
     codeGroupId: string;
   } | null>(null);
+
   const [loadingGroup, setLoadingGroup] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  const { admin } = useAuth();
+  const admin = useAuthStore((state) => state.admin);
 
   // 모달 부분
   const [groupModalOpen, setGroupModalOpen] = useState(false);
