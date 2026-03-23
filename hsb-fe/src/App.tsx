@@ -1,36 +1,20 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { useEffect } from 'react';
 
-import ContentManager from './pages/Admin/Content/ContentManager';
 import ContentManagerDetail from './pages/Admin/Content/ContentManagerDetail';
-import SqlProblemManager from './features/admin/SqlProblem';
 import SqlProblemDetail from './features/admin/SqlProblem/components/SqlProblemDetail';
 import AdminLogin from './pages/Admin/Login';
-import AdminDashboard from './pages/Admin';
-import AdminList from './pages/Admin/AdminAccountManagement';
 import AdminCreate from './pages/Admin/AdminRegister';
 import AdminProfile from './components/Admin/Account/AdminProfile';
-import AdminMenu from './pages/Admin/Menu/AdminMenuManagement';
-import AdminAuthManagement from './pages/Admin/Role/AdminRoleManagement';
-import AdminLogManager from './pages/Admin/Log/AdminLogManager';
-import UserMenuManager from './pages/Admin/Menu/UserMenuManager';
-import CodeManager from './pages/Admin/Code/CodeManager';
-import ContactManager from './features/admin/Contact';
 import ContactDetail from './features/admin/Contact/components/ContactDetail';
-import CorsOriginPage from './features/admin/CorsOrigin';
-import MaintenanceRulePage from './features/admin/MaintenanceRule';
 import BlockIpPage from './components/Common/BlockedIpPage';
-import PopupBannerManager from './pages/Admin/Main/PopupBannerManager';
-import PageManager from './pages/Admin/Page/PageManager';
 import BoardManager from './pages/Admin/Board/BoardManager';
 import BoardWrite from './pages/Admin/Board/BoardWrite';
 import BoardDetail from './pages/Admin/Board/BoardDetail';
-import BoardConfigManager from './pages/Admin/BoardConfig/BoardConfigManager';
 import BoardConfigWrite from './pages/Admin/BoardConfig/BoardConfigWrite';
 import { UserMenuProvider } from './context/UserMenuContext';
 import UserRouteGuard from './components/Route/UserRouteGuard';
 import MaintenanceRouteGuard from './components/Route/MaintenanceRouteGuard';
-import BlockIp from "./features/admin/BlockIp/index";
 import ComingSoonPage from './components/Common/ComingSoonPage';
 import MainPage from './pages/MainPage';
 import BoardList from './components/Board/BoardList';
@@ -39,12 +23,6 @@ import ContentsList from './components/Contents/ContentsList';
 import ContentDetail from './components/Contents/ContentDetail';
 import ContactForm from './features/user/Contact';
 import AIPlayground from './features/user/OpenAI/AIPlayground';
-import AdminSiteKeys from './features/admin/Ai/AdminSiteKeys';
-import AdminWidgetConfig from './features/admin/Ai/AdminWidgetConfig';
-import AdminPromptProfile from './features/admin/Ai/PromptProfile';
-import AdminUsageStats from './features/admin/Ai/AdminUsageStats';
-import AdminKbSourse from './features/admin/Ai/KbSource';
-import AdminKbDocument from './features/admin/Ai/KbDocument';
 import TestPage from './pages/User/TestPage';
 import SqlProblemTestPage from './features/admin/SqlProblem/SqlProblemTestPage';
 import KisPage from './features/user/Kis';
@@ -53,11 +31,15 @@ import PrivateRoute from './components/Admin/PrivateRoute';
 import { PermissionProvider } from './context/PermissionContext'
 import { useAuthStore } from './store/useAuthStore';
 
+import { useAdminDynamicRoutes } from './routes/admin/useAdminDynamicRoutes';
+import AdminIndex from './pages/Admin';
+
 function App() {
     useEffect(() => {
       useAuthStore.getState().checkSession();
     }, []);
 
+  const { routes: adminDynamicRoutes, loading: adminRoutesLoading } = useAdminDynamicRoutes();
   return (
     // 관리자 인증 세션을 최상단에서 관리한다.
     // PrivateRoute와 관리자 전용 화면들이 이 컨텍스트를 사용해 로그인 상태를 판단한다.
@@ -122,27 +104,14 @@ function App() {
                   PrivateRoute 하나로 묶어 공통 처리하는 구조다.
                   여기서 인증(AuthContext)과 메뉴 권한(PermissionContext)을 함께 검사한다. */}
               <Route element={<PrivateRoute />}>
-                <Route path="/admin/index" element={<AdminDashboard />} />
-                <Route path="/admin/page-manager" element={<PageManager />} />
-                <Route path="/admin/content-manager" element={<ContentManager />} />
+
+                <Route path="/admin/index" element={<AdminIndex />} />
+
+                {adminDynamicRoutes}
                 <Route path="/admin/content-manager/:fileId" element={<ContentManagerDetail />} />
-                <Route path="/admin/ai/site-keys" element={<AdminSiteKeys />} />
-                <Route path="/admin/ai/widget-configs" element={<AdminWidgetConfig />} />
-                <Route path="/admin/ai/prompt-profiles" element={<AdminPromptProfile />} />
-                <Route path="/admin/ai/usage-stats" element={<AdminUsageStats />} />
-                <Route path="/admin/kb/kb-source" element={<AdminKbSourse />} />
-                <Route path="/admin/kb/kb-document" element={<AdminKbDocument />} />
-                <Route path="/admin/sql-manager" element={<SqlProblemManager />} />
                 <Route path="/admin/sql-manager/:id" element={<SqlProblemDetail />} />
-                <Route path="/admin/admin-manager" element={<AdminList />} />
-                <Route path="/admin/auth-management" element={<AdminAuthManagement />} />
                 <Route path="/admin/admin-create" element={<AdminCreate />} />
                 <Route path="/admin/profile" element={<AdminProfile />} />
-                <Route path="/admin/admin-menu" element={<AdminMenu />} />
-                <Route path="/admin/log-manager" element={<AdminLogManager />} />
-                <Route path="/admin/user-menu-manager" element={<UserMenuManager />} />
-                <Route path="/admin/code-manager" element={<CodeManager />} />
-                <Route path="/admin/board-config" element={<BoardConfigManager />} />
                 <Route path="/admin/board-config/write" element={<BoardConfigWrite />} />
                 <Route path="/admin/board-config/:id/edit" element={<BoardConfigWrite />} />
                 <Route path="/admin/board/write" element={<BoardWrite />} />
@@ -151,12 +120,7 @@ function App() {
                 <Route path="/admin/board/:boardCode/write" element={<BoardWrite />} />
                 <Route path="/admin/board/:boardCode/edit/:id" element={<BoardWrite />} />
                 <Route path="/admin/board/:boardCode/detail/:id" element={<BoardDetail />} />
-                <Route path="/admin/contact" element={<ContactManager />} />
                 <Route path="/admin/contact/detail/:id" element={<ContactDetail />} />
-                <Route path="/admin/cors-origins" element={<CorsOriginPage />} />
-                <Route path="/admin/maintenance" element={<MaintenanceRulePage />} />
-                <Route path="/admin/block-ips" element={<BlockIp />}  />
-                <Route path="/admin/main/popup-banner-manager" element={<PopupBannerManager />} />
               </Route>
 
               {/* 관리자 콘텐츠 직접 보기용 예외 라우트.

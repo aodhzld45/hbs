@@ -8,6 +8,7 @@ export interface AdminMenu {
     createdAt?: string;
     updatedAt?: string;
     url: string;
+    componentKey: string;
     orderSequence: number;
     useTf: 'Y' | 'N';
     delTf: 'Y' | 'N';

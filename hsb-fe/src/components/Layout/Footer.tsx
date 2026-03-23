@@ -41,7 +41,7 @@ const Footer = ({ isDark, toggleDark, sticky = false }: FooterProps) => {
 
             {/* 관리자 */}
             <Link
-              to="/admin/index"
+              to="/admin/login"
               className="inline-flex h-11 items-center rounded-lg border px-4 text-sm font-medium hover:bg-gray-200 focus:outline-none focus:ring dark:border-gray-700 dark:hover:bg-gray-700"
             >
               관리자
