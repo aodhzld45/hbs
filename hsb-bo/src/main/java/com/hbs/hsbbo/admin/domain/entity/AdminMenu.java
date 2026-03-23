@@ -37,6 +37,9 @@ public class AdminMenu {
     @Column(nullable = false, length = 200)
     private String url;   // 주소
 
+    @Column(name = "component_key", nullable = false, length = 255)
+    private String componentKey;
+
     @Column(name = "order_sequence", nullable = false)
     private Integer orderSequence; // 순서
 

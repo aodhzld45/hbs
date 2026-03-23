@@ -1,7 +1,11 @@
 package com.hbs.hsbbo.admin.dto.response;
 
 import com.hbs.hsbbo.admin.domain.entity.AdminMenu;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -16,9 +20,11 @@ public class AdminMenuResponse {
     private Byte depth;
     private Integer parentId;
     private String url;
+    private String componentKey;
     private Integer orderSequence;
     private String description;
     private String useTf;
+    private String delTf;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -29,9 +35,11 @@ public class AdminMenuResponse {
                 entity.getDepth(),
                 entity.getParentId(),
                 entity.getUrl(),
+                entity.getComponentKey(),
                 entity.getOrderSequence(),
                 entity.getDescription(),
                 entity.getUseTf(),
+                entity.getDelTf(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
