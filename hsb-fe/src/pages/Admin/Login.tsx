@@ -18,7 +18,6 @@ const AdminLogin = () => {
   });
   const [error, setError] = useState<string>('');
   const navigate = useNavigate();
-  // const { isAuthenticated, login } = useAuth();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const login = useAuthStore((state) => state.login);
 

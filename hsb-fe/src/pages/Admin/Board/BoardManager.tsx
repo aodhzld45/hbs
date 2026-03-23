@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import PageLoader from "../../../features/common/PageLoader";
 
 import AdminLayout from '../../../components/Layout/AdminLayout';
@@ -9,14 +9,16 @@ import { BoardItem, getBoardDisplayName } from '../../../types/Admin/BoardItem';
 import { BoardConfigItem } from '../../../types/Admin/BoardConfigItem';
 import { fetchBoardList, fetchExcelDownload, updateBoardUseTf } from '../../../services/Admin/boardApi';
 import { fetchBoardConfigByCode } from '../../../services/Admin/boardConfigApi';
-import { useAuth } from '../../../context/AuthContext';
 import { FILE_BASE_URL } from '../../../config/config';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 const BoardManager: React.FC = () => {
   const navigate = useNavigate();
-  const { boardCode = 'NOTICE' } = useParams();
-  const normalizedBoardCode = boardCode.toUpperCase();
-  const { admin } = useAuth();
+  const location = useLocation();
+  const { boardCode } = useParams();
+  const fallbackBoardCode = location.pathname.split('/').filter(Boolean).pop() ?? 'NOTICE';
+  const normalizedBoardCode = (boardCode ?? fallbackBoardCode).toUpperCase();
+  const admin = useAuthStore((state) => state.admin);
 
   const [adminId, setAdminId] = useState<string | null>(admin?.id ?? null);
 

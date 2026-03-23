@@ -1,6 +1,8 @@
 // src/pages/Admin/Index.tsx
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useState, useEffect } from 'react';
+
+import { useAuthStore } from '../../store/useAuthStore';
+
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/Layout/AdminLayout';
 import DatePicker from 'react-datepicker';
@@ -24,7 +26,6 @@ import {
 
 import dayjs from 'dayjs';
 import { fetchContentStats, fetchCommentStats, fetchUserLogHour } from '../../services/Admin/statsApi';
-import { createJsxClosingElement } from 'typescript';
 
 ChartJS.register(
   CategoryScale,
@@ -40,7 +41,8 @@ ChartJS.register(
 );
 
 const AdminIndex = () => {
-  const { logout } = useAuth();
+
+  const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
 
   const [startDate, setStartDate] = useState<Date>(dayjs().subtract(30, 'day').toDate());
@@ -140,11 +142,6 @@ const AdminIndex = () => {
   useEffect(() => {
     loadStats();
   }, [startDate, endDate]);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/admin/login');
-  };
 
   return (
     <AdminLayout>
