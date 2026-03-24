@@ -5,6 +5,7 @@ import AdminLayout from '../../components/Layout/AdminLayout';
 import { fetchAdminMenus } from '../../services/Admin/adminMenuApi';
 import type { AdminMenu } from '../../types/Admin/AdminMenu';
 import { resolveAdminRouteComponent } from './adminRouteRegistry';
+import { useAuthStore } from '../../store/useAuthStore';
 
 function AdminRouteConfigurationNotice({
   menuName,
@@ -18,12 +19,8 @@ function AdminRouteConfigurationNotice({
       <div className="p-6">
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <p className="font-semibold">라우트 컴포넌트 매핑이 필요합니다.</p>
-          <p className="mt-2">
-            메뉴명: {menuName}
-          </p>
-          <p className="mt-1">
-            componentKey: {componentKey || '(비어 있음)'}
-          </p>
+          <p className="mt-2">메뉴명: {menuName}</p>
+          <p className="mt-1">componentKey: {componentKey || '(비어 있음)'}</p>
         </div>
       </div>
     </AdminLayout>
@@ -34,11 +31,27 @@ export function useAdminDynamicRoutes() {
   const [menus, setMenus] = useState<AdminMenu[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isAuthLoading = useAuthStore((state) => state.isLoading);
+
   useEffect(() => {
     let mounted = true;
 
     const loadMenus = async () => {
+      if (isAuthLoading) {
+        return;
+      }
+
+      if (!isAuthenticated) {
+        if (mounted) {
+          setMenus([]);
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
+        setLoading(true);
         const data = await fetchAdminMenus();
 
         if (!mounted) {
@@ -48,6 +61,10 @@ export function useAdminDynamicRoutes() {
         setMenus(data);
       } catch (error) {
         console.error('관리자 동적 라우트 로드 실패:', error);
+
+        if (mounted) {
+          setMenus([]);
+        }
       } finally {
         if (mounted) {
           setLoading(false);
@@ -60,7 +77,7 @@ export function useAdminDynamicRoutes() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isAuthenticated, isAuthLoading]);
 
   const routes = useMemo(() => {
     const registeredPaths = new Set<string>();

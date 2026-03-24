@@ -1,24 +1,26 @@
 // src/components/PrivateRoute.tsx
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-// import { useAuth } from '../../context/AuthContext';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePermission } from '../../context/PermissionContext';
 import PageLoader from '../../features/common/PageLoader';
 import AdminLayout from '../Layout/AdminLayout';
 
+const normalizePath = (path?: string) => {
+  if (!path) return '';
+  return path.replace(/\/+$/, '');
+};
+
 const PrivateRoute: React.FC = () => {
-
-  // const { isAuthenticated, isLoading } = useAuth();
-
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);
 
   const { menuPermissions, isLoaded } = usePermission();
   const location = useLocation();
-  const pathname = location.pathname;
 
-  // 세션 상태 확인 중에는 로딩 UI 또는 null 렌더링
+  const pathname = normalizePath(location.pathname);
+  const permissions = menuPermissions ?? [];
+
   if (isLoading) {
     return (
       <AdminLayout>
@@ -31,26 +33,33 @@ const PrivateRoute: React.FC = () => {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // 메뉴 권한 로드 후: 현재 path가 read 권한과 매칭되는지 검사
-  const permissions = menuPermissions ?? [];
-  const hasMenuAccess =
-    pathname === '/admin/index' ||
-    (permissions.length > 0 &&
-      permissions.some(
-        (m) =>
-          m.read &&
-          (pathname === m.url || pathname.startsWith(m.url + '/'))
-      ));
-
-  // 권한 로드 전에는 통과 (사이드바에서 로드 후 재검사됨)
+  // 권한 데이터가 아직 준비되지 않았으면 일단 통과
+  // (상위 App.tsx에서 adminRoutesLoading 로더 처리와 함께 써야 안정적)
   if (!isLoaded) {
-    return <Outlet />;
+    return (
+      <AdminLayout>
+        <PageLoader />
+      </AdminLayout>
+    );
   }
-  // 매칭되는 메뉴가 있거나 대시보드면 통과
+
+  const matchedPermission = permissions.find((m) => {
+    const menuUrl = normalizePath(m.url);
+
+    return (
+      m.read &&
+      menuUrl &&
+      (pathname === menuUrl || pathname.startsWith(`${menuUrl}/`))
+    );
+  });
+
+  const hasMenuAccess =
+    pathname === '/admin/index' || Boolean(matchedPermission);
+
   if (hasMenuAccess) {
     return <Outlet />;
   }
-  // 권한 없음 → 대시보드로 리다이렉트
+
   return <Navigate to="/admin/index" replace />;
 };
 
