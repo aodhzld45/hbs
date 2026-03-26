@@ -1,35 +1,27 @@
-import React, { useEffect, useState, useMemo } from "react";
-import type {
-  PromptProfile,
-  PromptProfileRequest,
-  Status,
-} from "../types/promptProfileConfig";
-
-import { WelcomeBlock } from "../types/welcomeBlockConfig";
+import React, { useEffect, useMemo, useState } from "react";
+import type { PromptProfile, PromptProfileRequest, Status } from "../types/promptProfileConfig";
+import type { WelcomeBlock } from "../types/welcomeBlockConfig";
 import { blocksToWelcomeJson, collectFilesFromBlocks, welcomeJsonToBlocks } from "../utils/welcomeBlocksMapper";
 import { WelcomeBlocksEditor } from "./WelcomeBlocksEditor";
-
 import type { SiteKeySummary } from "../../AdminSiteKeys/types/siteKey";
-import {
-  fetchSiteKeyList,
-  fetchLinkedSiteKeys,
-} from "../../AdminSiteKeys/services/siteKeyApi";
+import { fetchLinkedSiteKeys, fetchSiteKeyList } from "../../AdminSiteKeys/services/siteKeyApi";
 import { fetchKbDocumentList } from "../../KbDocument/services/KbDocumentApi";
 import type { KbDocumentResponse } from "../../KbDocument/types/KbDocumentConfig";
 
 type Props = {
-  value?: PromptProfile | null; // 수정 시 전달, 신규는 undefined/null
+  value?: PromptProfile | null;
   onSubmit: (data: PromptProfileRequest, files?: File[]) => void | Promise<void>;
   onCancel: () => void;
 };
 
-const DEFAULT_MODEL = "gpt-4o-mini";
+type ErrorMap = Partial<Record<keyof PromptProfileRequest | "_global", string>>;
+type ChatType = "knowledge" | "consulting";
 
 const DEFAULT_FORM: PromptProfileRequest = {
   tenantId: "",
   name: "",
   purpose: "",
-  model: DEFAULT_MODEL,
+  model: "gpt-4o-mini",
   temperature: 0.7,
   topP: undefined,
   maxTokens: undefined,
@@ -45,149 +37,125 @@ const DEFAULT_FORM: PromptProfileRequest = {
   policiesJson: "",
   version: 1,
   status: "DRAFT",
-
-  // 연결할 사이트키
   linkedSiteKeyId: null,
-
-  // 지문으로 사용할 KB 문서 ID 목록 (BO가 knowledgeContext로 조합 후 Brain에 전달)
   kbDocumentIds: null,
-
-  // 공통 플래그
+  chatType: "knowledge",
+  category: "",
+  persona: "",
+  memoryPolicy: "short",
+  strictGroundingTf: "Y",
+  requireCitationTf: "N",
   useTf: "Y",
   delTf: "N",
 };
 
-type ErrorMap = Partial<Record<keyof PromptProfileRequest | "_global", string>>;
+const PURPOSE_OPTIONS = ["support", "sales", "faq", "portfolio", "onboarding", "consulting"];
+const CATEGORY_OPTIONS: Record<ChatType, string[]> = {
+  knowledge: ["faq", "admission", "product", "policy", "manual", "support"],
+  consulting: ["career", "legal", "wellness", "coaching", "saju", "finance"],
+};
 
-export default function PromptProfileEditorForm({
-  value,
-  onSubmit,
-  onCancel,
-}: Props) {
+function Section({
+  title,
+  desc,
+  children,
+}: {
+  title: string;
+  desc?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+        {desc && <p className="mt-1 text-xs text-gray-500">{desc}</p>}
+      </div>
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  error,
+  hint,
+  required,
+  children,
+}: {
+  label: string;
+  error?: string;
+  hint?: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-gray-700">
+        {label}
+        {required && <span className="ml-1 text-red-500">*</span>}
+      </label>
+      {children}
+      {error ? <p className="mt-1 text-[11px] text-red-500">{error}</p> : hint ? <p className="mt-1 text-[11px] text-gray-500">{hint}</p> : null}
+    </div>
+  );
+}
+
+export default function PromptProfileEditorForm({ value, onSubmit, onCancel }: Props) {
   const [form, setForm] = useState<PromptProfileRequest>(DEFAULT_FORM);
-  const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<ErrorMap>({});
-
-  const [linkedTouched, setLinkedTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [welcomeBlocks, setWelcomeBlocks] = useState<WelcomeBlock[]>([]);
-
-
-  // 사이트키 목록 상태
+  const [linkedTouched, setLinkedTouched] = useState(false);
   const [siteKeys, setSiteKeys] = useState<SiteKeySummary[]>([]);
   const [loadingKeys, setLoadingKeys] = useState(false);
   const [keysError, setKeysError] = useState<string | null>(null);
-
-  // KB 문서 목록 (지문 선택용)
   const [kbDocuments, setKbDocuments] = useState<KbDocumentResponse[]>([]);
   const [loadingKbDocs, setLoadingKbDocs] = useState(false);
-  /** 지문 KB 문서 테이블: 제목으로만 필터 (LIKE, 클라이언트) */
   const [kbDocTitleFilter, setKbDocTitleFilter] = useState("");
 
-  // ==== 유효성 검사 ====
+  const isKnowledgeChat = form.chatType !== "consulting";
+  const categoryOptions = CATEGORY_OPTIONS[(form.chatType as ChatType) ?? "knowledge"] ?? CATEGORY_OPTIONS.knowledge;
+
+  const clearFieldError = (name: string) => {
+    setErrors((prev) => {
+      if (!prev[name as keyof ErrorMap]) return prev;
+      const next = { ...prev };
+      delete next[name as keyof ErrorMap];
+      return next;
+    });
+  };
+
+  const patchForm = (patch: Partial<PromptProfileRequest>) => {
+    setForm((prev) => ({ ...prev, ...patch }));
+  };
+
   const validate = (f: PromptProfileRequest): ErrorMap => {
     const err: ErrorMap = {};
-
-    // name: @NotBlank, @Size(max=100)
-    if (!f.name || !f.name.trim()) {
-      err.name = "프로필 이름은 필수입니다.";
-    } else if (f.name.trim().length > 100) {
-      err.name = "프로필 이름은 최대 100자까지 가능합니다.";
-    }
-
-    // tenantId: @Size(max=64)
-    if (f.tenantId && f.tenantId.length > 64) {
-      err.tenantId = "Tenant ID는 최대 64자까지 가능합니다.";
-    }
-
-    // purpose: @Size(max=40)
-    if (f.purpose && f.purpose.length > 40) {
-      err.purpose = "목적(purpose)은 최대 40자까지 가능합니다.";
-    }
-
-    // model: @NotBlank, @Size(max=60)
-    if (!f.model || !f.model.trim()) {
-      err.model = "모델은 필수입니다.";
-    } else if (f.model.trim().length > 60) {
-      err.model = "모델 이름은 최대 60자까지 가능합니다.";
-    }
-
-    // temperature: @NotNull, 0.0 ~ 1.0
-    if (f.temperature === null || f.temperature === undefined) {
-      err.temperature = "temperature는 필수입니다.";
-    } else if (isNaN(Number(f.temperature))) {
-      err.temperature = "temperature 값이 올바르지 않습니다.";
-    } else if (Number(f.temperature) < 0 || Number(f.temperature) > 1) {
-      err.temperature = "temperature는 0.0 이상 1.0 이하로 입력해주세요.";
-    }
-
-    // topP: 0.0 ~ 1.0 (옵션)
-    if (f.topP !== null && f.topP !== undefined) {
-      if (isNaN(Number(f.topP))) {
-        err.topP = "topP 값이 올바르지 않습니다.";
-      } else if (Number(f.topP) < 0 || Number(f.topP) > 1) {
-        err.topP = "topP는 0.0 이상 1.0 이하로 입력해주세요.";
-      }
-    }
-
-    // maxTokens: @Min(1) (옵션)
-    if (f.maxTokens !== null && f.maxTokens !== undefined) {
-      if (Number.isNaN(Number(f.maxTokens))) {
-        err.maxTokens = "maxTokens 값이 올바르지 않습니다.";
-      } else if (Number(f.maxTokens) < 1) {
-        err.maxTokens = "maxTokens는 1 이상이어야 합니다.";
-      }
-    }
-
-    // freqPenalty: -2.0 ~ 2.0 (옵션)
-    if (f.freqPenalty !== null && f.freqPenalty !== undefined) {
-      if (isNaN(Number(f.freqPenalty))) {
-        err.freqPenalty = "freqPenalty 값이 올바르지 않습니다.";
-      } else if (Number(f.freqPenalty) < -2 || Number(f.freqPenalty) > 2) {
-        err.freqPenalty = "freqPenalty는 -2.0 이상 2.0 이하로 입력해주세요.";
-      }
-    }
-
-    // presencePenalty: -2.0 ~ 2.0 (옵션)
-    if (f.presencePenalty !== null && f.presencePenalty !== undefined) {
-      if (isNaN(Number(f.presencePenalty))) {
-        err.presencePenalty = "presencePenalty 값이 올바르지 않습니다.";
-      } else if (
-        Number(f.presencePenalty) < -2 ||
-        Number(f.presencePenalty) > 2
-      ) {
-        err.presencePenalty =
-          "presencePenalty는 -2.0 이상 2.0 이하로 입력해주세요.";
-      }
-    }
-
-    // version: nullable이지만 지금은 UI에서 기본 1 지정, 1 이상 보장
-    if (f.version !== null && f.version !== undefined) {
-      if (Number.isNaN(Number(f.version))) {
-        err.version = "버전 값이 올바르지 않습니다.";
-      } else if (Number(f.version) < 1) {
-        err.version = "버전은 1 이상이어야 합니다.";
-      }
-    }
-
-    // status: null 허용이지만 UI에서 항상 선택하도록 강제
-    if (!f.status) {
-      err.status = "상태는 필수입니다.";
-    }
-
-    // JSON 필드는 서버에서 제약이 없으므로 필수는 아님.
-    // 원하시면 여기서 try/catch로 JSON.parse 테스트만 추가할 수 있음.
-
+    if (!f.name?.trim()) err.name = "프로필 이름은 필수입니다.";
+    else if (f.name.trim().length > 100) err.name = "프로필 이름은 최대 100자입니다.";
+    if (f.tenantId && f.tenantId.length > 64) err.tenantId = "Tenant ID는 최대 64자입니다.";
+    if (f.purpose && f.purpose.length > 40) err.purpose = "목적은 최대 40자입니다.";
+    if (!f.model?.trim()) err.model = "모델은 필수입니다.";
+    else if (f.model.trim().length > 60) err.model = "모델명은 최대 60자입니다.";
+    if (f.temperature === null || f.temperature === undefined || Number.isNaN(Number(f.temperature))) err.temperature = "temperature 값을 확인해 주세요.";
+    else if (Number(f.temperature) < 0 || Number(f.temperature) > 1) err.temperature = "temperature는 0.0 ~ 1.0 입니다.";
+    if (f.topP !== null && f.topP !== undefined && (Number.isNaN(Number(f.topP)) || Number(f.topP) < 0 || Number(f.topP) > 1)) err.topP = "topP는 0.0 ~ 1.0 입니다.";
+    if (f.maxTokens !== null && f.maxTokens !== undefined && (Number.isNaN(Number(f.maxTokens)) || Number(f.maxTokens) < 1)) err.maxTokens = "maxTokens는 1 이상입니다.";
+    if (f.freqPenalty !== null && f.freqPenalty !== undefined && (Number.isNaN(Number(f.freqPenalty)) || Number(f.freqPenalty) < -2 || Number(f.freqPenalty) > 2)) err.freqPenalty = "freqPenalty는 -2.0 ~ 2.0 입니다.";
+    if (f.presencePenalty !== null && f.presencePenalty !== undefined && (Number.isNaN(Number(f.presencePenalty)) || Number(f.presencePenalty) < -2 || Number(f.presencePenalty) > 2)) err.presencePenalty = "presencePenalty는 -2.0 ~ 2.0 입니다.";
+    if (f.version !== null && f.version !== undefined && (Number.isNaN(Number(f.version)) || Number(f.version) < 1)) err.version = "버전은 1 이상입니다.";
+    if (!f.status) err.status = "상태는 필수입니다.";
+    if (!f.chatType?.trim()) err.chatType = "챗봇 유형은 필수입니다.";
+    if (f.category && f.category.length > 50) err.category = "카테고리는 최대 50자입니다.";
+    if (f.persona && f.persona.length > 255) err.persona = "페르소나는 최대 255자입니다.";
     return err;
   };
 
-  // 수정 모드일 때 초기값 세팅
   useEffect(() => {
     if (!value) {
       setForm(DEFAULT_FORM);
       setErrors({});
       setLinkedTouched(false);
-
-      // 신규일 때 블록 초기화
       setWelcomeBlocks([]);
       return;
     }
@@ -213,19 +181,20 @@ export default function PromptProfileEditorForm({
       status: value.status,
       linkedSiteKeyId: value.linkedSiteKeyId ?? null,
       kbDocumentIds: value.kbDocumentIds ?? null,
+      chatType: value.chatType ?? "knowledge",
+      category: value.category ?? "",
+      persona: value.persona ?? "",
+      memoryPolicy: value.memoryPolicy ?? "short",
+      strictGroundingTf: value.strictGroundingTf ?? "Y",
+      requireCitationTf: value.requireCitationTf ?? "N",
       useTf: value.useTf ?? "Y",
       delTf: value.delTf ?? "N",
     });
-
     setErrors({});
     setLinkedTouched(false);
-    
     setWelcomeBlocks(welcomeJsonToBlocks(value.welcomeBlocksJson));
-
-
   }, [value]);
 
-  // 사이트키 목록 로드 (ACTIVE 위주)
   useEffect(() => {
     (async () => {
       try {
@@ -241,14 +210,13 @@ export default function PromptProfileEditorForm({
         });
         setSiteKeys(res.content ?? []);
       } catch (e: any) {
-        setKeysError(e?.message ?? "사이트키 조회 실패");
+        setKeysError(e?.message ?? "SiteKey 조회에 실패했습니다.");
       } finally {
         setLoadingKeys(false);
       }
     })();
   }, []);
 
-  // KB 문서 목록 로드 (지문 선택용)
   useEffect(() => {
     (async () => {
       try {
@@ -268,117 +236,82 @@ export default function PromptProfileEditorForm({
     })();
   }, []);
 
-  // 수정 모드: 현재 프로필을 기본으로 쓰는 사이트키 자동 매핑
   useEffect(() => {
-    if (!value?.id) return; // 신규 모드
-    if (linkedTouched) return; // 사용자가 한번이라도 건드렸으면 자동 매핑 X
-    if (form.linkedSiteKeyId != null) return; // 이미 값이 있으면 재설정 X
-
+    if (!value?.id || linkedTouched || form.linkedSiteKeyId != null) return;
     (async () => {
       try {
         const list = await fetchLinkedSiteKeys(value.id);
         if (!Array.isArray(list) || list.length === 0) return;
-
         const best =
-          list.find(
-            (k: any) =>
-              k.status === "ACTIVE" && k.delTf !== "Y" && k.useTf === "Y",
-          ) ?? list[0];
-
-        setForm((prev) => ({
-          ...prev,
-          linkedSiteKeyId: best.id,
-        }));
+          list.find((k: any) => k.status === "ACTIVE" && k.delTf !== "Y" && k.useTf === "Y") ??
+          list[0];
+        patchForm({ linkedSiteKeyId: best.id });
       } catch (e) {
         console.warn("linked siteKeys load failed", e);
       }
     })();
   }, [value?.id, linkedTouched, form.linkedSiteKeyId]);
 
-  // Select 라벨 가독성 향상
   const siteKeyOptions = useMemo(
     () =>
       siteKeys.map((k) => ({
         value: k.id,
-        label: `[${k.id}] ${k.siteKey} (${k.planCode ?? "-"}, ${k.status}${
-          k.useTf === "Y" ? "" : ", off"
-        })`,
+        label: `[${k.id}] ${k.siteKey} (${k.planCode ?? "-"}, ${k.status}${k.useTf === "Y" ? "" : ", off"})`,
         disabled: k.status !== "ACTIVE",
       })),
     [siteKeys],
   );
 
   const selectedKbDocs = useMemo(() => {
-    const selectedIds = new Set(form.kbDocumentIds ?? []);
-    return kbDocuments.filter((doc) => selectedIds.has(doc.id));
+    const ids = new Set(form.kbDocumentIds ?? []);
+    return kbDocuments.filter((doc) => ids.has(doc.id));
   }, [kbDocuments, form.kbDocumentIds]);
 
-  const clearFieldError = (name: string) => {
-    setErrors((prev) => {
-      if (!prev[name as keyof ErrorMap]) return prev;
-      const copy = { ...prev };
-      delete copy[name as keyof ErrorMap];
-      return copy;
-    });
-  };
+  const filteredKbDocuments = useMemo(() => {
+    const q = kbDocTitleFilter.trim().toLowerCase();
+    if (!q) return kbDocuments;
+    return kbDocuments.filter((doc) =>
+      `${doc.title ?? ""} ${doc.originalFileName ?? ""}`.toLowerCase().includes(q),
+    );
+  }, [kbDocuments, kbDocTitleFilter]);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     clearFieldError(name);
-
     if (name === "linkedSiteKeyId") {
       setLinkedTouched(true);
-      setForm((prev) => ({
-        ...prev,
-        linkedSiteKeyId: value === "" ? null : Number(value),
-      }));
+      patchForm({ linkedSiteKeyId: value === "" ? null : Number(value) });
       return;
     }
-
-    // 숫자(실수) 필드
-    if (
-      ["temperature", "topP", "freqPenalty", "presencePenalty"].includes(name)
-    ) {
-      setForm((prev) => ({
-        ...prev,
-        [name]: value === "" ? undefined : Number(value),
-      }));
+    if (["temperature", "topP", "freqPenalty", "presencePenalty"].includes(name)) {
+      patchForm({ [name]: value === "" ? undefined : Number(value) } as Partial<PromptProfileRequest>);
       return;
     }
-
-    // 숫자(정수) 필드
     if (["maxTokens", "seed", "version"].includes(name)) {
-      setForm((prev) => ({
-        ...prev,
-        [name]: value === "" ? undefined : Number(value),
-      }));
+      patchForm({ [name]: value === "" ? undefined : Number(value) } as Partial<PromptProfileRequest>);
       return;
     }
-
     if (name === "status") {
-      setForm((prev) => ({
-        ...prev,
-        status: value as Status,
-      }));
+      patchForm({ status: value as Status });
       return;
     }
-
-    if (name === "useTf" || name === "delTf") {
-      setForm((prev) => ({
-        ...prev,
-        [name]: value === "Y" ? "Y" : "N",
-      }));
+    if (name === "useTf" || name === "delTf" || name === "strictGroundingTf" || name === "requireCitationTf") {
+      patchForm({ [name]: value === "Y" ? "Y" : "N" } as Partial<PromptProfileRequest>);
       return;
     }
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    if (name === "chatType") {
+      const nextType = value as ChatType;
+      patchForm({
+        chatType: nextType,
+        kbDocumentIds: nextType === "knowledge" ? form.kbDocumentIds ?? null : null,
+        strictGroundingTf: nextType === "knowledge" ? form.strictGroundingTf ?? "Y" : "N",
+        requireCitationTf: nextType === "knowledge" ? form.requireCitationTf ?? "N" : "N",
+      });
+      return;
+    }
+    patchForm({ [name]: value } as Partial<PromptProfileRequest>);
   };
 
   const toggleKbDocumentId = (docId: number) => {
@@ -386,516 +319,262 @@ export default function PromptProfileEditorForm({
     const next = current.includes(docId)
       ? current.filter((id) => id !== docId)
       : [...current, docId].sort((a, b) => a - b);
-    setForm((prev) => ({ ...prev, kbDocumentIds: next.length ? next : null }));
+    patchForm({ kbDocumentIds: next.length ? next : null });
   };
 
-  // uploadKey 중복 체크(이미지/카드만)
-  function assertUniqueUploadKeys(blocks: WelcomeBlock[]) {
-    const used = new Map<string, string>(); // key -> blockId
-
-    for (const b of blocks) {
-      if ((b.type === "image" || b.type === "card") && b.file) {
-        const key = (b.uploadKey ?? "").trim().toLowerCase();
-        if (!key) throw new Error(`업로드 키(uploadKey)가 비어 있습니다. (blockId=${b.id})`);
-
-        if (used.has(key)) {
-          const prev = used.get(key)!;
-          throw new Error(`업로드 키가 중복되었습니다: "${key}" (blockId=${prev}, ${b.id})`);
-        }
-        used.set(key, b.id);
+  const assertUniqueUploadKeys = (blocks: WelcomeBlock[]) => {
+    const used = new Map<string, string>();
+    for (const block of blocks) {
+      if ((block.type === "image" || block.type === "card") && block.file) {
+        const key = (block.uploadKey ?? "").trim().toLowerCase();
+        if (!key) throw new Error(`업로드 키가 비어 있습니다. (blockId=${block.id})`);
+        if (used.has(key)) throw new Error(`업로드 키가 중복되었습니다. "${key}"`);
+        used.set(key, block.id);
       }
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const v = validate(form);
-    if (Object.keys(v).length > 0) {
-      setErrors(v);
-      alert("입력값을 다시 확인해주세요.");
+    const nextErrors = validate(form);
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      alert("입력값을 다시 확인해 주세요.");
       return;
     }
-
     try {
       setSubmitting(true);
-
-      // 1) 업로드 key 중복/누락 검사
       assertUniqueUploadKeys(welcomeBlocks);
-
-      // 2) blocks -> welcomeBlocksJson 생성
-      const welcomeBlocksJson = blocksToWelcomeJson(welcomeBlocks);
-
-      // 3) blocks에서 파일 수집 (A안: fileName=key.ext로 리네임 포함)
-      const files = collectFilesFromBlocks(welcomeBlocks);
-
-      // 4) body에 주입해서 제출
-      const nextBody = {
+      const nextBody: PromptProfileRequest = {
         ...form,
-      welcomeBlocksJson,
-    };
-
-      await onSubmit(nextBody, files);
+        welcomeBlocksJson: blocksToWelcomeJson(welcomeBlocks),
+        kbDocumentIds: form.chatType === "knowledge" ? form.kbDocumentIds ?? null : null,
+        strictGroundingTf: form.chatType === "knowledge" ? form.strictGroundingTf ?? "Y" : "N",
+        requireCitationTf: form.chatType === "knowledge" ? form.requireCitationTf ?? "N" : "N",
+      };
+      await onSubmit(nextBody, collectFilesFromBlocks(welcomeBlocks));
     } finally {
       setSubmitting(false);
     }
   };
 
   const modeLabel = value ? "프롬프트 프로필 수정" : "프롬프트 프로필 등록";
+  const selectedCount = form.kbDocumentIds?.length ?? 0;
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-      <h2 className="text-base font-semibold text-gray-800">{modeLabel}</h2>
-
-      <div className="grid grid-cols-2 gap-4">
-        {/* 기본 정보 */}
-        <div className="space-y-3">
+    <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+      <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-5 text-white shadow-lg">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              프로필 이름 *
-            </label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              className="w-full border rounded px-2 py-1 text-sm"
-              placeholder="예: hsbs 기본 프롬프트"
-            />
-            {errors.name && (
-              <p className="mt-1 text-[11px] text-red-500">{errors.name}</p>
-            )}
+            <h2 className="text-lg font-semibold">{modeLabel}</h2>
+            <p className="mt-1 text-sm text-slate-200">챗봇 분기, KB 선택, 웰컴 블록까지 한 화면에서 설정합니다.</p>
           </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Tenant ID
-            </label>
-            <input
-              name="tenantId"
-              value={form.tenantId ?? ""}
-              onChange={handleChange}
-              className="w-full border rounded px-2 py-1 text-sm"
-              placeholder="멀티테넌트용 식별자 (옵션)"
-            />
-            {errors.tenantId && (
-              <p className="mt-1 text-[11px] text-red-500">
-                {errors.tenantId}
-              </p>
-            )}
+          <div className="grid grid-cols-2 gap-2 text-xs text-slate-200 sm:grid-cols-4">
+            <div className="rounded-lg bg-white/10 px-3 py-2"><div className="text-[11px] text-slate-300">TYPE</div><div className="mt-1 font-medium">{form.chatType}</div></div>
+            <div className="rounded-lg bg-white/10 px-3 py-2"><div className="text-[11px] text-slate-300">STATUS</div><div className="mt-1 font-medium">{form.status}</div></div>
+            <div className="rounded-lg bg-white/10 px-3 py-2"><div className="text-[11px] text-slate-300">VERSION</div><div className="mt-1 font-medium">{form.version ?? 1}</div></div>
+            <div className="rounded-lg bg-white/10 px-3 py-2"><div className="text-[11px] text-slate-300">KB DOCS</div><div className="mt-1 font-medium">{selectedCount}</div></div>
           </div>
+        </div>
+      </div>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              목적(purpose)
-            </label>
-            <input
-              name="purpose"
-              value={form.purpose ?? ""}
-              onChange={handleChange}
-              className="w-full border rounded px-2 py-1 text-sm"
-              placeholder="예: support / sales / faq / portfolio"
-            />
-            {errors.purpose && (
-              <p className="mt-1 text-[11px] text-red-500">
-                {errors.purpose}
-              </p>
-            )}
-          </div>
-
-          {/* 연결할 사이트키 셀렉트 */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              연결할 사이트키
-            </label>
-            <select
-              name="linkedSiteKeyId"
-              value={form.linkedSiteKeyId ?? ""}
-              onChange={handleChange}
-              className="w-full border rounded px-2 py-1 text-sm"
-            >
-              <option value="">(선택 없음)</option>
-              {siteKeyOptions.map((opt) => (
-                <option
-                  key={opt.value}
-                  value={opt.value}
-                  disabled={opt.disabled}
-                >
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <div className="mt-1 min-h-[16px]">
-              {loadingKeys && (
-                <span className="text-[11px] text-gray-400">
-                  사이트키 목록 로딩 중...
-                </span>
-              )}
-              {keysError && (
-                <span className="text-[11px] text-red-500">{keysError}</span>
-              )}
+      <Section title="기본 정보" desc="프로필 식별 정보와 배포 상태를 정의합니다.">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="프로필 이름" required error={errors.name}>
+            <input name="name" value={form.name} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" placeholder="예: HSBS 입학 안내 기본 프로필" />
+          </Field>
+          <Field label="Tenant ID" error={errors.tenantId} hint="비워두면 글로벌 설정처럼 동작합니다.">
+            <input name="tenantId" value={form.tenantId ?? ""} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" placeholder="tenant-school-a" />
+          </Field>
+          <Field label="목적" error={errors.purpose} hint="운영 목적을 짧게 남겨두면 관리가 쉬워집니다.">
+            <div className="space-y-2">
+              <input name="purpose" value={form.purpose ?? ""} onChange={handleChange} list="prompt-purpose-options" className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" placeholder="support / sales / faq / consulting" />
+              <datalist id="prompt-purpose-options">{PURPOSE_OPTIONS.map((item) => <option key={item} value={item} />)}</datalist>
             </div>
-          </div>
+          </Field>
+          <Field label="연결 SiteKey" hint="선택하면 해당 사이트의 기본 프롬프트로 연결됩니다.">
+            <select name="linkedSiteKeyId" value={form.linkedSiteKeyId ?? ""} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm">
+              <option value="">선택 안 함</option>
+              {siteKeyOptions.map((opt) => <option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</option>)}
+            </select>
+            <div className="mt-1 min-h-[16px] text-[11px]">{loadingKeys ? <span className="text-gray-400">SiteKey 목록을 불러오는 중입니다.</span> : null}{keysError ? <span className="text-red-500">{keysError}</span> : null}</div>
+          </Field>
+          <Field label="사용 여부">
+            <select name="useTf" value={form.useTf ?? "Y"} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm"><option value="Y">사용</option><option value="N">미사용</option></select>
+          </Field>
+          <Field label="상태" error={errors.status}>
+            <select name="status" value={form.status} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm"><option value="DRAFT">DRAFT</option><option value="ACTIVE">ACTIVE</option><option value="ARCHIVED">ARCHIVED</option></select>
+          </Field>
+          <Field label="버전" error={errors.version}>
+            <input name="version" type="number" min={1} value={form.version ?? 1} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" />
+          </Field>
+          <Field label="카테고리" error={errors.category} hint={`추천: ${categoryOptions.join(", ")}`}>
+            <input name="category" value={form.category ?? ""} onChange={handleChange} list="prompt-category-options" className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" placeholder="faq / career / legal / product" />
+            <datalist id="prompt-category-options">{categoryOptions.map((item) => <option key={item} value={item} />)}</datalist>
+          </Field>
+        </div>
+      </Section>
 
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                사용여부
-              </label>
-              <select
-                name="useTf"
-                value={form.useTf ?? "Y"}
-                onChange={handleChange}
-                className="w-full border rounded px-2 py-1 text-sm"
+      <Section title="챗봇 유형" desc="지식형과 상담형을 나눠 필요한 옵션만 노출되도록 구성했습니다.">
+        <div className="grid gap-3 md:grid-cols-2">
+          {(["knowledge", "consulting"] as ChatType[]).map((type) => {
+            const selected = form.chatType === type;
+            const label = type === "knowledge" ? "지식형 챗봇" : "상담형 챗봇";
+            const desc = type === "knowledge"
+              ? "KB 문서를 근거로 응답하고 grounding, citation 옵션을 함께 운영합니다."
+              : "페르소나와 대화 흐름 중심으로 운영하고 상담 UX에 집중합니다.";
+            const tone = type === "knowledge" ? "border-blue-200 bg-blue-50 text-blue-700" : "border-emerald-200 bg-emerald-50 text-emerald-700";
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => {
+                  clearFieldError("chatType");
+                  patchForm({
+                    chatType: type,
+                    kbDocumentIds: type === "knowledge" ? form.kbDocumentIds ?? null : null,
+                    strictGroundingTf: type === "knowledge" ? form.strictGroundingTf ?? "Y" : "N",
+                    requireCitationTf: type === "knowledge" ? form.requireCitationTf ?? "N" : "N",
+                  });
+                }}
+                className={`rounded-xl border px-4 py-4 text-left transition ${selected ? `${tone} ring-2 ring-slate-300 ring-offset-1` : "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100"}`}
               >
-                <option value="Y">Y</option>
-                <option value="N">N</option>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold">{label}</div>
+                  <div className="text-xs uppercase">{type}</div>
+                </div>
+                <p className="mt-2 text-xs leading-5">{desc}</p>
+              </button>
+            );
+          })}
+        </div>
+        {errors.chatType ? <p className="text-[11px] text-red-500">{errors.chatType}</p> : null}
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="페르소나" error={errors.persona} hint="상담형에서는 응대 캐릭터를, 지식형에서는 말투/전문성 힌트를 적어두면 좋습니다.">
+            <textarea name="persona" value={form.persona ?? ""} onChange={handleChange} rows={4} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="예: 차분하고 신뢰감 있게 핵심만 답하는 입학 상담 매니저" />
+          </Field>
+          <div className="grid gap-4">
+            <Field label="메모리 정책">
+              <select name="memoryPolicy" value={form.memoryPolicy ?? "short"} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm">
+                <option value="short">short</option>
+                <option value="summary_history">summary_history</option>
               </select>
-            </div>
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                버전
-              </label>
-              <input
-                name="version"
-                type="number"
-                min={1}
-                value={form.version ?? 1}
-                onChange={handleChange}
-                className="w-full border rounded px-2 py-1 text-sm"
-              />
-              {errors.version && (
-                <p className="mt-1 text-[11px] text-red-500">
-                  {errors.version}
-                </p>
-              )}
+            </Field>
+            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-3 text-xs leading-5 text-gray-600">
+              {isKnowledgeChat
+                ? "지식형 챗봇으로 저장됩니다. 선택한 KB 문서를 기반으로 웰컴 블록 자동 생성과 grounding 옵션을 함께 운영할 수 있습니다."
+                : "상담형 챗봇으로 저장됩니다. KB 문서 선택은 숨기고, 페르소나와 대화 흐름 중심 설정에 집중합니다."}
             </div>
           </div>
+        </div>
+      </Section>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              상태
-            </label>
-            <select
-              name="status"
-              value={form.status}
-              onChange={handleChange}
-              className="w-full border rounded px-2 py-1 text-sm"
-            >
-              <option value="DRAFT">DRAFT</option>
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="ARCHIVED">ARCHIVED</option>
-            </select>
-            {errors.status && (
-              <p className="mt-1 text-[11px] text-red-500">{errors.status}</p>
+      <Section title="모델 파라미터" desc="OpenAI 호출 파라미터와 JSON 기반 옵션을 조정합니다.">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Field label="모델" required error={errors.model}><input name="model" value={form.model} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" placeholder="gpt-4o-mini" /></Field>
+          <Field label="temperature" error={errors.temperature}><input name="temperature" type="number" step="0.1" min={0} max={1} value={form.temperature ?? 0.7} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" /></Field>
+          <Field label="topP" error={errors.topP}><input name="topP" type="number" step="0.1" min={0} max={1} value={form.topP ?? ""} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" /></Field>
+          <Field label="maxTokens" error={errors.maxTokens}><input name="maxTokens" type="number" min={1} value={form.maxTokens ?? ""} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" /></Field>
+          <Field label="seed"><input name="seed" type="number" value={form.seed ?? ""} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" /></Field>
+          <Field label="freqPenalty" error={errors.freqPenalty}><input name="freqPenalty" type="number" step="0.1" min={-2} max={2} value={form.freqPenalty ?? 0} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" /></Field>
+          <Field label="presencePenalty" error={errors.presencePenalty}><input name="presencePenalty" type="number" step="0.1" min={-2} max={2} value={form.presencePenalty ?? 0} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" /></Field>
+          <Field label="stopJson" hint='예: ["\\nUser:", "\\nSystem:"]'><input name="stopJson" value={form.stopJson ?? ""} onChange={handleChange} className="h-10 w-full rounded-lg border border-gray-300 px-3 font-mono text-xs" placeholder='["\\nUser:"]' /></Field>
+        </div>
+      </Section>
+
+      <Section title="프롬프트 템플릿" desc="시스템 프롬프트와 가드레일을 분리해 운영할 수 있습니다.">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Field label="systemTpl"><textarea name="systemTpl" value={form.systemTpl ?? ""} onChange={handleChange} className="min-h-[180px] w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-xs" placeholder="예: 당신은 HSBS 사이트의 AI 안내 도우미입니다..." /></Field>
+          <Field label="guardrailTpl"><textarea name="guardrailTpl" value={form.guardrailTpl ?? ""} onChange={handleChange} className="min-h-[180px] w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-xs" placeholder="예: 모르는 내용은 추정하지 말고, 근거가 없으면 명확히 한계를 안내합니다." /></Field>
+        </div>
+      </Section>
+
+      <Section
+        title={isKnowledgeChat ? "지식형 설정" : "상담형 설정"}
+        desc={isKnowledgeChat ? "선택된 KB 문서를 근거로 사용할지, 출처 표기를 강제할지 결정합니다." : "상담형은 KB 선택 대신 대화 스타일과 응대 흐름에 집중합니다."}
+      >
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Field label="strictGroundingTf" hint="Y이면 문서 근거 중심으로 보수적으로 답합니다.">
+            <select name="strictGroundingTf" value={isKnowledgeChat ? form.strictGroundingTf ?? "Y" : "N"} onChange={handleChange} disabled={!isKnowledgeChat} className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm disabled:bg-gray-100 disabled:text-gray-400"><option value="Y">Y</option><option value="N">N</option></select>
+          </Field>
+          <Field label="requireCitationTf" hint="Y이면 출처 노출 응답 정책을 사용합니다.">
+            <select name="requireCitationTf" value={isKnowledgeChat ? form.requireCitationTf ?? "N" : "N"} onChange={handleChange} disabled={!isKnowledgeChat} className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm disabled:bg-gray-100 disabled:text-gray-400"><option value="N">N</option><option value="Y">Y</option></select>
+          </Field>
+          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4 text-xs leading-5 text-gray-600">
+            {isKnowledgeChat
+              ? "KB 문서를 선택하지 않으면 일반 프롬프트 기반 응답만 수행합니다. 웰컴 블록 자동 생성은 선택 문서의 welcome 메타를 사용합니다."
+              : "상담형에서는 KB 선택 영역을 숨기지만 welcome 블록과 style/tools/policies JSON은 그대로 사용할 수 있습니다."}
+          </div>
+        </div>
+
+        {isKnowledgeChat ? (
+          <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-gray-900">KB 문서 선택</div>
+                <p className="mt-1 text-xs text-gray-600">선택한 문서의 요약과 웰컴 메타가 지식형 챗봇 응답과 웰컴 UI 생성에 사용됩니다.</p>
+              </div>
+              <div className="rounded-full bg-white px-3 py-1 text-xs font-medium text-blue-700">선택 {selectedCount}건</div>
+            </div>
+
+            {loadingKbDocs ? <span className="text-[11px] text-gray-400">KB 문서 목록을 불러오는 중입니다.</span> : kbDocuments.length === 0 ? <span className="text-[11px] text-gray-400">등록된 KB 문서가 없습니다.</span> : (
+              <>
+                <div className="mb-3">
+                  <input type="text" value={kbDocTitleFilter} onChange={(e) => setKbDocTitleFilter(e.target.value)} placeholder="문서 제목 또는 파일명으로 검색" className="h-10 w-full max-w-md rounded-lg border border-gray-300 px-3 text-sm" aria-label="KB 문서 검색" />
+                </div>
+                <div className="max-h-72 overflow-y-auto rounded-xl border border-gray-200 bg-white">
+                  <table className="w-full border-collapse text-sm">
+                    <thead className="sticky top-0 z-[1] bg-gray-50">
+                      <tr className="border-b border-gray-200 text-gray-600">
+                        <th className="w-12 px-3 py-2 text-left font-medium">선택</th>
+                        <th className="w-16 px-3 py-2 text-left font-medium">ID</th>
+                        <th className="px-3 py-2 text-left font-medium">문서</th>
+                        <th className="px-3 py-2 text-left font-medium">미리보기</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredKbDocuments.map((doc) => {
+                        const checked = (form.kbDocumentIds ?? []).includes(doc.id);
+                        const previewText = (doc.indexSummary && doc.indexSummary.trim()) || (doc.tagsJson && (() => {
+                          try {
+                            const tags = JSON.parse(doc.tagsJson) as string[];
+                            return Array.isArray(tags) && tags.length ? `태그: ${tags.join(", ")}` : null;
+                          } catch {
+                            return null;
+                          }
+                        })()) || null;
+                        return (
+                          <tr key={doc.id} className={`border-b border-gray-100 align-top last:border-0 ${checked ? "bg-blue-50/70" : "hover:bg-gray-50"}`}>
+                            <td className="px-3 py-2"><input type="checkbox" checked={checked} onChange={() => toggleKbDocumentId(doc.id)} className="cursor-pointer rounded" aria-label={`문서 ${doc.id} 선택`} /></td>
+                            <td className="px-3 py-2 tabular-nums text-gray-500">{doc.id}</td>
+                            <td className="px-3 py-2"><div className="font-medium text-gray-800">{doc.title ?? doc.originalFileName ?? "(제목 없음)"}</div><div className="mt-1 text-[11px] text-gray-500">{[doc.category, doc.docType].filter(Boolean).join(" · ")}</div></td>
+                            <td className="px-3 py-2 text-xs leading-5 text-gray-600">{previewText ? (previewText.length > 140 ? `${previewText.slice(0, 140)}...` : previewText) : <span className="italic text-gray-400">요약 또는 태그 없음</span>}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
+        ) : null}
+      </Section>
+
+      <WelcomeBlocksEditor blocks={welcomeBlocks} setBlocks={setWelcomeBlocks} selectedKbDocs={selectedKbDocs} />
+
+      <Section title="JSON 설정" desc="렌더링 스타일, 툴 정의, 정책 JSON을 분리 관리합니다.">
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Field label="styleJson" hint='예: {"lang":"ko","tone":"casual","length":"short"}'><textarea name="styleJson" value={form.styleJson ?? ""} onChange={handleChange} className="min-h-[120px] w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-xs" placeholder='{"lang":"ko","tone":"casual","length":"short"}' /></Field>
+          <Field label="toolsJson" hint="허용 툴과 함수 스키마를 JSON 배열로 입력합니다."><textarea name="toolsJson" value={form.toolsJson ?? ""} onChange={handleChange} className="min-h-[120px] w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-xs" placeholder='[{"type":"function","function":{"name":"searchDocs"}}]' /></Field>
+          <Field label="policiesJson" hint="금칙어, PII, 산업별 운영 정책을 JSON으로 관리합니다."><textarea name="policiesJson" value={form.policiesJson ?? ""} onChange={handleChange} className="min-h-[120px] w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-xs" placeholder='{"piiMasking":"Y","restrictedTopics":["medical","legal"]}' /></Field>
         </div>
+      </Section>
 
-        {/* 모델/파라미터 */}
-        <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              모델 *
-            </label>
-            <input
-              name="model"
-              value={form.model}
-              onChange={handleChange}
-              className="w-full border rounded px-2 py-1 text-sm"
-              placeholder="gpt-4o-mini"
-            />
-            {errors.model && (
-              <p className="mt-1 text-[11px] text-red-500">{errors.model}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                temperature
-              </label>
-              <input
-                name="temperature"
-                type="number"
-                step="0.1"
-                min={0}
-                max={1}
-                value={form.temperature ?? 0.7}
-                onChange={handleChange}
-                className="w-full border rounded px-2 py-1 text-sm"
-              />
-              {errors.temperature && (
-                <p className="mt-1 text-[11px] text-red-500">
-                  {errors.temperature}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                maxTokens
-              </label>
-              <input
-                name="maxTokens"
-                type="number"
-                min={1}
-                value={form.maxTokens ?? ""}
-                onChange={handleChange}
-                className="w-full border rounded px-2 py-1 text-sm"
-              />
-              {errors.maxTokens && (
-                <p className="mt-1 text-[11px] text-red-500">
-                  {errors.maxTokens}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                freqPenalty
-              </label>
-              <input
-                name="freqPenalty"
-                type="number"
-                step="0.1"
-                min={-2}
-                max={2}
-                value={form.freqPenalty ?? 0}
-                onChange={handleChange}
-                className="w-full border rounded px-2 py-1 text-sm"
-              />
-              {errors.freqPenalty && (
-                <p className="mt-1 text-[11px] text-red-500">
-                  {errors.freqPenalty}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                presencePenalty
-              </label>
-              <input
-                name="presencePenalty"
-                type="number"
-                step={0.1}
-                min={-2}
-                max={2}
-                value={form.presencePenalty ?? 0}
-                onChange={handleChange}
-                className="w-full border rounded px-2 py-1 text-sm"
-              />
-              {errors.presencePenalty && (
-                <p className="mt-1 text-[11px] text-red-500">
-                  {errors.presencePenalty}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              stop 시퀀스 (JSON 문자열)
-            </label>
-            <input
-              name="stopJson"
-              value={form.stopJson ?? ""}
-              onChange={handleChange}
-              className="w-full border rounded px-2 py-1 text-xs font-mono"
-              placeholder='예: ["\\nUser:", "\\nSystem:"]'
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* 지문으로 사용할 KB 문서 선택 (BO가 knowledgeContext로 조합 후 Brain에 전달) */}
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">
-          지문으로 사용할 KB 문서
-        </label>
-        <p className="text-[11px] text-gray-500 mb-2">
-          선택한 문서의 요약·태그로 지문을 조합해 Brain system 프롬프트 앞에 붙입니다. (미선택 시 지문 없음)
-        </p>
-        {loadingKbDocs ? (
-          <span className="text-[11px] text-gray-400">문서 목록 로딩 중...</span>
-        ) : kbDocuments.length === 0 ? (
-          <span className="text-[11px] text-gray-400">등록된 KB 문서가 없습니다.</span>
-        ) : (
-          <>
-            <div className="mb-2">
-              <input
-                type="text"
-                value={kbDocTitleFilter}
-                onChange={(e) => setKbDocTitleFilter(e.target.value)}
-                placeholder="문서 제목으로 검색"
-                className="w-full max-w-xs h-9 border border-gray-300 rounded px-2 text-sm placeholder:text-gray-400"
-                aria-label="문서 제목 검색"
-              />
-            </div>
-            <div className="max-h-64 overflow-y-auto border rounded bg-gray-50">
-              <table className="w-full text-sm border-collapse">
-                <thead className="sticky top-0 bg-gray-100 border-b border-gray-200 z-[1]">
-                  <tr>
-                    <th className="text-left py-2 px-3 w-9 font-medium text-gray-600">선택</th>
-                    <th className="text-left py-2 px-3 w-14 font-medium text-gray-600">ID</th>
-                    <th className="text-left py-2 px-3 min-w-[140px] font-medium text-gray-600">제목</th>
-                    <th className="text-left py-2 px-3 font-medium text-gray-600">미리보기</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {kbDocuments
-                    .filter((doc) => {
-                      const q = kbDocTitleFilter.trim().toLowerCase();
-                      if (!q) return true;
-                      const title = (doc.title ?? "").toLowerCase();
-                      return title.includes(q);
-                    })
-                    .map((doc) => {
-                  const checked = (form.kbDocumentIds ?? []).includes(doc.id);
-                  const previewText =
-                    (doc.indexSummary && doc.indexSummary.trim()) ||
-                    (doc.tagsJson && (() => {
-                      try {
-                        const tags = JSON.parse(doc.tagsJson) as string[];
-                        return Array.isArray(tags) && tags.length ? `태그: ${tags.join(", ")}` : null;
-                      } catch {
-                        return null;
-                      }
-                    })()) ||
-                    null;
-                  return (
-                    <tr
-                      key={doc.id}
-                      className={`border-b border-gray-100 last:border-0 hover:bg-gray-100/80 ${checked ? "bg-blue-50/60" : ""}`}
-                    >
-                      <td className="py-1.5 px-3 align-top pt-2">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleKbDocumentId(doc.id)}
-                          className="rounded cursor-pointer"
-                          aria-label={`문서 ${doc.id} 선택`}
-                        />
-                      </td>
-                      <td className="py-1.5 px-3 align-top text-gray-500 tabular-nums">{doc.id}</td>
-                      <td className="py-1.5 px-3 align-top font-medium text-gray-800 max-w-[200px]">
-                        <span className="line-clamp-2" title={doc.title ?? doc.originalFileName ?? ""}>
-                          {doc.title ?? doc.originalFileName ?? "(제목 없음)"}
-                        </span>
-                      </td>
-                      <td className="py-1.5 px-3 align-top text-gray-600 max-w-[320px]">
-                        <span
-                          className="line-clamp-2 text-xs leading-relaxed"
-                          title={previewText ?? undefined}
-                        >
-                          {previewText ? (
-                            previewText.length > 120 ? `${previewText.slice(0, 120)}…` : previewText
-                          ) : (
-                            <span className="text-gray-400 italic">요약·태그 없음</span>
-                          )}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* 시스템 / 가드레일 프롬프트 */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            시스템 프롬프트(systemTpl)
-          </label>
-          <textarea
-            name="systemTpl"
-            value={form.systemTpl ?? ""}
-            onChange={handleChange}
-            className="w-full border rounded px-2 py-1 text-xs font-mono min-h-[120px]"
-            placeholder="예: HSBS 사이트의 AI 상담원으로서 ..."
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            가드레일/규정 프롬프트(guardrailTpl)
-          </label>
-          <textarea
-            name="guardrailTpl"
-            value={form.guardrailTpl ?? ""}
-            onChange={handleChange}
-            className="w-full border rounded px-2 py-1 text-xs font-mono min-h-[120px]"
-            placeholder="예: 금융/의료/법률 관련 답변 제한, 욕설 금지 등"
-          />
-        </div>
-      </div>
-
-      <WelcomeBlocksEditor
-        blocks={welcomeBlocks}
-        setBlocks={setWelcomeBlocks}
-        selectedKbDocs={selectedKbDocs}
-      />
-
-      {/* 스타일/툴/정책 JSON */}
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            styleJson
-          </label>
-          <textarea
-            name="styleJson"
-            value={form.styleJson ?? ""}
-            onChange={handleChange}
-            className="w-full border rounded px-2 py-1 text-xs font-mono min-h-[80px]"
-            placeholder='예: {"lang":"ko","tone":"casual","length":"short"}'
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            toolsJson
-          </label>
-          <textarea
-            name="toolsJson"
-            value={form.toolsJson ?? ""}
-            onChange={handleChange}
-            className="w-full border rounded px-2 py-1 text-xs font-mono min-h-[80px]"
-            placeholder="허용 함수 목록 JSON"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            policiesJson
-          </label>
-          <textarea
-            name="policiesJson"
-            value={form.policiesJson ?? ""}
-            onChange={handleChange}
-            className="w-full border rounded px-2 py-1 text-xs font-mono min-h-[80px]"
-            placeholder="PII/금칙어/업종별 규정 JSON"
-          />
-        </div>
-      </div>
-
-      {/* 액션 버튼 */}
-      <div className="flex justify-end gap-2 pt-2 border-t">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-3 py-1.5 text-xs rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
-          disabled={submitting}
-        >
-          취소
-        </button>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="px-3 py-1.5 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
-        >
-          {submitting ? "저장 중..." : "저장"}
-        </button>
+      <div className="flex justify-end gap-2 border-t border-gray-200 pt-3">
+        <button type="button" onClick={onCancel} disabled={submitting} className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">취소</button>
+        <button type="submit" disabled={submitting} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60">{submitting ? "저장 중..." : "저장"}</button>
       </div>
     </form>
   );

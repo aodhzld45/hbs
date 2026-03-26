@@ -38,6 +38,13 @@ export type PromptProfile = {
   regDate?: string;
   upDate?: string;
 
+  chatType: 'knowledge' | 'consulting' | string;
+  category?: string | null;
+  persona?: string | null;
+  memoryPolicy?: 'short' | 'summary_history' | string | null;
+  strictGroundingTf?: 'Y' | 'N';
+  requireCitationTf?: 'Y' | 'N';
+
   /** 이 프로필에서 지문으로 사용할 KB 문서 ID 목록. BO가 조회해 knowledgeContext로 조합 후 Brain에 전달. */
   kbDocumentIds?: number[] | null;
 };
