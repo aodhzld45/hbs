@@ -28,6 +28,12 @@ public class BrainChatRequest {
 
     private BrainOptions options;              // 모델/샘플링 옵션
     private Map<String, Object> policies;      // policiesJson 파싱 or 그대로
+
+    private String chatType;      // knowledge | consulting
+    private String memoryPolicy;  // short | summary_history
+    private String persona;       // 상담형 전용
+    private String category;      // 상담 카테고리
+
     private List<BrainToolSpec> tools;         // toolsJson 파싱 결과
     private BrainRagOptions rag;               // RAG 관련 옵션
     private BrainMeta meta;                    // 로그용 메타

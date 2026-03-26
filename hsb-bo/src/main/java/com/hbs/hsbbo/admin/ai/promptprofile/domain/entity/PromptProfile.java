@@ -102,6 +102,25 @@ public class PromptProfile extends AuditBase {
     @Column(name = "status", nullable = false, columnDefinition = "ENUM('DRAFT','ACTIVE','ARCHIVED')")
     private PromptStatus status;
 
+    // 챗봇 타입 - kb-document기반 문서 know|
+    @Column(name = "chat_type", nullable = false, length = 20)
+    private String chatType;
+
+    @Column(name = "category", length = 50)
+    private String category; // legal | saju | career ...
+
+    @Column(name = "persona", length = 255)
+    private String persona;
+
+    @Column(name = "memory_policy", length = 30)
+    private String memoryPolicy; // short | summary_history
+
+    @Column(name = "strict_grounding_tf", nullable = false, length = 1)
+    private String strictGroundingTf; // Y | N
+
+    @Column(name = "require_citation_tf", nullable = false, length = 1)
+    private String requireCitationTf; // Y | N
+
     /** 이 프로필에서 지문으로 사용할 KB 문서 ID 목록 (JSON 배열, 예: [1,2,3]). BO가 조회해 knowledgeContext 문자열로 조합 후 Brain에 전달. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "kb_document_ids", columnDefinition = "json")

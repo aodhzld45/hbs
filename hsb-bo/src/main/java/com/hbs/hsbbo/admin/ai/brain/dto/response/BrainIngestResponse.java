@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -54,4 +55,13 @@ public class BrainIngestResponse {
     private List<String> welcomeKeywords;
 
     private List<String> tags;
+
+    /**
+     * 운영/파싱 메타
+     */
+    private String status;             // queued | processing | completed | failed
+    private String docTypeResolved;   // FILE | URL | TEXT
+    private Integer chunkCount;
+    private Map<String, Object> parserResult;
+
 }

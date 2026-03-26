@@ -277,6 +277,12 @@ public class PromptProfileService {
                 .promptProfileVersion(promptProfile.getVersion())
                 .tenantId(promptProfile.getTenantId())
                 .purpose(promptProfile.getPurpose())
+                .chatType(promptProfile.getChatType())
+                .category(promptProfile.getCategory())
+                .persona(promptProfile.getPersona())
+                .memoryPolicy(promptProfile.getMemoryPolicy())
+                .strictGroundingTf(promptProfile.getStrictGroundingTf())
+                .requireCitationTf(promptProfile.getRequireCitationTf())
 
                 // 유저 입력
                 .userPrompt(userReq.getPrompt())
@@ -295,6 +301,7 @@ public class PromptProfileService {
                 .systemTpl(promptProfile.getSystemTpl())
                 .guardrailTpl(promptProfile.getGuardrailTpl())
                 .styleJson(promptProfile.getStyleJson())
+                .toolsJson(promptProfile.getToolsJson())
                 .policiesJson(promptProfile.getPoliciesJson())
 
                 // JSON → List 조립
@@ -374,6 +381,13 @@ public class PromptProfileService {
         } else if (isCreate && e.getStatus() == null) {
             e.setStatus(PromptStatus.DRAFT);
         }
+
+        e.setChatType(normalize(dto.getChatType()) != null ? normalize(dto.getChatType()) : "knowledge");
+        e.setCategory(normalize(dto.getCategory()));
+        e.setPersona(normalize(dto.getPersona()));
+        e.setMemoryPolicy(normalize(dto.getMemoryPolicy()) != null ? normalize(dto.getMemoryPolicy()) : "short");
+        e.setStrictGroundingTf(flag(dto.getStrictGroundingTf() == null ? "Y" : dto.getStrictGroundingTf()));
+        e.setRequireCitationTf(flag(dto.getRequireCitationTf() == null ? "N" : dto.getRequireCitationTf()));
 
         // use_tf / del_tf
         if (isCreate) {

@@ -44,6 +44,19 @@ public class PromptProfileResponse {
     // 상태/감사 필드(읽기 전용)
     private Integer version;
     private PromptStatus status;    // DRAFT/ACTIVE/ARCHIVED
+
+    /**
+     * ===== 확장 필드 =====
+     */
+    private String chatType;
+    private String category;
+    private String persona;
+    private String memoryPolicy;
+    private String strictGroundingTf;
+    private String requireCitationTf;
+    /**
+    *
+    **/
     private String useTf;
     private String delTf;
     private String regAdm;
@@ -80,6 +93,14 @@ public class PromptProfileResponse {
 
                 .version(e.getVersion())
                 .status(e.getStatus())
+
+                .chatType(e.getChatType())
+                .category(e.getCategory())
+                .persona(e.getPersona())
+                .memoryPolicy(e.getMemoryPolicy())
+                .strictGroundingTf(e.getStrictGroundingTf())
+                .requireCitationTf(e.getRequireCitationTf())
+
                 .useTf(e.getUseTf())
                 .delTf(e.getDelTf())
                 .regAdm(e.getRegAdm())

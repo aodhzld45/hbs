@@ -20,6 +20,12 @@ public class ChatWithPromptProfileRequest {
     private Integer promptProfileVersion;
     private String tenantId;
     private String purpose;
+    private String chatType;
+    private String category;
+    private String persona;
+    private String memoryPolicy;
+    private String strictGroundingTf;
+    private String requireCitationTf;
 
     // 유저 입력
     /** 실제 질문 (required) */
@@ -62,6 +68,14 @@ public class ChatWithPromptProfileRequest {
                 .promptProfileId(profile.getId())
                 .promptProfileName(profile.getName())
                 .promptProfileVersion(profile.getVersion())
+                .tenantId(profile.getTenantId())
+                .purpose(profile.getPurpose())
+                .chatType(profile.getChatType())
+                .category(profile.getCategory())
+                .persona(profile.getPersona())
+                .memoryPolicy(profile.getMemoryPolicy())
+                .strictGroundingTf(profile.getStrictGroundingTf())
+                .requireCitationTf(profile.getRequireCitationTf())
 
                 .model(profile.getModel())
                 .temperature(profile.getTemperature())

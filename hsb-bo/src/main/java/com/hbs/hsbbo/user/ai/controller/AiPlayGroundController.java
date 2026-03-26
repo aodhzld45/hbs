@@ -567,6 +567,14 @@ public class AiPlayGroundController {
                 .knowledgeContext(knowledgeContext.isEmpty() ? null : knowledgeContext)
                 .messages(brainMessages)
                 .options(options)
+                .chatType(
+                        ppReq.getChatType() != null && !ppReq.getChatType().isBlank()
+                                ? ppReq.getChatType()
+                                : "knowledge"
+                )
+                .memoryPolicy(ppReq.getMemoryPolicy())
+                .persona(ppReq.getPersona())
+                .category(ppReq.getCategory())
                 .meta(meta)
                 .build();
 

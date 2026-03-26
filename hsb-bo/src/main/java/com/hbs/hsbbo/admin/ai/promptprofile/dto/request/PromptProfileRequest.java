@@ -71,4 +71,21 @@ public class PromptProfileRequest {
     /** 이 프로필에서 지문으로 사용할 KB 문서 ID 목록. BO가 조회해 knowledgeContext로 조합 후 Brain에 전달. */
     private List<Long> kbDocumentIds;
 
+    // 챗봇 타입 분류 고도화 확장 필드
+    @NotBlank
+    @Builder.Default
+    private String chatType = "knowledge";
+
+    private String category;
+    private String persona;
+
+    @Builder.Default
+    private String memoryPolicy = "short";
+
+    @Builder.Default
+    private String strictGroundingTf = "Y";
+
+    @Builder.Default
+    private String requireCitationTf = "N";
+
 }
