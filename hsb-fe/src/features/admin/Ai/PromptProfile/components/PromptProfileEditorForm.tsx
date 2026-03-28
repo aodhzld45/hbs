@@ -193,7 +193,7 @@ export default function PromptProfileEditorForm({ value, onSubmit, onCancel }: P
     setErrors({});
     setLinkedTouched(false);
     setWelcomeBlocks(welcomeJsonToBlocks(value.welcomeBlocksJson));
-  }, [value]);
+  }, [value?.id]);
 
   useEffect(() => {
     (async () => {

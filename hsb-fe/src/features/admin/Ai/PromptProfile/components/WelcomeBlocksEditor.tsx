@@ -179,35 +179,41 @@ export function WelcomeBlocksEditor({
     );
   };
 
-  const renderPreview = (b: WelcomeBlock) => {
-    if ((b.type === "image" || b.type === "card") && b.file) {
-      const url = URL.createObjectURL(b.file);
-      return (
-        <img
-          src={url}
-          alt="preview"
-          className="w-28 h-20 object-cover border rounded"
-          onLoad={() => URL.revokeObjectURL(url)}
-        />
-      );
-    }
+  const previewUrlRef = React.useRef<Record<string, string>>({});
+  const [, forcePreviewRefresh] = React.useState(0);
 
-    if ((b.type === "image" || b.type === "card") && b.imagePath) {
-      return (
-        <img
-          src={b.imagePath}
-          alt="preview"
-          className="w-28 h-20 object-cover border rounded"
-        />
-      );
-    }
+  React.useEffect(() => {
+    const activeIds = new Set<string>();
 
-    return (
-      <div className="w-28 h-20 border rounded bg-gray-50 flex items-center justify-center text-xs text-gray-400">
-        미리보기
-      </div>
-    );
-  };
+    blocks.forEach((b) => {
+      if ((b.type === "image" || b.type === "card") && b.file) {
+        activeIds.add(b.id);
+
+        if (!previewUrlRef.current[b.id]) {
+          previewUrlRef.current[b.id] = URL.createObjectURL(b.file);
+        }
+      }
+    });
+
+    Object.keys(previewUrlRef.current).forEach((id) => {
+      if (!activeIds.has(id)) {
+        URL.revokeObjectURL(previewUrlRef.current[id]);
+        delete previewUrlRef.current[id];
+      }
+    });
+
+    forcePreviewRefresh((v) => v + 1);
+  }, [blocks]);
+
+  React.useEffect(() => {
+    return () => {
+      Object.values(previewUrlRef.current).forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+      previewUrlRef.current = {};
+    };
+  }, []);
+
 
   const generateBlocksFromSelectedDocs = () => {
     const generated: WelcomeBlock[] = selectedKbDocs.flatMap((doc) => {
@@ -410,7 +416,26 @@ export function WelcomeBlocksEditor({
 
               {b.type === "image" && (
                 <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] gap-3">
-                  <div className="flex flex-col gap-2">{renderPreview(b)}</div>
+
+                  <div className="flex flex-col gap-2">
+                    {previewUrlRef.current[b.id] ? (
+                      <img
+                        src={previewUrlRef.current[b.id]}
+                        alt="preview"
+                        className="w-28 h-20 object-cover border rounded"
+                      />
+                    ) : b.imagePath ? (
+                      <img
+                        src={b.imagePath}
+                        alt="preview"
+                        className="w-28 h-20 object-cover border rounded"
+                      />
+                    ) : (
+                      <div className="w-28 h-20 border rounded bg-gray-50 flex items-center justify-center text-xs text-gray-400">
+                        미리보기
+                      </div>
+                    )}
+                  </div>                  
 
                   <div className="space-y-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -487,7 +512,25 @@ export function WelcomeBlocksEditor({
               {b.type === "card" && (
                 <div className="space-y-2">
                   <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] gap-3">
-                    <div className="flex flex-col gap-2">{renderPreview(b)}</div>
+                    <div className="flex flex-col gap-2">
+                      {previewUrlRef.current[b.id] ? (
+                        <img
+                          src={previewUrlRef.current[b.id]}
+                          alt="preview"
+                          className="w-28 h-20 object-cover border rounded"
+                        />
+                      ) : b.imagePath ? (
+                        <img
+                          src={b.imagePath}
+                          alt="preview"
+                          className="w-28 h-20 object-cover border rounded"
+                        />
+                      ) : (
+                        <div className="w-28 h-20 border rounded bg-gray-50 flex items-center justify-center text-xs text-gray-400">
+                          미리보기
+                        </div>
+                      )}
+                    </div>
 
                     <div className="space-y-2">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
