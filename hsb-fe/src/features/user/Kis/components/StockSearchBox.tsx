@@ -83,7 +83,11 @@ export default function StockSearchBox({
   return (
     <div ref={wrapRef} className="relative w-full">
       <input
-        className="w-full rounded-md border px-3 py-2 outline-none focus:ring"
+        className="
+          w-full rounded-md border px-3 py-2 outline-none focus:ring
+          bg-white text-gray-900 placeholder:text-gray-400
+          dark:bg-zinc-900 dark:text-gray-100 dark:placeholder:text-gray-400 dark:border-zinc-700
+        "
         value={q}
         onChange={(e) => setQ(e.target.value)}
         onFocus={() => q && setOpen(true)}
@@ -91,23 +95,33 @@ export default function StockSearchBox({
         placeholder={placeholder}
       />
       {open && (
-        <div className="absolute z-30 mt-1 w-full max-h-72 overflow-auto rounded-md border bg-white shadow">
-          {loading && <div className="px-3 py-2 text-sm text-gray-500">검색중…</div>}
+        <div
+          className="
+            absolute z-30 mt-1 w-full max-h-72 overflow-auto rounded-md border shadow
+            bg-white text-gray-900
+            dark:bg-zinc-900 dark:text-gray-100 dark:border-zinc-700
+          "
+        >
+          {loading && <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">검색중…</div>}
           {!loading && items.length === 0 && (
-            <div className="px-3 py-2 text-sm text-gray-500">결과 없음</div>
+            <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">결과 없음</div>
           )}
           {!loading && items.map((it, idx) => (
             <button
               key={it.symbol}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${hi===idx ? 'bg-gray-100' : ''}`}
+              className={`
+                w-full text-left px-3 py-2 text-sm
+                hover:bg-gray-100 dark:hover:bg-zinc-800
+                ${hi === idx ? 'bg-gray-100 dark:bg-zinc-800' : ''}
+              `}
               onMouseEnter={() => setHi(idx)}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => { onPick(it); setQ(`${it.shortName} (${it.symbol})`); setOpen(false); }}
             >
-              <div className="font-medium">
-                {it.shortName} <span className="text-gray-500">({it.symbol})</span>
+              <div className="font-medium text-gray-900 dark:text-gray-100">
+                {it.shortName} <span className="text-gray-500 dark:text-gray-400">({it.symbol})</span>
               </div>
-              <div className="text-xs text-gray-500">{it.market}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{it.market}</div>
             </button>
           ))}
         </div>
