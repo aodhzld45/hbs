@@ -115,6 +115,55 @@ public class PromptProfile extends AuditBase {
     @Column(name = "memory_policy", length = 30)
     private String memoryPolicy; // short | summary_history
 
+    @Column(name = "role_template_code", length = 100)
+    private String roleTemplateCode;
+
+    @Column(name = "execution_template_code", length = 100)
+    private String executionTemplateCode;
+
+    @Column(name = "flow_template_code", length = 100)
+    private String flowTemplateCode;
+
+    @Column(name = "few_shot_mode", nullable = false, length = 20)
+    private String fewShotMode; // NONE | STATIC | PROFILE
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "few_shot_examples_json", columnDefinition = "json")
+    private String fewShotExamplesJson;
+
+    @Column(name = "response_format", nullable = false, length = 30)
+    private String responseFormat; // TEXT | JSON_OBJECT | JSON_SCHEMA | MARKDOWN
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "output_schema_json", columnDefinition = "json")
+    private String outputSchemaJson;
+
+    @Column(name = "schema_enforce_tf", nullable = false, length = 1)
+    private String schemaEnforceTf; // Y | N
+
+    @Column(name = "schema_retry_count", nullable = false)
+    private Integer schemaRetryCount;
+
+    @Column(name = "streaming_tf", nullable = false, length = 1)
+    private String streamingTf; // Y | N
+
+    @Column(name = "fallback_model", length = 60)
+    private String fallbackModel;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "fallback_policy_json", columnDefinition = "json")
+    private String fallbackPolicyJson;
+
+    @Column(name = "tool_choice_policy", length = 20)
+    private String toolChoicePolicy; // AUTO | REQUIRED | NONE
+
+    @Column(name = "reasoning_policy", length = 30)
+    private String reasoningPolicy; // DIRECT | DELIBERATE
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "template_vars_json", columnDefinition = "json")
+    private String templateVarsJson;
+
     @Column(name = "strict_grounding_tf", nullable = false, length = 1)
     private String strictGroundingTf; // Y | N
 
@@ -129,11 +178,18 @@ public class PromptProfile extends AuditBase {
     // 기본값 세팅
     @PrePersist
     protected void onCreate() {
-        if (model == null)          model = "gpt-4o-mini";
-        if (temperature == null)    temperature = new BigDecimal("0.70");
-        if (version == null)        version = 1;
-        if (status == null)         status = PromptStatus.DRAFT;
+        if (model == null) model = "gpt-4o-mini";
+        if (temperature == null) temperature = new BigDecimal("0.70");
+        if (version == null) version = 1;
+        if (status == null) status = PromptStatus.DRAFT;
+
+        if (fewShotMode == null) fewShotMode = "NONE";
+        if (responseFormat == null) responseFormat = "TEXT";
+        if (schemaEnforceTf == null) schemaEnforceTf = "N";
+        if (schemaRetryCount == null) schemaRetryCount = 0;
+        if (streamingTf == null) streamingTf = "N";
     }
+
 
 }
 
