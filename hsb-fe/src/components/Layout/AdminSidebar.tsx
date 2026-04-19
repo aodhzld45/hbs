@@ -13,6 +13,8 @@ interface Props {
   toggleSidebar: () => void;
 }
 
+const normalizePath = (path?: string) => (path ? path.replace(/\/+$/, '').toLowerCase() : '');
+
 const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
   const {
     refreshToken,
@@ -30,7 +32,6 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
 
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
 
-  /** 권한 기반 메뉴 로딩 */
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -41,7 +42,7 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
           setIsLoaded(true);
         }
       } catch (error) {
-        console.error('사이드바 권한 메뉴 로드 실패:', error);
+        console.error('Failed to load sidebar permissions:', error);
       }
     };
     loadData();
@@ -49,11 +50,19 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
 
   const permissions = menuPermissions || [];
 
-  /** 현재 경로에 맞는 상위 메뉴 자동 선택 */
   useEffect(() => {
+    const normalizedPathname = normalizePath(location.pathname);
     const matched = permissions
-      .filter((menu) => menu.depth === 2 && location.pathname.startsWith(menu.url))
-      .sort((a, b) => b.url.length - a.url.length)[0];
+      .filter((menu) => {
+        const normalizedMenuUrl = normalizePath(menu.url);
+        return (
+          menu.depth === 2 &&
+          normalizedMenuUrl &&
+          (normalizedPathname === normalizedMenuUrl ||
+            normalizedPathname.startsWith(`${normalizedMenuUrl}/`))
+        );
+      })
+      .sort((a, b) => normalizePath(b.url).length - normalizePath(a.url).length)[0];
 
     if (matched) {
       setSelectedParent(matched.parentId ?? null);
@@ -77,14 +86,12 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
         ${isOpen ? 'w-64' : 'w-0 overflow-hidden'}
       `}
     >
-      {/* 상단 로고 및 토글 버튼 */}
       <div className="p-4 flex justify-between items-center bg-white border-b md:hidden">
         <button onClick={toggleSidebar}>
           <Menu size={20} />
         </button>
       </div>
 
-      {/* 메뉴 영역 */}
       <nav className="p-2 space-y-1">
         {topMenus.map((menu) => {
           const isSelected = selectedParent === menu.menuId;
@@ -102,28 +109,34 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, toggleSidebar }) => {
                 {menu.name}
               </button>
 
-              {/* 2depth 메뉴 */}
               {isSelected && isOpen && (
                 <div className="ml-4">
-                  {secondMenus.map((child) => (
-                    <Link
-                      key={child.menuId}
-                      to={child.url}
-                      onClick={() => {
-                        // 모바일일 때만 사이드바 닫기
-                        if (window.innerWidth < 768) {
-                          toggleSidebar();
-                        }
-                      }}
-                      className={`block p-1 text-sm rounded border-b last:border-0 ${
-                        location.pathname.startsWith(child.url)
-                          ? 'bg-blue-100 text-blue-600 font-bold'
-                          : 'hover:bg-gray-200'
-                      }`}
-                    >
-                      └ {child.name}
-                    </Link>
-                  ))}
+                  {secondMenus.map((child) => {
+                    const normalizedPathname = normalizePath(location.pathname);
+                    const normalizedChildUrl = normalizePath(child.url);
+                    const isActive =
+                      normalizedPathname === normalizedChildUrl ||
+                      normalizedPathname.startsWith(`${normalizedChildUrl}/`);
+
+                    return (
+                      <Link
+                        key={child.menuId}
+                        to={child.url}
+                        onClick={() => {
+                          if (window.innerWidth < 768) {
+                            toggleSidebar();
+                          }
+                        }}
+                        className={`block p-1 text-sm rounded border-b last:border-0 ${
+                          isActive
+                            ? 'bg-blue-100 text-blue-600 font-bold'
+                            : 'hover:bg-gray-200'
+                        }`}
+                      >
+                        - {child.name}
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </div>

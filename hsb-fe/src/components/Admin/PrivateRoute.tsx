@@ -8,7 +8,7 @@ import AdminLayout from '../Layout/AdminLayout';
 
 const normalizePath = (path?: string) => {
   if (!path) return '';
-  return path.replace(/\/+$/, '');
+  return path.replace(/\/+$/, '').toLowerCase();
 };
 
 const PrivateRoute: React.FC = () => {
@@ -33,8 +33,7 @@ const PrivateRoute: React.FC = () => {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // 권한 데이터가 아직 준비되지 않았으면 일단 통과
-  // (상위 App.tsx에서 adminRoutesLoading 로더 처리와 함께 써야 안정적)
+  // Wait until permissions are loaded before evaluating route access.
   if (!isLoaded) {
     return (
       <AdminLayout>
