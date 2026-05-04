@@ -10,6 +10,13 @@ import {
   UpdateRequest,
 } from "../types/siteKey";
 
+const normalizeSiteKey = (value?: string | null) => (value ?? "").trim().toUpperCase();
+
+const normalizeCreateRequest = (body: CreateRequest): CreateRequest => ({
+  ...body,
+  siteKey: normalizeSiteKey(body.siteKey),
+});
+
 
 // 사이트키 목록 조회 API 요청
 export const fetchSiteKeyList = async (
@@ -43,7 +50,7 @@ export const fetchSiteKeyDetail = async (
 // 사이트키 생성 API 요청
 export const createSiteKey = (body: CreateRequest, actorId: string | number) =>
   okOrThrow<SiteKeyResponse>(
-    api.post("/admin/ai/site-keys", body, { params: { actor: String(actorId) } })
+    api.post("/admin/ai/site-keys", normalizeCreateRequest(body), { params: { actor: String(actorId) } })
 );
 
 // 사이트키 수정 API 요청
@@ -81,5 +88,5 @@ export const deleteSiteKey = (id: number, actorId: string | number) => {
 // (선택) 사이트키 검증 API 요청 - verify는 actor 안 받으면 기존대로
 export const verifySiteKey = (siteKey: string, clientDomain: string) =>
   okOrThrow<{ ok: boolean; status: Status }>(
-    api.post(`/admin/ai/site-keys/verify`, { siteKey, clientDomain })
+    api.post(`/admin/ai/site-keys/verify`, { siteKey: normalizeSiteKey(siteKey), clientDomain })
 );

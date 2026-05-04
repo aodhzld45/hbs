@@ -44,10 +44,12 @@ type FormErrors = {
   siteKey?: string;
 };
 
+const normalizeSiteKey = (value?: string | null) => (value ?? "").trim().toUpperCase();
+
 export default function SiteKeyFormModal({ open, mode, initial, onClose, onSubmit }: Props) {
   const isCreate = mode === "create";
 
-  const [siteKey, setSiteKey] = useState(initial?.siteKey ?? "");
+  const [siteKey, setSiteKey] = useState(normalizeSiteKey(initial?.siteKey));
   const [status, setStatus] = useState<Status>((initial?.status as Status) ?? "ACTIVE");
   const [planCode, setPlanCode] = useState<PlanCode>((initial?.planCode as PlanCode) ?? "");
   const [rateLimitRps, setRateLimitRps] = useState<number | undefined>(initial?.rateLimitRps ?? undefined);
@@ -60,7 +62,7 @@ export default function SiteKeyFormModal({ open, mode, initial, onClose, onSubmi
 
   useEffect(() => {
     if (!open) return;
-    setSiteKey(initial?.siteKey ?? "");
+    setSiteKey(normalizeSiteKey(initial?.siteKey));
     setStatus((initial?.status as Status) ?? "ACTIVE");
     setPlanCode((initial?.planCode as PlanCode) ?? "");
     setRateLimitRps(initial?.rateLimitRps ?? undefined);
@@ -93,7 +95,7 @@ export default function SiteKeyFormModal({ open, mode, initial, onClose, onSubmi
     const nextErrors: FormErrors = {};
 
     if (isCreate) {
-      const key = siteKey.trim();
+      const key = normalizeSiteKey(siteKey);
       if (!key) {
         nextErrors.siteKey = "사이트키는 필수입니다.";
       } else if (!/^[A-Z0-9-]+$/.test(key)) {
@@ -121,7 +123,7 @@ export default function SiteKeyFormModal({ open, mode, initial, onClose, onSubmi
 
     try {
       if (isCreate) {
-        const payload: CreateRequest = { siteKey: siteKey.trim(), ...base };
+        const payload: CreateRequest = { siteKey: normalizeSiteKey(siteKey), ...base };
         await onSubmit(payload);
       } else {
         const payload: UpdateRequest = { ...base };
@@ -183,7 +185,7 @@ export default function SiteKeyFormModal({ open, mode, initial, onClose, onSubmi
                 </label>
                 <input
                   value={siteKey}
-                  onChange={e => setSiteKey(e.target.value.toUpperCase())}
+                  onChange={e => setSiteKey(normalizeSiteKey(e.target.value))}
                   placeholder="예) HSBS-DEMO-FREE-01"
                   style={{
                     ...inputStyle,
