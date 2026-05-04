@@ -47,15 +47,16 @@ public class WidgetConfigService {
      */
     @Transactional
     public WidgetConfigResponse loadForPublic(String siteKey, String host) {
-        if (siteKey == null || siteKey.isBlank()) {
+        String key = normalizeSiteKey(siteKey);
+        if (key == null || key.isBlank()) {
             throw new IllegalArgumentException("사이트키가 비어 있습니다.");
         }
 
         // 1) 도메인/상태 검증
         if (siteKeyService != null) {
-            siteKeyService.assertActiveAndDomainAllowed(siteKey, host); // 실패 시 403 성격 예외
+            siteKeyService.assertActiveAndDomainAllowed(key, host); // 실패 시 403 성격 예외
         } else {
-            SiteKey sk = siteKeyRepository.findBySiteKey(siteKey)
+            SiteKey sk = siteKeyRepository.findBySiteKeyIgnoreCase(key)
                     .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사이트키 입니다."));
             if (!"Y".equalsIgnoreCase(sk.getUseTf()) || "Y".equalsIgnoreCase(sk.getDelTf())) {
                 throw new IllegalStateException("비활성화되었거나 삭제된 사이트키 입니다.");
@@ -63,12 +64,12 @@ public class WidgetConfigService {
         }
 
         // 2) 연결된 기본 위젯 설정 식별
-        SiteKey sk = siteKeyRepository.findBySiteKey(siteKey)
+        SiteKey sk = siteKeyRepository.findBySiteKeyIgnoreCase(key)
                 .orElseThrow(() -> new IllegalArgumentException("사이트 키 조회 실패"));
         WidgetConfig linked = sk.getDefaultWidgetConfig();
         if (linked == null) {
             // 정책에 따라 404 또는 기본 설정 반환 결정
-            throw new IllegalStateException("연결된 기본 위젯 설정이 없습니다. siteKey=" + siteKey);
+            throw new IllegalStateException("연결된 기본 위젯 설정이 없습니다. siteKey=" + key);
         }
         if ("Y".equalsIgnoreCase(linked.getDelTf())) {
             throw new IllegalStateException("삭제된 위젯 설정입니다. id=" + linked.getId());
@@ -237,16 +238,17 @@ public class WidgetConfigService {
     // 사이트키 검증 위젯 반환
     @Transactional(readOnly = true)
     public WidgetConfig findDefaultWidgetForSiteKeyOrThrow(String siteKey, String host) {
-        if (siteKey == null || siteKey.isBlank()) {
+        String key = normalizeSiteKey(siteKey);
+        if (key == null || key.isBlank()) {
             throw new IllegalArgumentException("사이트키가 비어 있습니다.");
         }
 
         // 도메인/상태 검증
-        SiteKey sk = siteKeyRepository.findBySiteKey(siteKey)
+        SiteKey sk = siteKeyRepository.findBySiteKeyIgnoreCase(key)
                 .orElseThrow(() -> new IllegalArgumentException("사이트키를 찾을 수 없습니다."));
 
         if (!sk.isActive()) {
-            throw new IllegalStateException("비활성화된 사이트키 입니다. siteKey=" + siteKey);
+            throw new IllegalStateException("비활성화된 사이트키 입니다. siteKey=" + key);
         }
         if (host != null && !sk.isDomainAllowed(host)) {
             throw new IllegalStateException("허용되지 않은 도메인입니다. host=" + host);
@@ -254,7 +256,7 @@ public class WidgetConfigService {
 
         WidgetConfig widgetConfig = sk.getDefaultWidgetConfig(); // 연관관계 전제
         if (widgetConfig == null) {
-            throw new IllegalStateException("연결된 기본 위젯 설정이 없습니다. siteKey=" + siteKey);
+            throw new IllegalStateException("연결된 기본 위젯 설정이 없습니다. siteKey=" + key);
         }
         // 필요하면 status/useTf/delTf 검사
         return widgetConfig;
@@ -347,6 +349,13 @@ public class WidgetConfigService {
         }
         String trimmed = s.trim();
         return trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeSiteKey(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        return s.trim().toUpperCase(Locale.ROOT);
     }
 
     private String normalize(String s) {

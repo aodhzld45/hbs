@@ -18,6 +18,8 @@ public interface SiteKeyRepository extends JpaRepository<SiteKey, Long>, SiteKey
 
     Optional<SiteKey> findBySiteKey(String siteKey);
 
+    Optional<SiteKey> findBySiteKeyIgnoreCase(String siteKey);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from SiteKey s where s.id = :id and s.delTf = 'N'")
     Optional<SiteKey> findByIdForUpdate(@Param("id") Long id);
@@ -30,6 +32,8 @@ public interface SiteKeyRepository extends JpaRepository<SiteKey, Long>, SiteKey
     List<SiteKey> findAllByDefaultWidgetConfigId(@Param("widgetConfigId") Long widgetConfigId);
 
     boolean existsBySiteKey(String siteKey);
+
+    boolean existsBySiteKeyIgnoreCase(String siteKey);
 
     Page<SiteKey> findAllByStatus(Status status, Pageable pageable);
 

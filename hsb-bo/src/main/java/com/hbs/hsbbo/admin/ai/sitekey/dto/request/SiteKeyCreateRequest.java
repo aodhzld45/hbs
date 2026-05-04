@@ -15,6 +15,7 @@ public class SiteKeyCreateRequest {
     /** 공개 식별자 (예: HSBS-DEMO, sk_pub_xxx) */
     @NotBlank
     @Size(max = 40)
+    @Pattern(regexp = "^[A-Za-z0-9-]+$")
     private String siteKey;
 
     /** 상태 (기본 ACTIVE), 미지정 시 Default - ACTIVE로 처리 */

@@ -48,11 +48,12 @@ public class PromptProfileService {
 
     @Transactional(readOnly = true)
     public PromptProfileResponse loadForPublic(String siteKey, String host) {
-        if (siteKey == null || siteKey.isBlank()) {
+        String key = normalizeSiteKey(siteKey);
+        if (key == null || key.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "siteKey is required");
         }
 
-        PromptProfile entity = findDefaultProfileForSiteKeyOrThrow(siteKey, host);
+        PromptProfile entity = findDefaultProfileForSiteKeyOrThrow(key, host);
 
         // (선택) 공용 노출 조건 여기서 한번 더 가드
         // if ("Y".equals(entity.getDelTf()) || "N".equals(entity.getUseTf())) { ... }
@@ -238,16 +239,17 @@ public class PromptProfileService {
     // 사이트키 검증 프로필 반환
     @Transactional(readOnly = true)
     public PromptProfile findDefaultProfileForSiteKeyOrThrow(String siteKey, String host) {
-        if (siteKey == null || siteKey.isBlank()) {
+        String key = normalizeSiteKey(siteKey);
+        if (key == null || key.isBlank()) {
             throw new IllegalArgumentException("사이트키가 비어 있습니다.");
         }
 
         // 도메인/상태 검증
-        SiteKey sk = siteKeyRepository.findBySiteKey(siteKey)
+        SiteKey sk = siteKeyRepository.findBySiteKeyIgnoreCase(key)
                 .orElseThrow(() -> new IllegalArgumentException("사이트키를 찾을 수 없습니다."));
 
         if (!sk.isActive()) {
-            throw new IllegalStateException("비활성화된 사이트키 입니다. siteKey=" + siteKey);
+            throw new IllegalStateException("비활성화된 사이트키 입니다. siteKey=" + key);
         }
         if (host != null && !sk.isDomainAllowed(host)) {
             throw new IllegalStateException("허용되지 않은 도메인입니다. host=" + host);
@@ -255,7 +257,7 @@ public class PromptProfileService {
 
         PromptProfile profile = sk.getDefaultPromptProfileId(); // 연관관계 전제
         if (profile == null) {
-            throw new IllegalStateException("연결된 기본 프롬프트 프로필이 없습니다. siteKey=" + siteKey);
+            throw new IllegalStateException("연결된 기본 프롬프트 프로필이 없습니다. siteKey=" + key);
         }
         // 필요하면 status/useTf/delTf 검사
         return profile;
@@ -424,6 +426,13 @@ public class PromptProfileService {
         }
         String trimmed = s.trim();
         return trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeSiteKey(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        return s.trim().toUpperCase(Locale.ROOT);
     }
 
     private String normalize(String s) {

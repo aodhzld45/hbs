@@ -32,9 +32,9 @@ public class SiteKeyService {
     @Transactional
     public SiteKeyResponse create(SiteKeyCreateRequest req, String actor) {
         // 1) 기본 유효성(서버단) + 중복 검사
-        String key = normalizeName(req.getSiteKey());
+        String key = normalizeSiteKey(req.getSiteKey());
         if (key == null || key.isEmpty()) throw new BadRequestException("사이트키는 필수입니다.");
-        if (siteKeyRepository.existsBySiteKey(key)) {
+        if (siteKeyRepository.existsBySiteKeyIgnoreCase(key)) {
             throw new ConflictException("사이트키가 이미 존재합니다.: " + key);
         }
 
@@ -43,6 +43,7 @@ public class SiteKeyService {
         validateDomains(normalizedDomains);
 
         // 3) 엔티티 생성 & 저장
+        req.setSiteKey(key);
         req.setAllowedDomains(normalizedDomains);
         SiteKey entity = SiteKeyMapper.toEntity(req, actor);
         entity = siteKeyRepository.save(entity);
@@ -123,7 +124,8 @@ public class SiteKeyService {
 
     @Transactional(readOnly = true)
     public SiteKeyResponse getBySiteKey(String siteKey) {
-        SiteKey e = siteKeyRepository.findBySiteKey(siteKey)
+        String key = normalizeSiteKey(siteKey);
+        SiteKey e = siteKeyRepository.findBySiteKeyIgnoreCase(key)
                 .orElseThrow(() -> new NotFoundException("사이트키를 찾을 수 없습니다." + siteKey));
         return SiteKeyMapper.toResponse(e);
     }
@@ -161,11 +163,12 @@ public class SiteKeyService {
     // 서버 런타임 검증(위젯/API용)
     @Transactional(readOnly = true)
     public SiteKey assertActiveAndDomainAllowed(String siteKey, String clientDomain) {
-        if (siteKey == null || siteKey.isBlank()) {
+        String key = normalizeSiteKey(siteKey);
+        if (key == null || key.isBlank()) {
             throw new UnauthorizedException("사이트키가 누락되었습니다.");
         }
 
-        SiteKey sk = siteKeyRepository.findBySiteKey(siteKey)
+        SiteKey sk = siteKeyRepository.findBySiteKeyIgnoreCase(key)
                 .orElseThrow(() -> new NotFoundException("해당 사이트키를 찾을 수 없습니다."+ siteKey));
 
         // 1. 소프트 삭제 차단
@@ -238,12 +241,12 @@ public class SiteKeyService {
         );
     }
 
-    private String normalizeName(String s) {
+    private String normalizeSiteKey(String s) {
         if (s == null || s.isBlank()) {
             return null;
         }
         String trimmed = s.trim();
-        return trimmed.toLowerCase(Locale.ROOT);
+        return trimmed.toUpperCase(Locale.ROOT);
     }
 
     private String normalize(String s) {

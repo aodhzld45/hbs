@@ -277,6 +277,7 @@ public class BoardService {
             fileEntities.add(boardFile);
         }
 
+
         if (!fileEntities.isEmpty()) {
             boardFileRepository.saveAll(fileEntities);
         }
