@@ -13,6 +13,26 @@ const api = axios.create({
   timeout: 15000,
 });
 
+export const SESSION_EXPIRED_EVENT = 'hsbs:session-expired';
+
+const notifySessionExpired = (message?: string) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const currentPath =
+    window.location.pathname + window.location.search + window.location.hash;
+
+  window.dispatchEvent(
+    new CustomEvent(SESSION_EXPIRED_EVENT, {
+      detail: {
+        message: message || '인증이 만료되었습니다. 다시 로그인해주세요.',
+        redirectTo: currentPath,
+      },
+    })
+  );
+};
+
 // ---- helper: FormData 판별 ----
 const isFormData = (v: any): v is FormData =>
   typeof FormData !== 'undefined' && v instanceof FormData;
@@ -64,6 +84,21 @@ api.interceptors.response.use(
       }
 
       return Promise.reject(error);
+    }
+
+    if (status === 401) {
+      try {
+        const isAdminPath = window.location.pathname.startsWith('/admin');
+        const isLoginPath = window.location.pathname === '/admin/login';
+
+        localStorage.removeItem('jwtToken');
+
+        if (isAdminPath && !isLoginPath) {
+          notifySessionExpired(error?.response?.data?.message);
+        }
+      } catch (e) {
+        console.warn('세션 만료 처리 실패', e);
+      }
     }
 
     return Promise.reject(error);

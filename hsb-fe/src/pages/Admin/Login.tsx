@@ -1,5 +1,5 @@
 import React, { useState, FormEvent, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 
 // import { useAuth } from '../../context/AuthContext'
@@ -17,17 +17,31 @@ const AdminLogin = () => {
     password: '',
   });
   const [error, setError] = useState<string>('');
+  const location = useLocation();
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const login = useAuthStore((state) => state.login);
+  const searchParams = new URLSearchParams(location.search);
+  const redirectParam = searchParams.get('redirect');
+  const redirectPath =
+    redirectParam?.startsWith('/admin') && redirectParam !== '/admin/login'
+      ? redirectParam
+      : '/admin/index';
+  const isSessionExpired = searchParams.get('reason') === 'session-expired';
 
   const [ip, setIp] = useState<string>('');
   
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/admin/index');
+      navigate(redirectPath);
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, redirectPath]);
+
+  useEffect(() => {
+    if (isSessionExpired) {
+      setError('인증이 만료되었습니다. 다시 로그인해주세요.');
+    }
+  }, [isSessionExpired]);
 
   useEffect(() => {
     // 내부망 또는 사내망: Spring 서버에서 IP 반환
@@ -85,7 +99,7 @@ const AdminLogin = () => {
       );
 
       // 로그인 성공 후 이동
-      navigate('/admin/index');
+      navigate(redirectPath);
     } catch (err: any) {
       setError(err?.message ?? '로그인에 실패했습니다.');
     }

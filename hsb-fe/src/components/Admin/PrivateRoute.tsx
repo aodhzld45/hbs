@@ -1,8 +1,9 @@
 // src/components/PrivateRoute.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePermission } from '../../context/PermissionContext';
+import { SESSION_EXPIRED_EVENT } from '../../services/api';
 import PageLoader from '../../features/common/PageLoader';
 import AdminLayout from '../Layout/AdminLayout';
 
@@ -20,6 +21,25 @@ const PrivateRoute: React.FC = () => {
 
   const pathname = normalizePath(location.pathname);
   const permissions = menuPermissions ?? [];
+  const hasToken = Boolean(localStorage.getItem('jwtToken'));
+  const redirectQuery = `redirect=${encodeURIComponent(location.pathname + location.search)}`;
+  const loginRedirect =
+    isAuthenticated && !hasToken
+      ? `/admin/login?reason=session-expired&${redirectQuery}`
+      : `/admin/login?${redirectQuery}`;
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && !hasToken) {
+      window.dispatchEvent(
+        new CustomEvent(SESSION_EXPIRED_EVENT, {
+          detail: {
+            message: '인증이 만료되었습니다. 다시 로그인해주세요.',
+            redirectTo: location.pathname + location.search,
+          },
+        })
+      );
+    }
+  }, [hasToken, isAuthenticated, isLoading, location.pathname, location.search]);
 
   if (isLoading) {
     return (
@@ -29,8 +49,8 @@ const PrivateRoute: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+  if (!isAuthenticated || !hasToken) {
+    return <Navigate to={loginRedirect} replace state={{ from: location }} />;
   }
 
   // Wait until permissions are loaded before evaluating route access.
