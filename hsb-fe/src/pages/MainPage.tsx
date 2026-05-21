@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Code, ServerCog, ClipboardList, BarChart4 } from 'lucide-react';
+import { Code, ServerCog, ClipboardList, BarChart4, Brain } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import Layout from '../components/Layout/Layout';
@@ -8,7 +8,9 @@ import Layout from '../components/Layout/Layout';
 import SideNav from '../components/Common/SideNav';
 import IntroSection from '../components/Common/IntroSection';
 import DeploySection from '../components/Common/DeploySection';
-import SecuritiesDataSection from '../components/Common/SecuritiesDataSection';
+
+import HrCopilotSection from '../components/Common/HrCopilotSection';
+
 import { SkillGroup, TechIcon } from '../components/Common/SkillGroup';
 import ProjectDetailModal, { type ProjectDetail } from '../components/Common/ProjectDetailModal';
 
@@ -26,9 +28,20 @@ import { fetchPageSectonList } from '../services/Admin/pageSectionApi';
 import { Block, PageSectionItem } from '../types/Admin/PageSectionItem';
 import DynamicSection from './Admin/Page/DynamicSection';
 
-import Assistant from '../features/user/OpenAI';
+// import Assistant from '../features/user/OpenAI';
 
 const POPUP_HIDE_KEY = 'hsbs_popup_hide_date';
+const HR_COPILOT_IMAGES = [
+  '/image/main/hr-copilot/dashboard01.png',
+  '/image/main/hr-copilot/candidates01.png',
+  '/image/main/hr-copilot/candidates02.png',
+  '/image/main/hr-copilot/candidates03.png',
+  '/image/main/hr-copilot/session01png.png',
+  '/image/main/hr-copilot/RAG01.png',
+  '/image/main/hr-copilot/workflow01.png',
+  '/image/main/hr-copilot/workflow02.png',
+  '/image/main/hr-copilot/workflow03.png',
+];
 
 /** 경력기술서 기반 프로젝트 (Slider Carousel + 상세 모달). public/image/main 이미지 활용 */
 const PROJECTS: Array<{
@@ -42,6 +55,36 @@ const PROJECTS: Array<{
   coverImage?: string;
   detail: ProjectDetail;
 }> = [
+  {
+    icon: Brain,
+    title: 'HR COPILOT',
+    desc: '지원자 문서와 채용공고 데이터를 기반으로 면접 질문 생성과 채용공고 분석을 지원하는 LLM 기반 HR 코파일럿',
+    period: '2026.04 ~ 2026.05',
+    platform: 'Web / AI SaaS',
+    stack: ['React', 'FastAPI', 'PostgreSQL', 'LangGraph', 'Claude/GPT', 'BGE-M3'],
+    coverImage: HR_COPILOT_IMAGES[0],
+    detail: {
+      id: 'hr-copilot',
+      title: 'HR COPILOT',
+      period: '2026.04 ~ 2026.05',
+      platform: 'Web / AI SaaS',
+      role: 'AI 시스템 설계 및 풀스택 개발',
+      summary:
+        '지원자 이력서와 직무 정보를 기반으로 면접 질문·예상 답변·평가 가이드를 생성하고, 채용공고 문구의 법적 리스크를 Rule + Hybrid RAG로 분석하는 LLM 기반 HR 업무 지원 서비스입니다.',
+      bullets: [
+        '지원자 문서 업로드 후 PyMuPDF·RapidOCR 기반 텍스트 추출 및 직무별 그룹핑 흐름 구현',
+        'LangGraph 멀티에이전트로 면접 질문, 예상 답변, 평가 기준, 꼬리 질문 생성',
+        'Judge Agent와 루브릭 기반 질문 품질 평가 흐름 설계',
+        '채용공고 문구의 성차별·연령차별 등 7개 위험 패턴 탐지 파이프라인 구축',
+        'Rule + Hybrid RAG (BGE-M3 + BM25 + BGE-reranker) 기반 법령 근거 검색 및 리포트 생성',
+        'FastAPI BackgroundTasks 비동기 처리 + AiJob polling UX',
+        'LangSmith 기반 노드별 토큰 사용량·비용·레이턴시 추적 대시보드 연동',
+      ],
+      stack: ['React 19', 'TypeScript', 'TailwindCSS', 'FastAPI', 'PostgreSQL + pgvector', 'LangGraph', 'OpenAI API', 'LangSmith', 'BGE-M3', 'BM25'],
+      link: { label: 'GitHub 바로가기', url: 'https://github.com/bamti95/hr-copilot' },
+      images: HR_COPILOT_IMAGES,
+    },
+  },
   {
     icon: ClipboardList,
     title: '원주미래산업진흥원 구축',
@@ -269,7 +312,7 @@ const MainPage = () => {
       <div className="w-full overflow-x-hidden">
         <IntroSection />
         {showSideNav && <SideNav />}
-        <Assistant />
+        {/* <Assistant /> */}
         <ProjectDetailModal project={selectedProject} onClose={handleCloseProjectModal} />
 
         {/* About */}
@@ -504,20 +547,7 @@ const MainPage = () => {
           </div>
         </motion.section>
 
-        {/* Securities Data */}
-        <motion.section
-          id="securitiesData"
-          className={`${SECTION_CLASS} bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white`}
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="text-center mb-12">
-            <h2 className={SECTION_TITLE_CLASS}>📌 Securities Data</h2>
-          </div>
-          <SecuritiesDataSection />
-        </motion.section>
+        <HrCopilotSection />
 
         {/* Deploy */}
         <motion.section

@@ -7,7 +7,7 @@ const sections = [
   { id: 'philosophy', label: 'Philosophy' },
   { id: 'projects', label: 'Projects' },
   { id: 'skills',   label: 'Skills' },
-  { id: 'securitiesData', label: 'Securities Data' },
+  { id: 'hr-copilot', label: 'HR Copilot' },
   { id: 'deploy',   label: 'Deploy' },
   { id: 'sections', label: 'Sections' },
   { id: 'contents', label: 'Contents' }, // 외부 링크
