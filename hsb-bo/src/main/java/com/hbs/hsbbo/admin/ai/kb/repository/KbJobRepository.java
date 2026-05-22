@@ -40,4 +40,18 @@ public interface KbJobRepository extends JpaRepository<KbJob, Long> {
     """)
     List<KbJob> findReadyIngestJobs(Pageable pageable);
 
+    @Query("""
+        select j
+          from KbJob j
+         where j.jobStatus = com.hbs.hsbbo.admin.ai.kb.domain.type.KbJobStatus.READY
+           and j.jobType in :jobTypes
+           and j.delTf = 'N'
+           and j.useTf = 'Y'
+         order by j.regDate asc
+    """)
+    List<KbJob> findReadyJobs(
+            @Param("jobTypes") List<KbJobType> jobTypes,
+            Pageable pageable
+    );
+
 }

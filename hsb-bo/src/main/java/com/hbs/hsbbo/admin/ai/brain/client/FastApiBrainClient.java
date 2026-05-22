@@ -3,9 +3,12 @@ package com.hbs.hsbbo.admin.ai.brain.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hbs.hsbbo.admin.ai.brain.config.HsbsBrainProperties;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainChatRequest;
+import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainDeleteIndexRequest;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainIngestRequest;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainVectorStoreCreateRequest;
 import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainChatResponse;
+import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainDeleteIndexResponse;
+import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainHealthResponse;
 import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainIngestResponse;
 import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainVectorStoreCreateResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,25 @@ public class FastApiBrainClient implements BrainClient{
     private final WebClient webClient;
     private final HsbsBrainProperties props;
     private final ObjectMapper objectMapper;
+
+    @Override
+    public BrainHealthResponse health() {
+        try {
+            return webClient.get()
+                    .uri("/health")
+                    .header("X-HSBS-Internal-Token", props.getApiKey())
+                    .retrieve()
+                    .bodyToMono(BrainHealthResponse.class)
+                    .onErrorResume(WebClientResponseException.class, ex ->
+                            Mono.error(new RuntimeException(
+                                    "Brain health check failed: " + ex.getStatusCode() + " " + safeBody(ex.getResponseBodyAsString()), ex
+                            ))
+                    )
+                    .block();
+        } catch (Exception e) {
+            throw new RuntimeException("Brain server health check failed", e);
+        }
+    }
 
     @Override
     public BrainChatResponse chat(BrainChatRequest request) {
@@ -90,6 +112,26 @@ public class FastApiBrainClient implements BrainClient{
 
         } catch (Exception e) {
             throw new RuntimeException("Brain 서버 ingest 호출 실패", e);
+        }
+    }
+
+    @Override
+    public BrainDeleteIndexResponse deleteIndex(BrainDeleteIndexRequest request) {
+        try {
+            return webClient.post()
+                    .uri("/kb/delete-index")
+                    .header("X-HSBS-Internal-Token", props.getApiKey())
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(BrainDeleteIndexResponse.class)
+                    .onErrorResume(WebClientResponseException.class, ex ->
+                            Mono.error(new RuntimeException(
+                                    "Brain deleteIndex failed: " + ex.getStatusCode() + " " + safeBody(ex.getResponseBodyAsString()), ex
+                            ))
+                    )
+                    .block();
+        } catch (Exception e) {
+            throw new RuntimeException("Brain server deleteIndex call failed", e);
         }
     }
 

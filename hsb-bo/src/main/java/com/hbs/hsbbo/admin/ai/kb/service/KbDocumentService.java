@@ -292,6 +292,13 @@ public class KbDocumentService {
 
         e.setDelTf("Y");
         e.setDelAdm(actor);
+        // 벡터 인덱스가 남아있는 문서는 soft delete 후 별도 job으로 Brain 삭제를 진행한다.
+        if (!isBlank(e.getVectorStoreId()) && !isBlank(e.getVectorFileId())) {
+            e.setDocStatus("DELETE_PENDING");
+            enqueueDeleteIndexJob(e, actor);
+        } else {
+            e.setDocStatus("DELETED");
+        }
         return e.getId();
     }
 
@@ -368,6 +375,10 @@ public class KbDocumentService {
         return ("Y".equalsIgnoreCase(s.trim())) ? "Y" : "N";
     }
 
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
     private void resetIndexFields(KbDocument e) {
         e.setIndexedAt(null);
         e.setIndexSummary(null);
@@ -378,6 +389,60 @@ public class KbDocumentService {
 
         // kbSource 이동/정책에 따라 초기화
         e.setVectorStoreId(null);
+    }
+
+    private void enqueueDeleteIndexJob(KbDocument doc, String actor) {
+        try {
+            // 아직 인덱싱되지 않은 문서는 Brain에 삭제 요청할 대상이 없다.
+            if (isBlank(doc.getVectorStoreId()) || isBlank(doc.getVectorFileId())) {
+                log.info("[kb-document] skip delete-index job. vector ids are empty. docId={}", doc.getId());
+                return;
+            }
+
+            // 중복 DELETE_INDEX job 방지. READY/RUNNING이 있으면 기존 작업에 맡긴다.
+            boolean exists = kbJobRepository.existsByKbDocumentIdAndJobTypeAndJobStatusInAndDelTf(
+                    doc.getId(),
+                    KbJobType.DELETE_INDEX,
+                    List.of(KbJobStatus.READY, KbJobStatus.RUNNING),
+                    "N"
+            );
+            if (exists) {
+                log.info("[kb-document] delete-index job already exists. docId={}", doc.getId());
+                return;
+            }
+
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("kbDocumentId", doc.getId());
+            payload.put("kbSourceId", doc.getKbSourceId());
+            payload.put("vectorStoreId", doc.getVectorStoreId());
+            payload.put("vectorFileId", doc.getVectorFileId());
+
+            KbJob job = KbJob.builder()
+                    .kbDocumentId(doc.getId())
+                    .jobType(KbJobType.DELETE_INDEX)
+                    .jobStatus(KbJobStatus.READY)
+                    .payloadJson(objectMapper.writeValueAsString(payload))
+                    .tryCount(0)
+                    .lastError(null)
+                    .scheduledAt(LocalDateTime.now())
+                    .build();
+
+            job.setRegAdm(actor);
+            job.setUpAdm(actor);
+
+            kbJobRepository.save(job);
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            kbJobScheduler.wakeUpNow();
+                        }
+                    }
+            );
+        } catch (Exception ex) {
+            log.error("[kb-document] enqueue delete-index job failed. docId={}", doc.getId(), ex);
+            throw new IllegalStateException("KB delete-index job creation failed.");
+        }
     }
 
     private void enqueueIngestJob(KbDocument doc, String actor) {
@@ -434,4 +499,3 @@ public class KbDocumentService {
         }
     }
 }
-

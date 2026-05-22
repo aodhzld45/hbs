@@ -4,9 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hbs.hsbbo.admin.ai.brain.client.BrainClient;
 import com.hbs.hsbbo.admin.ai.brain.client.FastApiBrainClient;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainChatRequest;
+import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainDeleteIndexRequest;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainIngestRequest;
 import com.hbs.hsbbo.admin.ai.brain.dto.request.BrainVectorStoreCreateRequest;
 import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainChatResponse;
+import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainDeleteIndexResponse;
+import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainHealthResponse;
 import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainIngestResponse;
 import com.hbs.hsbbo.admin.ai.brain.dto.response.BrainVectorStoreCreateResponse;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +44,7 @@ public class BrainConfig {
     public WebClient hsbsBrainWebClient() {
         return WebClient.builder()
                 .baseUrl(props.getBaseUrl())
-                // 내부 통신 키: 우선 X-API-KEY 헤더로 통일 (FastAPI에서도 동일하게 검사)
+                // 내부 통신 키: FastAPI에서도 동일하게 검사하는 X-API-KEY 헤더를 기본값으로 둔다.
                 .defaultHeader("X-API-KEY", props.getApiKey() == null ? "" : props.getApiKey())
                 .build();
     }
@@ -49,15 +52,26 @@ public class BrainConfig {
     @Bean
     public BrainClient brainClient(WebClient brainWebClient, ObjectMapper objectMapper) {
         if (!props.isEnabled()) {
+            // Brain 연동을 끈 환경에서는 동일한 인터페이스를 유지하되, 호출 시점에 명확하게 실패시킨다.
             return new BrainClient() {
                 @Override
+                public BrainHealthResponse health() {
+                    throw disabled();
+                }
+
+                @Override
                 public BrainChatResponse chat(BrainChatRequest request) {
-                    throw new IllegalStateException("Brain 연동이 disabled 상태입니다. hsbs.brain.enabled 값을 확인하세요.");
+                    throw disabled();
                 }
 
                 @Override
                 public BrainIngestResponse ingest(BrainIngestRequest request) {
-                    throw new IllegalStateException("Brain 연동이 disabled 상태입니다. hsbs.brain.enabled 값을 확인하세요.");
+                    throw disabled();
+                }
+
+                @Override
+                public BrainDeleteIndexResponse deleteIndex(BrainDeleteIndexRequest request) {
+                    throw disabled();
                 }
 
                 @Override
@@ -66,9 +80,7 @@ public class BrainConfig {
                 }
 
                 private IllegalStateException disabled() {
-                    return new IllegalStateException(
-                            "Brain 연동이 disabled 상태입니다. hsbs.brain.enabled 값을 확인하세요."
-                    );
+                    return new IllegalStateException("Brain integration is disabled. Check hsbs.brain.enabled.");
                 }
             };
         }
