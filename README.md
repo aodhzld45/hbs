@@ -19,6 +19,7 @@ HSBS는 실제 운영을 고려한 구조로 설계된 **멀티 테넌트 AI Saa
 - 동적 Section 기반 메인 페이지
 - 관리자(Admin) CMS UI
 - 위젯 미리보기(Preview) 패널
+- SaaS Chatbot SDK 테스트 페이지 및 public 위젯 스크립트 제공
 
 ### 🔹 Backend
 - Spring Boot REST API
@@ -26,17 +27,19 @@ HSBS는 실제 운영을 고려한 구조로 설계된 **멀티 테넌트 AI Saa
 - AuditBase 공통 컬럼 설계
 - Soft Delete 구조
 - Job Queue 기반 비동기 처리
+- SiteKey / WidgetConfig / PromptProfile / KB / UsageLog 기반 Back-Office API
 
 ### 🔹 AI Server (분리 아키텍처)
 - FastAPI 기반 독립 서버
 - OpenAI API 연동
-- RAG 기반 문서 질의응답
+- RAG 기반 문서 질의응답 → 자체 검색 계층 + OpenAI Vector Store 선택 연동
 - Reverse Proxy (Apache) 구성
 
 ### 🔹 Database
 - MySQL
 - 멀티 테넌트 설계 (`tenantId` / `siteKey` 기반)
 - PromptProfile / KB / UsageLog 구조
+- SiteKey별 기본 WidgetConfig / PromptProfile 연결 구조
 
 ### 🔹 Infra & DevOps
 - OCI Ubuntu
@@ -109,13 +112,32 @@ HSBS는 실제 운영을 고려한 구조로 설계된 **멀티 테넌트 AI Saa
 **4️⃣ JS SDK 임베드**
 
 ```html
-<script src="/hsbs/hsbs-chat.js" defer data-site-key="{YOUR_SITE_KEY}"></script>
+<script src="https://www.hsbs.kr/sdk/prod/hsbs-chat_prod.js"></script>
+<script>
+  window.HSBS.init({
+    siteKey: "{YOUR_SITE_KEY}",
+    apiBase: "https://www.hsbs.kr/api"
+  });
+</script>
 ```
 
-- 기본 API Base: 운영/로컬 자동 스위칭
-- CSS/버블/패널 동적 주입, 오픈/닫기 상태 기억
-- 위젯 UI 설정 시 Option JSON으로 세부 옵션 고도화
-- web/app/기타 시스템 소프트웨어 호환성 추가 (예정)
+- `window.HSBS.init()` 공개 API 제공
+- CSS/버블/패널 동적 주입, 중복 로드 방지, 재초기화/제거(`destroy`) 지원
+- `siteKey` 기반 `/api/ai/ping` 사전 검증
+- `/api/ai/public/widget-config`로 위젯 디자인 설정 로드
+- `/api/ai/public/prompt-profile`로 환영 문구/WelcomeBlocks 로드
+- `/api/ai/complete4`로 FastAPI Brain 경유 응답 처리
+- web/app/기타 시스템 소프트웨어 호환성 추가 예정
+
+#### 현재 구현 범위
+
+- `window.HSBS.init({ siteKey, apiBase })` 기반 외부 사이트 임베드
+- `siteKey` 활성 상태 및 허용 도메인 검증
+- public WidgetConfig / PromptProfile 조회 후 위젯 UI 반영
+- FastAPI Brain 경유 응답 처리와 UsageLog 저장 흐름
+- 관리자 BO에서 SiteKey, WidgetConfig, PromptProfile, KB, UsageStats 관리
+
+> 상세 고도화 계획은 [HSBS SaaS Chatbot 고도화 작업 문서](SaaS-Hsbs-ChatBot-advancement-roadmap.md)를 참고합니다.
 
 **5️⃣ 요청 처리 및 쿼터 관리**
 - `/api/ai/complete` → 응답 저장/로깅
@@ -131,6 +153,7 @@ HSBS는 실제 운영을 고려한 구조로 설계된 **멀티 테넌트 AI Saa
 - PromptProfile 등록/버전관리(시스템/가드레일)
 - UsageLog 조회(필터: 기간/모델/상태), 엑셀 내보내기
 - Plan/Quota 정책: 일일 요청 제한, 초과 시 차단/경고
+- KB Source / KB Document 관리 및 Brain 인덱싱 잡 상태 확인
 
 ### 보안/검증
 
