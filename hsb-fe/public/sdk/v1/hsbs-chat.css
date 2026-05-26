@@ -1,0 +1,307 @@
+/**
+ * HSBS Chat Widget - 스타일 시트
+ * 설정값은 SDK가 #hsbs-root 에 CSS 변수로 주입합니다.
+ * 사용처에서 var(--hsbs-*, 기본값) 형태로 fallback을 둡니다.
+ */
+
+/* 공통 아바타(원형) */
+.hsbs-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffffe6;
+  color: #111827;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  user-select: none;
+}
+.hsbs-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* 버블 버튼 - 위치는 data-position 에 따라 분기 */
+#hsbs-root[data-position="right"] #hsbs-chat-bubble {
+  right: var(--hsbs-offset-x, 20px);
+  left: auto;
+}
+#hsbs-root[data-position="left"] #hsbs-chat-bubble {
+  left: var(--hsbs-offset-x, 20px);
+  right: auto;
+}
+
+#hsbs-chat-bubble {
+  position: fixed;
+  bottom: var(--hsbs-offset-y, 20px);
+  width: var(--hsbs-bubble-size, 56px);
+  height: var(--hsbs-bubble-size, 56px);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--hsbs-accent, #4f46e5);
+  color: #fff;
+  box-shadow: var(--hsbs-bubble-shadow, 0 10px 25px rgba(0, 0, 0, 0.2));
+  cursor: pointer;
+  z-index: var(--hsbs-z, 2147483000);
+}
+#hsbs-chat-bubble .inner {
+  width: var(--hsbs-bubble-inner-size, 36px);
+  height: var(--hsbs-bubble-inner-size, 36px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 패널 - 위치 분기 */
+#hsbs-root[data-position="right"] #hsbs-chat-panel {
+  right: var(--hsbs-offset-x, 20px);
+  left: auto;
+}
+#hsbs-root[data-position="left"] #hsbs-chat-panel {
+  left: var(--hsbs-offset-x, 20px);
+  right: auto;
+}
+
+#hsbs-chat-panel {
+  position: fixed;
+  bottom: calc(var(--hsbs-offset-y, 20px) + 68px);
+  width: var(--hsbs-panel-w, 360px);
+  max-height: var(--hsbs-max-h, 60vh);
+  background: var(--hsbs-bg, #111827);
+  color: var(--hsbs-text, #e5e7eb);
+  border-radius: var(--hsbs-radius, 16px);
+  box-shadow: var(--hsbs-box-shadow, 0 20px 40px rgba(0, 0, 0, 0.35));
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: var(--hsbs-z, 2147483000);
+  font-family: var(--hsbs-font-family, inherit);
+  font-size: var(--hsbs-font-size, 14px);
+}
+
+#hsbs-chat-header {
+  padding: 12px 14px;
+  font-weight: 600;
+  font-size: var(--hsbs-header-font-size, 14px);
+  background: var(--hsbs-bg-2, #0b0f1a);
+  border-bottom: 1px solid var(--hsbs-border, #1f2937);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#hsbs-chat-body {
+  padding: 12px;
+  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+/* 초기 추천 질문(퀵리플라이) 영역 */
+.hsbs-quick-wrap {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.hsbs-quick-btn {
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.hsbs-quick-btn:hover {
+  background: rgba(37, 99, 235, 0.9);
+  border-color: rgba(59, 130, 246, 1);
+}
+
+.hsbs-msg {
+  padding: 10px 12px;
+  border-radius: 12px;
+  max-width: 85%;
+  white-space: pre-wrap;
+}
+
+/* ===== WelcomeBlocks 영역 ===== */
+.hsbs-wb-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  align-items: center;
+  margin-top: 8px;
+}
+.hsbs-wb-card {
+  width: 100%;
+  max-width: 560px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #111827;
+  border-radius: 18px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 14px;
+}
+.hsbs-wb-row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.hsbs-wb-thumb {
+  width: 96px;
+  height: 96px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hsbs-wb-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.hsbs-wb-noimg {
+  font-size: 11px;
+  color: rgba(17, 24, 39, 0.6);
+}
+.hsbs-wb-content {
+  min-width: 0;
+}
+.hsbs-wb-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hsbs-wb-desc {
+  font-size: 13px;
+  color: rgba(17, 24, 39, 0.75);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.hsbs-wb-text {
+  font-size: 14px;
+  color: rgba(17, 24, 39, 0.9);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.hsbs-wb-img {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.04);
+  display: block;
+}
+.hsbs-wb-caption {
+  margin-top: 10px;
+  font-size: 12px;
+  color: rgba(17, 24, 39, 0.65);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.hsbs-wb-btn-wrap {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.hsbs-wb-btn {
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  background: rgba(249, 250, 251, 1);
+  color: #111827;
+  font-size: 13px;
+  cursor: pointer;
+}
+.hsbs-wb-btn:hover {
+  background: rgba(243, 244, 246, 1);
+}
+
+.hsbs-user {
+  align-self: flex-end;
+  background: #1f2937;
+}
+.hsbs-bot {
+  align-self: flex-start;
+  background: #0d1220;
+}
+
+#hsbs-chat-footer {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  background: var(--hsbs-bg-2, #0b0f1a);
+  border-top: 1px solid var(--hsbs-border, #1f2937);
+}
+
+#hsbs-chat-input {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--hsbs-input-radius, 10px);
+  border: 1px solid #222733;
+  background: var(--hsbs-input-bg, #0f1422);
+  color: var(--hsbs-text, #e5e7eb);
+}
+
+#hsbs-chat-send {
+  padding: 10px 14px;
+  border-radius: var(--hsbs-send-radius, 10px);
+  border: none;
+  background: var(--hsbs-accent, #4f46e5);
+  color: #fff;
+  cursor: pointer;
+}
+#hsbs-chat-send[data-style="icon"]::before {
+  content: "✈";
+}
+#hsbs-chat-send[data-style="text"]::before {
+  content: var(--hsbs-send-text);
+}
+#hsbs-chat-send[data-style="icon-text"]::before {
+  content: "✈  ";
+}
+
+/* 모바일: 패널 전체 너비 */
+@media (max-width: 480px) {
+  #hsbs-root[data-position="right"] #hsbs-chat-panel {
+    right: 8px;
+    left: 8px;
+    width: auto;
+    bottom: 88px;
+  }
+  #hsbs-root[data-position="left"] #hsbs-chat-panel {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    bottom: 88px;
+  }
+}
