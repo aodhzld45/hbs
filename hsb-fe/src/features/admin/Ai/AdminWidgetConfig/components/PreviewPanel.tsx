@@ -151,8 +151,12 @@ export default function PreviewPanel({ cfg, welcomeBlocksJson }: Props) {
   }, [welcomeBlocksJson]);
 
   // ===== 패널 폭/높이 적용(미리보기 용) =====
-  const panelWidthPx = cfg.panelWidthPx ?? 360;
-  const panelHeightPx = 420; // 고정 높이 안에서만 스크롤 되도록
+  const options = cfg.options ?? {};
+  const panelWidthPx = Number(options.desktopPanelWidthPx ?? cfg.panelWidthPx ?? 360);
+  const panelHeightPx = Number(options.desktopPanelHeightPx ?? 420);
+  const bubbleSizePx = Number(options.desktopBubbleSizePx ?? cfg.bubbleSizePx ?? 56);
+  const bubbleIconSizePx = Number(cfg.bubbleIconSizePx ?? Math.round(bubbleSizePx * 0.72));
+  const mobileFullscreen = options.mobileFullscreen === true || options.mobileFullscreen === 'Y' || options.mobileFullscreen === 'true';
 
   return (
     <div className="border rounded p-3">
@@ -233,18 +237,20 @@ export default function PreviewPanel({ cfg, welcomeBlocksJson }: Props) {
 
           {/* 버블 버튼 - 패널 안쪽, 푸터 위에 겹쳐서 항상 노출 */}
           <button
-            className="absolute right-4 bottom-4 w-14 h-14 rounded-full shadow-lg border flex items-center justify-center"
+            className="absolute right-4 bottom-4 rounded-full shadow-lg border flex items-center justify-center"
             style={{
               background: 'var(--hsbs-bubble-bg)',
               color: 'var(--hsbs-bubble-fg)',
+              width: bubbleSizePx,
+              height: bubbleSizePx,
             }}
             aria-label="Bubble"
             type="button"
             disabled
           >
-            <div className="w-10 h-10">
+            <div style={{ width: bubbleIconSizePx, height: bubbleIconSizePx }}>
               <CircleAvatar
-                size={40}
+                size={bubbleIconSizePx}
                 img={bubbleImg}
                 imgOk={bubbleImgOk}
                 onImgError={() => setBubbleImgOk(false)}
@@ -261,6 +267,7 @@ export default function PreviewPanel({ cfg, welcomeBlocksJson }: Props) {
       <p className="mt-2 text-xs text-gray-500">
         * 실제 배치: position <b>{cfg.position ?? 'right'}</b>, offsetX{' '}
         <b>{cfg.offsetX ?? 20}</b>, offsetY <b>{cfg.offsetY ?? 20}</b>
+        {mobileFullscreen ? ', 모바일 풀스크린' : ''}
       </p>
     </div>
   );

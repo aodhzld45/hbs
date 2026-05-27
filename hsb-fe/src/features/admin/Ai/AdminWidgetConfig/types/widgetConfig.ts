@@ -1,3 +1,24 @@
+export type WidgetSizePreset = 'compact' | 'standard' | 'large-portfolio';
+
+export type WidgetConfigOptions = {
+  sizePreset?: WidgetSizePreset | string;
+  desktopBubbleSizePx?: number | null;
+  mobileBubbleSizePx?: number | null;
+  desktopPanelWidthPx?: number | null;
+  desktopPanelHeightPx?: number | null;
+  mobileFullscreen?: boolean | 'Y' | 'N' | string | null;
+  mobileBreakpointPx?: number | null;
+  offlineMessage?: string | null;
+  timeoutMessage?: string | null;
+  networkErrorMessage?: string | null;
+  quotaExceededMessage?: string | null;
+  serverErrorMessage?: string | null;
+  retryButtonLabel?: string | null;
+  completeTimeoutMs?: number | null;
+  welcomeQuickReplies?: unknown;
+  [key: string]: unknown;
+};
+
 export type WidgetConfig = {
   id: number;
   name: string;
@@ -65,7 +86,7 @@ export type WidgetConfig = {
   closeOnEsc: 'Y' | 'N';
   closeOnOutsideClick: 'Y' | 'N';
 
-  options?: Record<string, null>;
+  options?: WidgetConfigOptions | null;
   welcomeQuickRepliesJson?: string | null;
 
   notes?: string;
@@ -90,6 +111,5 @@ export interface WidgetConfigListResponse {
   totalCount: number;
   totalPages: number;
 }
-
 
 

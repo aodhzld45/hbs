@@ -18,8 +18,10 @@
   function createCircleAvatar({ size = 28, imgUrl, emoji = '💬', initial = 'H', title }) {
     const wrap = document.createElement('div');
     wrap.className = 'hsbs-avatar';
-    wrap.style.width = `${size}px`;
-    wrap.style.height = `${size}px`;
+    if (size != null) {
+      wrap.style.width = `${size}px`;
+      wrap.style.height = `${size}px`;
+    }
     if (title) wrap.title = title;
 
     if (imgUrl) {
@@ -323,6 +325,44 @@
     return typeof navigator !== 'undefined' && navigator.onLine === false;
   }
 
+  function toNumber(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function toBoolean(value) {
+    return value === true || value === 'true' || value === 'Y' || value === '1';
+  }
+
+  function getSizePresetOptions(name) {
+    const preset = String(name || 'standard').trim();
+    if (preset === 'large-portfolio') {
+      return {
+        desktopBubbleSizePx: 128,
+        mobileBubbleSizePx: 80,
+        desktopPanelWidthPx: 340,
+        desktopPanelHeightPx: 480,
+        mobileFullscreen: true,
+      };
+    }
+    if (preset === 'compact') {
+      return {
+        desktopBubbleSizePx: 48,
+        mobileBubbleSizePx: 48,
+        desktopPanelWidthPx: 320,
+        desktopPanelHeightPx: null,
+        mobileFullscreen: false,
+      };
+    }
+    return {
+      desktopBubbleSizePx: 56,
+      mobileBubbleSizePx: 56,
+      desktopPanelWidthPx: 360,
+      desktopPanelHeightPx: null,
+      mobileFullscreen: false,
+    };
+  }
+
   function teardown() {
     if (!widgetState) return;
     const { root, bubble, panel, escHandler, outsideHandler, hooks, instance } = widgetState;
@@ -427,16 +467,24 @@
     }
 
     // 3) 서버 응답 → merged 매핑
-    const opt = wc && wc.options ? wc.options : {};
+    const opt = Object.assign({}, (wc && wc.options ? wc.options : {}), cfg.options || {});
+    const preset = getSizePresetOptions(opt.sizePreset);
 
     const merged = {
       // 배치/위치
       position: wc.position || 'right', // 'left'|'right'
       offsetX: wc.offsetX ?? 20,
       offsetY: wc.offsetY ?? 20,
-      panelWidthPx: wc.panelWidthPx ?? 360,
+      panelWidthPx: toNumber(opt.desktopPanelWidthPx, wc.panelWidthPx ?? preset.desktopPanelWidthPx),
       zIndex: wc.zIndex ?? 2147483000,
       panelMaxHeightPx: wc.panelMaxHeightPx ?? null,
+      panelHeightPx: opt.desktopPanelHeightPx == null || opt.desktopPanelHeightPx === ''
+        ? preset.desktopPanelHeightPx
+        : toNumber(opt.desktopPanelHeightPx, preset.desktopPanelHeightPx),
+      mobileFullscreen: opt.mobileFullscreen == null ? preset.mobileFullscreen : toBoolean(opt.mobileFullscreen),
+      mobileBubbleSizePx: toNumber(opt.mobileBubbleSizePx, preset.mobileBubbleSizePx),
+      desktopBubbleSizePx: toNumber(opt.desktopBubbleSizePx, wc.bubbleSizePx ?? preset.desktopBubbleSizePx),
+      sizePreset: opt.sizePreset || 'standard',
 
       // 스타일(크기/타이포/그림자) — 관리자에서 설정 가능
       panelBorderRadiusPx: wc.panelBorderRadiusPx ?? null,
@@ -526,6 +574,8 @@
     const $root = document.createElement('div');
     $root.id = 'hsbs-root';
     $root.dataset.position = merged.position === 'left' ? 'left' : 'right';
+    $root.dataset.mobileFullscreen = merged.mobileFullscreen ? 'true' : 'false';
+    $root.dataset.sizePreset = merged.sizePreset;
 
     // CSS 변수(스코프: #hsbs-root) — 스타일 시트(hsbs-chat.css)에서 참조
     $root.style.setProperty('--hsbs-accent', merged.primaryColor);
@@ -536,12 +586,17 @@
     $root.style.setProperty('--hsbs-text', merged.panelTextColor);
     $root.style.setProperty('--hsbs-z', String(merged.zIndex));
     $root.style.setProperty('--hsbs-panel-w', `${merged.panelWidthPx}px`);
+    if (merged.panelHeightPx != null) $root.style.setProperty('--hsbs-panel-h', `${merged.panelHeightPx}px`);
     $root.style.setProperty('--hsbs-offset-x', `${merged.offsetX}px`);
     $root.style.setProperty('--hsbs-offset-y', `${merged.offsetY}px`);
     $root.style.setProperty('--hsbs-send-text', escapeCssString(merged.sendButtonLabel));
     if (merged.panelMaxHeightPx) $root.style.setProperty('--hsbs-max-h', `${merged.panelMaxHeightPx}px`);
     if (merged.panelBorderRadiusPx != null) $root.style.setProperty('--hsbs-radius', `${merged.panelBorderRadiusPx}px`);
     if (merged.bubbleSizePx != null) $root.style.setProperty('--hsbs-bubble-size', `${merged.bubbleSizePx}px`);
+    $root.style.setProperty('--hsbs-bubble-size-desktop', `${merged.desktopBubbleSizePx}px`);
+    $root.style.setProperty('--hsbs-bubble-size-mobile', `${merged.mobileBubbleSizePx}px`);
+    $root.style.setProperty('--hsbs-bubble-inner-size-desktop', `${merged.bubbleIconSizePx ?? Math.round(merged.desktopBubbleSizePx * 0.78)}px`);
+    $root.style.setProperty('--hsbs-bubble-inner-size-mobile', `${merged.bubbleIconSizePx ?? Math.round(merged.mobileBubbleSizePx * 0.78)}px`);
     $root.style.setProperty('--hsbs-bubble-inner-size', `${merged.bubbleIconSizePx ?? 36}px`);
     if (merged.inputBorderRadiusPx != null) $root.style.setProperty('--hsbs-input-radius', `${merged.inputBorderRadiusPx}px`);
     if (merged.sendButtonRadiusPx != null) $root.style.setProperty('--hsbs-send-radius', `${merged.sendButtonRadiusPx}px`);
@@ -563,14 +618,11 @@
     $bubble.setAttribute('aria-label', 'Open chat');
     $bubble.setAttribute('aria-expanded', 'false');
     $bubble.setAttribute('aria-controls', 'hsbs-chat-panel');
-    const bubbleInnerSizePx = merged.bubbleIconSizePx ?? 36;
     const $bubbleInner = document.createElement('div');
     $bubbleInner.className = 'inner';
-    $bubbleInner.style.width = bubbleInnerSizePx + 'px';
-    $bubbleInner.style.height = bubbleInnerSizePx + 'px';
     $bubbleInner.appendChild(
       createCircleAvatar({
-        size: bubbleInnerSizePx,
+        size: null,
         imgUrl: bubbleImgUrl,
         emoji: bubbleEmoji,
         initial: brandInitial,

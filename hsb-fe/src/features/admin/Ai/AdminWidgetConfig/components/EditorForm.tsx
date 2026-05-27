@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import type { WidgetConfig, WidgetConfigRequest } from '../types/widgetConfig';
+import type { WidgetConfig, WidgetConfigOptions, WidgetConfigRequest, WidgetSizePreset } from '../types/widgetConfig';
 
 import { fetchSiteKeyList, fetchLinkedSiteKeys } from '../../AdminSiteKeys/services/siteKeyApi';
  
@@ -24,7 +24,6 @@ function SliderField(
   }
 ) {
   const { label, value, onChange, min, max, step = 1, unit = 'px', placeholder } = props;
-  const num = value ?? min;
   const display = value ?? '';
   return (
     <div className="grid grid-cols-3 gap-2 items-center">
@@ -103,6 +102,33 @@ const WIDGET_THEME_PRESETS: Record<string, Partial<WidgetConfigRequest>> = {
   },
 };
 
+const WIDGET_SIZE_PRESETS: Record<WidgetSizePreset, WidgetConfigOptions> = {
+  compact: {
+    sizePreset: 'compact',
+    desktopBubbleSizePx: 48,
+    mobileBubbleSizePx: 48,
+    desktopPanelWidthPx: 320,
+    desktopPanelHeightPx: null,
+    mobileFullscreen: false,
+  },
+  standard: {
+    sizePreset: 'standard',
+    desktopBubbleSizePx: 56,
+    mobileBubbleSizePx: 56,
+    desktopPanelWidthPx: 360,
+    desktopPanelHeightPx: null,
+    mobileFullscreen: false,
+  },
+  'large-portfolio': {
+    sizePreset: 'large-portfolio',
+    desktopBubbleSizePx: 128,
+    mobileBubbleSizePx: 80,
+    desktopPanelWidthPx: 340,
+    desktopPanelHeightPx: 480,
+    mobileFullscreen: true,
+  },
+};
+
 type Props = {
   value?: WidgetConfig | null;      // id === 0(신규)일 때는 undefined/null 전달
   onSubmit: (data: WidgetConfigRequest, iconFile?: File | null) => void;
@@ -127,7 +153,8 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview,
     // 연결할 사이트키
     linkedSiteKeyId: null,
     // 연결된 프롬프트 프로필
-    welcomeBlocksJson: 'null'
+    welcomeBlocksJson: 'null',
+    options: WIDGET_SIZE_PRESETS.standard,
   });
 
   // 퀵리플라이 훅: value에서 내려온 welcomeQuickRepliesJson을 초기값으로 사용
@@ -243,6 +270,31 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview,
       return next;
     });
 
+  const updateOption = <K extends keyof WidgetConfigOptions>(k: K, v: WidgetConfigOptions[K]) =>
+    setForm((f) => {
+      const nextOptions = { ...(f.options ?? {}), [k]: v };
+      const next = { ...f, options: nextOptions };
+      onChangePreview?.({ ...next, bubbleIconUrl: iconPreviewUrl ?? next.bubbleIconUrl ?? undefined });
+      return next;
+    });
+
+  const applySizePreset = (presetId: WidgetSizePreset) =>
+    setForm((f) => {
+      const preset = WIDGET_SIZE_PRESETS[presetId];
+      const next = {
+        ...f,
+        panelWidthPx: preset.desktopPanelWidthPx ?? f.panelWidthPx,
+        bubbleSizePx: preset.desktopBubbleSizePx ?? f.bubbleSizePx,
+        panelMaxHeightPx: null,
+        options: {
+          ...(f.options ?? {}),
+          ...preset,
+        },
+      };
+      onChangePreview?.({ ...next, bubbleIconUrl: iconPreviewUrl ?? next.bubbleIconUrl ?? undefined });
+      return next;
+    });
+
   // Select 라벨 가독성 향상
   const siteKeyOptions = useMemo(
     () =>
@@ -255,6 +307,9 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview,
       })),
     [siteKeys]
   );
+
+  const sizeOptions = (form.options ?? {}) as WidgetConfigOptions;
+  const selectedSizePreset = (sizeOptions.sizePreset as WidgetSizePreset) || 'standard';
 
   // 아이콘 첨부파일 관련,
   // 아이콘 파일 선택 이벤트
@@ -396,8 +451,65 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview,
         <section className="space-y-3">
           <h3 className="font-semibold">레이아웃·스타일</h3>
           <p className="text-xs text-gray-500">패널·버블 크기와 모서리 둥글기를 설정합니다. (선택)</p>
+          <div className="grid grid-cols-3 gap-2">
+            <label className="text-sm self-center">크기 프리셋</label>
+            <select
+              className="col-span-2 border rounded px-2 py-2"
+              value={selectedSizePreset}
+              onChange={(e) => applySizePreset(e.target.value as WidgetSizePreset)}
+            >
+              <option value="compact">작게</option>
+              <option value="standard">기본</option>
+              <option value="large-portfolio">포트폴리오형</option>
+            </select>
+          </div>
+          <SliderField
+            label="데스크톱 패널 너비(px)"
+            value={(sizeOptions.desktopPanelWidthPx as number | null | undefined) ?? form.panelWidthPx ?? 360}
+            onChange={(v) => {
+              update('panelWidthPx', v ?? 360);
+              updateOption('desktopPanelWidthPx', v ?? 360);
+            }}
+            min={280}
+            max={640}
+            step={10}
+          />
+          <SliderField
+            label="데스크톱 패널 높이(px)"
+            value={(sizeOptions.desktopPanelHeightPx as number | null | undefined) ?? null}
+            onChange={(v) => updateOption('desktopPanelHeightPx', v)}
+            min={360}
+            max={760}
+            step={20}
+            placeholder="비움=자동"
+          />
+          <SliderField
+            label="데스크톱 버블 크기(px)"
+            value={(sizeOptions.desktopBubbleSizePx as number | null | undefined) ?? form.bubbleSizePx ?? null}
+            onChange={(v) => {
+              update('bubbleSizePx', v);
+              updateOption('desktopBubbleSizePx', v);
+            }}
+            min={36}
+            max={160}
+          />
+          <SliderField
+            label="모바일 버블 크기(px)"
+            value={(sizeOptions.mobileBubbleSizePx as number | null | undefined) ?? null}
+            onChange={(v) => updateOption('mobileBubbleSizePx', v)}
+            min={36}
+            max={120}
+          />
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={sizeOptions.mobileFullscreen === true || sizeOptions.mobileFullscreen === 'Y' || sizeOptions.mobileFullscreen === 'true'}
+              onChange={(e) => updateOption('mobileFullscreen', e.target.checked)}
+            />
+            <span className="text-sm">모바일 풀스크린</span>
+          </label>
           <SliderField label="패널 둥글기(px)" value={form.panelBorderRadiusPx ?? null} onChange={(v) => update('panelBorderRadiusPx', v)} min={0} max={24} />
-          <SliderField label="버블 크기(px)" value={form.bubbleSizePx ?? null} onChange={(v) => update('bubbleSizePx', v)} min={36} max={96} />
+          <SliderField label="버블 크기(px, 구형 호환)" value={form.bubbleSizePx ?? null} onChange={(v) => update('bubbleSizePx', v)} min={36} max={160} />
           <SliderField label="버블 안 아이콘/이모지 크기(px)" value={form.bubbleIconSizePx ?? null} onChange={(v) => update('bubbleIconSizePx', v)} min={24} max={64} />
           <SliderField label="입력창 둥글기(px)" value={form.inputBorderRadiusPx ?? null} onChange={(v) => update('inputBorderRadiusPx', v)} min={0} max={20} />
           <SliderField label="전송버튼 둥글기(px)" value={form.sendButtonRadiusPx ?? null} onChange={(v) => update('sendButtonRadiusPx', v)} min={0} max={20} />

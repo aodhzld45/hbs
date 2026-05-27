@@ -64,6 +64,15 @@ export interface HSBSInitOptions {
   apiBase?: string;
   theme?: "auto" | "light" | "dark" | string;
   debug?: boolean;
+  options?: {
+    sizePreset?: "compact" | "standard" | "large-portfolio" | string;
+    desktopBubbleSizePx?: number;
+    mobileBubbleSizePx?: number;
+    desktopPanelWidthPx?: number;
+    desktopPanelHeightPx?: number | null;
+    mobileFullscreen?: boolean;
+    [key: string]: unknown;
+  };
   pingTimeoutMs?: number;
   configTimeoutMs?: number;
   completeTimeoutMs?: number;

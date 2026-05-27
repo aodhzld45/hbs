@@ -39,8 +39,8 @@
 #hsbs-chat-bubble {
   position: fixed;
   bottom: var(--hsbs-offset-y, 20px);
-  width: var(--hsbs-bubble-size, 56px);
-  height: var(--hsbs-bubble-size, 56px);
+  width: var(--hsbs-bubble-size-desktop, var(--hsbs-bubble-size, 56px));
+  height: var(--hsbs-bubble-size-desktop, var(--hsbs-bubble-size, 56px));
   border: none;
   border-radius: 50%;
   display: flex;
@@ -53,11 +53,15 @@
   z-index: var(--hsbs-z, 2147483000);
 }
 #hsbs-chat-bubble .inner {
-  width: var(--hsbs-bubble-inner-size, 36px);
-  height: var(--hsbs-bubble-inner-size, 36px);
+  width: var(--hsbs-bubble-inner-size-desktop, var(--hsbs-bubble-inner-size, 36px));
+  height: var(--hsbs-bubble-inner-size-desktop, var(--hsbs-bubble-inner-size, 36px));
   display: flex;
   align-items: center;
   justify-content: center;
+}
+#hsbs-chat-bubble .hsbs-avatar {
+  width: 100%;
+  height: 100%;
 }
 
 /* 패널 - 위치 분기 */
@@ -72,8 +76,9 @@
 
 #hsbs-chat-panel {
   position: fixed;
-  bottom: calc(var(--hsbs-offset-y, 20px) + 68px);
+  bottom: calc(var(--hsbs-offset-y, 20px) + var(--hsbs-bubble-size-desktop, 56px) + 12px);
   width: var(--hsbs-panel-w, 360px);
+  height: var(--hsbs-panel-h, auto);
   max-height: var(--hsbs-max-h, 60vh);
   background: var(--hsbs-bg, #111827);
   color: var(--hsbs-text, #e5e7eb);
@@ -305,17 +310,32 @@
 }
 
 /* 모바일: 패널 전체 너비 */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+  #hsbs-chat-bubble {
+    width: var(--hsbs-bubble-size-mobile, var(--hsbs-bubble-size-desktop, 56px));
+    height: var(--hsbs-bubble-size-mobile, var(--hsbs-bubble-size-desktop, 56px));
+  }
+  #hsbs-chat-bubble .inner {
+    width: var(--hsbs-bubble-inner-size-mobile, var(--hsbs-bubble-inner-size-desktop, 36px));
+    height: var(--hsbs-bubble-inner-size-mobile, var(--hsbs-bubble-inner-size-desktop, 36px));
+  }
   #hsbs-root[data-position="right"] #hsbs-chat-panel {
     right: 8px;
     left: 8px;
     width: auto;
-    bottom: 88px;
+    bottom: calc(var(--hsbs-offset-y, 20px) + var(--hsbs-bubble-size-mobile, var(--hsbs-bubble-size-desktop, 56px)) + 12px);
   }
   #hsbs-root[data-position="left"] #hsbs-chat-panel {
     left: 8px;
     right: 8px;
     width: auto;
-    bottom: 88px;
+    bottom: calc(var(--hsbs-offset-y, 20px) + var(--hsbs-bubble-size-mobile, var(--hsbs-bubble-size-desktop, 56px)) + 12px);
+  }
+  #hsbs-root[data-mobile-fullscreen="true"] #hsbs-chat-panel {
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
   }
 }

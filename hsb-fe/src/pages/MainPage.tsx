@@ -27,8 +27,7 @@ import { fetchPageByUrl } from '../services/Admin/pageApi';
 import { fetchPageSectonList } from '../services/Admin/pageSectionApi';
 import { Block, PageSectionItem } from '../types/Admin/PageSectionItem';
 import DynamicSection from './Admin/Page/DynamicSection';
-
-// import Assistant from '../features/user/OpenAI';
+import HsbsSdkWidgetMount from '../features/user/OpenAI/components/HsbsSdkWidgetMount';
 
 const POPUP_HIDE_KEY = 'hsbs_popup_hide_date';
 const HR_COPILOT_IMAGES = [
@@ -312,7 +311,7 @@ const MainPage = () => {
       <div className="w-full overflow-x-hidden">
         <IntroSection />
         {showSideNav && <SideNav />}
-        {/* <Assistant /> */}
+        <HsbsSdkWidgetMount />
         <ProjectDetailModal project={selectedProject} onClose={handleCloseProjectModal} />
 
         {/* About */}
