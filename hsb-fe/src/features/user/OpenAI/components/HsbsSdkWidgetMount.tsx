@@ -11,6 +11,13 @@ declare global {
 
 const SDK_SRC = '/sdk/v1/hsbs-chat.js';
 const SDK_SCRIPT_ID = 'hsbs-chat-sdk-v1';
+const SITE_KEY = process.env.REACT_APP_HSBS_SDK_SITE_KEY || 'HSBS-DEMO-FREE-01';
+const API_BASE = normalizeApiBase(process.env.REACT_APP_HSBS_SDK_API_BASE || '/api');
+
+function normalizeApiBase(value: string) {
+  const trimmed = value.trim();
+  return (trimmed || '/api').replace(/\/+$/, '');
+}
 
 export default function HsbsSdkWidgetMount() {
   useEffect(() => {
@@ -19,13 +26,15 @@ export default function HsbsSdkWidgetMount() {
     const initWidget = async () => {
       if (cancelled || !window.HSBS?.init) return;
       await window.HSBS.init({
-        siteKey: 'HSBS-DEMO-FREE-01',
-        apiBase: 'https://www.hsbs.kr/api',
-        debug: true,
+        siteKey: SITE_KEY,
+        apiBase: API_BASE,
+        debug: process.env.NODE_ENV !== 'production',
         options: {
           sizePreset: 'large-portfolio',
           desktopBubbleSizePx: 128,
           mobileBubbleSizePx: 80,
+          desktopBubbleIconSizePx: 104,
+          mobileBubbleIconSizePx: 64,
           desktopPanelWidthPx: 340,
           desktopPanelHeightPx: 480,
           mobileFullscreen: true,

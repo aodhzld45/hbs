@@ -340,6 +340,8 @@
       return {
         desktopBubbleSizePx: 128,
         mobileBubbleSizePx: 80,
+        desktopBubbleIconSizePx: 104,
+        mobileBubbleIconSizePx: 64,
         desktopPanelWidthPx: 340,
         desktopPanelHeightPx: 480,
         mobileFullscreen: true,
@@ -349,6 +351,8 @@
       return {
         desktopBubbleSizePx: 48,
         mobileBubbleSizePx: 48,
+        desktopBubbleIconSizePx: 36,
+        mobileBubbleIconSizePx: 36,
         desktopPanelWidthPx: 320,
         desktopPanelHeightPx: null,
         mobileFullscreen: false,
@@ -357,6 +361,8 @@
     return {
       desktopBubbleSizePx: 56,
       mobileBubbleSizePx: 56,
+      desktopBubbleIconSizePx: 44,
+      mobileBubbleIconSizePx: 44,
       desktopPanelWidthPx: 360,
       desktopPanelHeightPx: null,
       mobileFullscreen: false,
@@ -484,6 +490,14 @@
       mobileFullscreen: opt.mobileFullscreen == null ? preset.mobileFullscreen : toBoolean(opt.mobileFullscreen),
       mobileBubbleSizePx: toNumber(opt.mobileBubbleSizePx, preset.mobileBubbleSizePx),
       desktopBubbleSizePx: toNumber(opt.desktopBubbleSizePx, wc.bubbleSizePx ?? preset.desktopBubbleSizePx),
+      mobileBubbleIconSizePx: toNumber(
+        opt.mobileBubbleIconSizePx,
+        wc.bubbleIconSizePx ?? wc.bubble_icon_size_px ?? preset.mobileBubbleIconSizePx
+      ),
+      desktopBubbleIconSizePx: toNumber(
+        opt.desktopBubbleIconSizePx,
+        wc.bubbleIconSizePx ?? wc.bubble_icon_size_px ?? preset.desktopBubbleIconSizePx
+      ),
       sizePreset: opt.sizePreset || 'standard',
 
       // 스타일(크기/타이포/그림자) — 관리자에서 설정 가능
@@ -595,9 +609,9 @@
     if (merged.bubbleSizePx != null) $root.style.setProperty('--hsbs-bubble-size', `${merged.bubbleSizePx}px`);
     $root.style.setProperty('--hsbs-bubble-size-desktop', `${merged.desktopBubbleSizePx}px`);
     $root.style.setProperty('--hsbs-bubble-size-mobile', `${merged.mobileBubbleSizePx}px`);
-    $root.style.setProperty('--hsbs-bubble-inner-size-desktop', `${merged.bubbleIconSizePx ?? Math.round(merged.desktopBubbleSizePx * 0.78)}px`);
-    $root.style.setProperty('--hsbs-bubble-inner-size-mobile', `${merged.bubbleIconSizePx ?? Math.round(merged.mobileBubbleSizePx * 0.78)}px`);
-    $root.style.setProperty('--hsbs-bubble-inner-size', `${merged.bubbleIconSizePx ?? 36}px`);
+    $root.style.setProperty('--hsbs-bubble-inner-size-desktop', `${merged.desktopBubbleIconSizePx}px`);
+    $root.style.setProperty('--hsbs-bubble-inner-size-mobile', `${merged.mobileBubbleIconSizePx}px`);
+    $root.style.setProperty('--hsbs-bubble-inner-size', `${merged.desktopBubbleIconSizePx}px`);
     if (merged.inputBorderRadiusPx != null) $root.style.setProperty('--hsbs-input-radius', `${merged.inputBorderRadiusPx}px`);
     if (merged.sendButtonRadiusPx != null) $root.style.setProperty('--hsbs-send-radius', `${merged.sendButtonRadiusPx}px`);
     if (merged.fontFamily) $root.style.setProperty('--hsbs-font-family', merged.fontFamily);

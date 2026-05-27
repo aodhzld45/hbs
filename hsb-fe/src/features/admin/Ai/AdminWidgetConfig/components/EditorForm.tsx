@@ -107,6 +107,8 @@ const WIDGET_SIZE_PRESETS: Record<WidgetSizePreset, WidgetConfigOptions> = {
     sizePreset: 'compact',
     desktopBubbleSizePx: 48,
     mobileBubbleSizePx: 48,
+    desktopBubbleIconSizePx: 36,
+    mobileBubbleIconSizePx: 36,
     desktopPanelWidthPx: 320,
     desktopPanelHeightPx: null,
     mobileFullscreen: false,
@@ -115,6 +117,8 @@ const WIDGET_SIZE_PRESETS: Record<WidgetSizePreset, WidgetConfigOptions> = {
     sizePreset: 'standard',
     desktopBubbleSizePx: 56,
     mobileBubbleSizePx: 56,
+    desktopBubbleIconSizePx: 44,
+    mobileBubbleIconSizePx: 44,
     desktopPanelWidthPx: 360,
     desktopPanelHeightPx: null,
     mobileFullscreen: false,
@@ -123,6 +127,8 @@ const WIDGET_SIZE_PRESETS: Record<WidgetSizePreset, WidgetConfigOptions> = {
     sizePreset: 'large-portfolio',
     desktopBubbleSizePx: 128,
     mobileBubbleSizePx: 80,
+    desktopBubbleIconSizePx: 104,
+    mobileBubbleIconSizePx: 64,
     desktopPanelWidthPx: 340,
     desktopPanelHeightPx: 480,
     mobileFullscreen: true,
@@ -494,11 +500,28 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview,
             max={160}
           />
           <SliderField
+            label="데스크톱 버블 안 아이콘 크기(px)"
+            value={(sizeOptions.desktopBubbleIconSizePx as number | null | undefined) ?? form.bubbleIconSizePx ?? null}
+            onChange={(v) => {
+              update('bubbleIconSizePx', v);
+              updateOption('desktopBubbleIconSizePx', v);
+            }}
+            min={24}
+            max={140}
+          />
+          <SliderField
             label="모바일 버블 크기(px)"
             value={(sizeOptions.mobileBubbleSizePx as number | null | undefined) ?? null}
             onChange={(v) => updateOption('mobileBubbleSizePx', v)}
             min={36}
             max={120}
+          />
+          <SliderField
+            label="모바일 버블 안 아이콘 크기(px)"
+            value={(sizeOptions.mobileBubbleIconSizePx as number | null | undefined) ?? null}
+            onChange={(v) => updateOption('mobileBubbleIconSizePx', v)}
+            min={24}
+            max={100}
           />
           <label className="flex items-center gap-2">
             <input
@@ -510,7 +533,7 @@ export default function EditorForm({ value, onSubmit, onCancel, onChangePreview,
           </label>
           <SliderField label="패널 둥글기(px)" value={form.panelBorderRadiusPx ?? null} onChange={(v) => update('panelBorderRadiusPx', v)} min={0} max={24} />
           <SliderField label="버블 크기(px, 구형 호환)" value={form.bubbleSizePx ?? null} onChange={(v) => update('bubbleSizePx', v)} min={36} max={160} />
-          <SliderField label="버블 안 아이콘/이모지 크기(px)" value={form.bubbleIconSizePx ?? null} onChange={(v) => update('bubbleIconSizePx', v)} min={24} max={64} />
+          <SliderField label="버블 안 아이콘/이모지 크기(px, 구형 호환)" value={form.bubbleIconSizePx ?? null} onChange={(v) => update('bubbleIconSizePx', v)} min={24} max={140} />
           <SliderField label="입력창 둥글기(px)" value={form.inputBorderRadiusPx ?? null} onChange={(v) => update('inputBorderRadiusPx', v)} min={0} max={20} />
           <SliderField label="전송버튼 둥글기(px)" value={form.sendButtonRadiusPx ?? null} onChange={(v) => update('sendButtonRadiusPx', v)} min={0} max={20} />
         </section>

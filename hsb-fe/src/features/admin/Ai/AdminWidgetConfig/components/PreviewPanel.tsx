@@ -155,7 +155,7 @@ export default function PreviewPanel({ cfg, welcomeBlocksJson }: Props) {
   const panelWidthPx = Number(options.desktopPanelWidthPx ?? cfg.panelWidthPx ?? 360);
   const panelHeightPx = Number(options.desktopPanelHeightPx ?? 420);
   const bubbleSizePx = Number(options.desktopBubbleSizePx ?? cfg.bubbleSizePx ?? 56);
-  const bubbleIconSizePx = Number(cfg.bubbleIconSizePx ?? Math.round(bubbleSizePx * 0.72));
+  const bubbleIconSizePx = Number(options.desktopBubbleIconSizePx ?? cfg.bubbleIconSizePx ?? Math.round(bubbleSizePx * 0.78));
   const mobileFullscreen = options.mobileFullscreen === true || options.mobileFullscreen === 'Y' || options.mobileFullscreen === 'true';
 
   return (

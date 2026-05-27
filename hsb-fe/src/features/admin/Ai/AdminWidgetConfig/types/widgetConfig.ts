@@ -4,6 +4,8 @@ export type WidgetConfigOptions = {
   sizePreset?: WidgetSizePreset | string;
   desktopBubbleSizePx?: number | null;
   mobileBubbleSizePx?: number | null;
+  desktopBubbleIconSizePx?: number | null;
+  mobileBubbleIconSizePx?: number | null;
   desktopPanelWidthPx?: number | null;
   desktopPanelHeightPx?: number | null;
   mobileFullscreen?: boolean | 'Y' | 'N' | string | null;
@@ -111,5 +113,4 @@ export interface WidgetConfigListResponse {
   totalCount: number;
   totalPages: number;
 }
-
 

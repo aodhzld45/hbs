@@ -68,6 +68,8 @@ export interface HSBSInitOptions {
     sizePreset?: "compact" | "standard" | "large-portfolio" | string;
     desktopBubbleSizePx?: number;
     mobileBubbleSizePx?: number;
+    desktopBubbleIconSizePx?: number;
+    mobileBubbleIconSizePx?: number;
     desktopPanelWidthPx?: number;
     desktopPanelHeightPx?: number | null;
     mobileFullscreen?: boolean;
