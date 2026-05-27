@@ -112,15 +112,29 @@ HSBS는 실제 운영을 고려한 구조로 설계된 **멀티 테넌트 AI Saa
 **4️⃣ JS SDK 임베드**
 
 ```html
-<script src="https://www.hsbs.kr/sdk/prod/hsbs-chat_prod.js"></script>
+<script
+  src="https://www.hsbs.kr/sdk/v1/hsbs-loader.js"
+  data-site-key="{YOUR_SITE_KEY}"
+  data-api-base="https://www.hsbs.kr/api"
+  data-theme="auto"
+  defer
+></script>
+```
+
+명시 초기화가 필요한 경우에는 공식 v1 core를 직접 사용할 수 있습니다.
+
+```html
+<script src="https://www.hsbs.kr/sdk/v1/hsbs-chat.js"></script>
 <script>
   window.HSBS.init({
     siteKey: "{YOUR_SITE_KEY}",
-    apiBase: "https://www.hsbs.kr/api"
+    apiBase: "https://www.hsbs.kr/api",
+    theme: "auto"
   });
 </script>
 ```
 
+- 공식 배포 경로: `/sdk/v1/hsbs-loader.js`, `/sdk/v1/hsbs-chat.js`, `/sdk/v1/hsbs-chat.css`, `/sdk/v1/latest.js`
 - `window.HSBS.init()` 공개 API 제공
 - CSS/버블/패널 동적 주입, 중복 로드 방지, 재초기화/제거(`destroy`) 지원
 - `siteKey` 기반 `/api/ai/ping` 사전 검증

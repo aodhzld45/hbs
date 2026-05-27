@@ -3,6 +3,7 @@ import { useSiteKeys } from "./hooks/useSiteKey";
 import { CreateRequest, SiteKeyResponse, SiteKeySummary, Status, UpdateRequest } from "./types/siteKey";
 import AdminLayout from "../../../../components/Layout/AdminLayout";
 import SiteKeyFormModal from "./components/SiteKeyFormModal";
+import SiteKeyOperationalChecklist from "./components/SiteKeyOperationalChecklist";
 import Pagination from "../../../../components/Common/Pagination"; // ← 공통 컴포넌트 경로에 맞게 조정
 import { useAdminPageHeader } from "../../Common/hooks/useAdminPageHeader";
 
@@ -17,6 +18,7 @@ export default function AdminSiteKeys() {
   const [openModal, setOpenModal] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [selected, setSelected] = useState<SiteKeyResponse | null>(null);
+  const [checkTarget, setCheckTarget] = useState<SiteKeyResponse | null>(null);
   /* 공통 헤더/메뉴 처리 */
   const { currentMenuTitle, actorId, menuError } = useAdminPageHeader();
 
@@ -70,6 +72,11 @@ export default function AdminSiteKeys() {
   const openEdit = async (id: number) => {
     const detail = await getDetail(id);
     setMode("edit"); setSelected(detail); setOpenModal(true);
+  };
+
+  const openChecklist = async (id: number) => {
+    const detail = await getDetail(id);
+    setCheckTarget(detail);
   };
 
   const submitForm = async (payload: CreateRequest | UpdateRequest) => {
@@ -142,6 +149,7 @@ export default function AdminSiteKeys() {
         </div>
       </div>
 
+      <SiteKeyOperationalChecklist siteKey={checkTarget} onClear={() => setCheckTarget(null)} />
 
       {/* 테이블 */}
       <div className="overflow-x-auto">
@@ -157,14 +165,15 @@ export default function AdminSiteKeys() {
               <th className="p-2">Domains</th>
               <th className="p-2">등록일</th>
               <th className="p-2">사용 여부</th>
+              <th className="p-2">운영 점검</th>
               <th className="p-2">상태 변경</th>
               <th className="p-2">관리</th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td className="p-4 text-center" colSpan={11}>불러오는 중...</td></tr>}
+            {loading && <tr><td className="p-4 text-center" colSpan={12}>불러오는 중...</td></tr>}
             {!loading && (data?.content?.length ?? 0) === 0 && (
-              <tr><td className="p-4 text-center" colSpan={11}>데이터가 없습니다.</td></tr>
+              <tr><td className="p-4 text-center" colSpan={12}>데이터가 없습니다.</td></tr>
             )}
             {!loading && data?.content?.map(row => (
               <tr key={row.id} className="border-t text-center">
@@ -191,6 +200,11 @@ export default function AdminSiteKeys() {
                     } hover:bg-green-200`}
                   >
                     {row.useTf === 'Y' ? '사용' : '미사용'}
+                  </button>
+                </td>
+                <td className="p-2">
+                  <button className="rounded border px-2 py-1 text-xs text-gray-700 hover:bg-gray-50" onClick={() => openChecklist(row.id)}>
+                    점검
                   </button>
                 </td>
                 <td className="p-2">

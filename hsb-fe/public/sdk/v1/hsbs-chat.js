@@ -279,9 +279,53 @@
   // 이전 위젯 상태 관리(재 init 시 정리용)
   let widgetState = null;
 
+  function createHooks(cfg) {
+    return {
+      onReady: typeof cfg.onReady === 'function' ? cfg.onReady : null,
+      onOpen: typeof cfg.onOpen === 'function' ? cfg.onOpen : null,
+      onClose: typeof cfg.onClose === 'function' ? cfg.onClose : null,
+      onMessage: typeof cfg.onMessage === 'function' ? cfg.onMessage : null,
+      onError: typeof cfg.onError === 'function' ? cfg.onError : null,
+      onQuotaExceeded: typeof cfg.onQuotaExceeded === 'function' ? cfg.onQuotaExceeded : null,
+    };
+  }
+
+  function emit(hooks, eventName, payload) {
+    const cbName = 'on' + eventName.charAt(0).toUpperCase() + eventName.slice(1);
+
+    try {
+      if (hooks && typeof hooks[cbName] === 'function') {
+        hooks[cbName](payload);
+      }
+    } catch (e) {
+      console.warn('[HSBS] event callback failed:', cbName, e);
+    }
+
+    try {
+      document.dispatchEvent(new CustomEvent('hsbs:' + eventName, { detail: payload }));
+    } catch {}
+  }
+
+  function emitError(hooks, code, message, extra) {
+    const payload = Object.assign({ code, message }, extra || {});
+    emit(hooks, 'error', payload);
+    return payload;
+  }
+
+  function fetchWithTimeout(url, options, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, Object.assign({}, options || {}, { signal: controller.signal }))
+      .finally(() => clearTimeout(timer));
+  }
+
+  function isOffline() {
+    return typeof navigator !== 'undefined' && navigator.onLine === false;
+  }
+
   function teardown() {
     if (!widgetState) return;
-    const { root, bubble, panel, escHandler, outsideHandler } = widgetState;
+    const { root, bubble, panel, escHandler, outsideHandler, hooks, instance } = widgetState;
     try {
       if (escHandler) window.removeEventListener('keydown', escHandler);
       if (outsideHandler) document.removeEventListener('click', outsideHandler);
@@ -295,6 +339,7 @@
     } catch (e) {
       console.warn('[HSBS] teardown 예외:', e);
     } finally {
+      emit(hooks, 'close', { reason: 'destroy', instance });
       widgetState = null;
     }
   }
@@ -309,10 +354,13 @@
       },
       opts || {}
     );
+    const hooks = createHooks(cfg);
 
     if (!cfg.siteKey) {
-      console.warn('[HSBS] siteKey가 없어 위젯을 표시하지 않습니다.');
-      return;
+      const msg = 'siteKey가 없어 위젯을 표시하지 않습니다.';
+      console.warn('[HSBS] ' + msg);
+      emitError(hooks, 'SITE_KEY_MISSING', msg);
+      return null;
     }
 
     // 기존 위젯 있으면 정리 (재 init 대비)
@@ -320,10 +368,16 @@
 
     // 1) 사전 검증: /ai/ping
     try {
-      const r = await fetch(`${cfg.apiBase}/ai/ping?siteKey=${encodeURIComponent(cfg.siteKey)}`, {
+      if (isOffline()) {
+        const msg = '네트워크가 오프라인 상태라 SiteKey를 확인할 수 없습니다.';
+        emitError(hooks, 'OFFLINE', msg);
+        return null;
+      }
+
+      const r = await fetchWithTimeout(`${cfg.apiBase}/ai/ping?siteKey=${encodeURIComponent(cfg.siteKey)}`, {
         method: 'GET',
         cache: 'no-store',
-      });
+      }, Number(cfg.pingTimeoutMs || 5000));
       if (r.status !== 204) {
         let detail = '';
         try {
@@ -338,26 +392,29 @@
         const msg = `[HSBS] ping 실패: ${r.status}${detail ? ' - ' + detail : ''}`;
         console.warn(msg);
         if (cfg.debug) console.warn(msg);
-        return;
+        emitError(hooks, 'PING_FAILED', msg, { status: r.status, detail });
+        return null;
       }
     } catch (e) {
       console.warn('[HSBS] ping 예외:', e);
       if (cfg.debug) console.warn('[HSBS] ping 예외:', e);
-      return;
+      emitError(hooks, 'PING_ERROR', 'SiteKey 검증 중 네트워크 오류가 발생했습니다.', { error: e });
+      return null;
     }
 
     // 2) 위젯 설정 불러오기: /public/widget-config
     let wc = null;
     try {
-      const res = await fetch(`${cfg.apiBase}/ai/public/widget-config?siteKey=${encodeURIComponent(cfg.siteKey)}`, {
+      const res = await fetchWithTimeout(`${cfg.apiBase}/ai/public/widget-config?siteKey=${encodeURIComponent(cfg.siteKey)}`, {
         method: 'GET',
         cache: 'no-store',
         headers: { Accept: 'application/json' },
-      });
+      }, Number(cfg.configTimeoutMs || 5000));
       if (!res.ok) throw new Error(`widget-config ${res.status}`);
       wc = await res.json();
     } catch (e) {
       console.warn('[HSBS] widget-config 로드 실패, 기본값으로 진행:', e?.message || e);
+      emitError(hooks, 'WIDGET_CONFIG_LOAD_FAILED', '위젯 설정을 불러오지 못해 기본값으로 진행합니다.', { error: e });
       wc = {};
     }
 
@@ -399,6 +456,14 @@
       greetOncePerOpen: wc.greetOncePerOpen !== 'N',
       closeOnEsc: wc.closeOnEsc !== 'N',
       closeOnOutsideClick: wc.closeOnOutsideClick !== 'N',
+
+      // 장애 안내
+      offlineMessage: opt.offlineMessage || '현재 네트워크가 오프라인입니다. 연결 상태를 확인한 뒤 다시 시도해주세요.',
+      timeoutMessage: opt.timeoutMessage || '응답이 지연되어 요청을 취소했습니다. 잠시 후 다시 시도해주세요.',
+      networkErrorMessage: opt.networkErrorMessage || '네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+      quotaExceededMessage: opt.quotaExceededMessage || '쿼타/레이트리밋 도달. 관리자에게 문의 바랍니다.',
+      serverErrorMessage: opt.serverErrorMessage || '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+      retryButtonLabel: opt.retryButtonLabel || '다시 시도',
 
       // 표시/브랜딩
       brandName: wc.brandName || 'HSBS',
@@ -592,6 +657,7 @@
     function openPanel() {
       $panel.style.display = 'flex';
       $bubble.setAttribute('aria-expanded', 'true');
+      emit(hooks, 'open', { siteKey: cfg.siteKey });
 
 
       const k = onceKey(`greet_${cfg.siteKey}`);
@@ -643,6 +709,7 @@
       $panel.style.display = 'none';
       $bubble.setAttribute('aria-expanded', 'false');
       ss.removeItem(onceKey(`greet_${cfg.siteKey}`));
+      emit(hooks, 'close', { reason: 'user' });
     }
 
     $bubble.onclick = () => {
@@ -679,6 +746,23 @@
 
     let isSending = false;
 
+    function renderRetry($msg, label, retry) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hsbs-retry-btn';
+      btn.textContent = label;
+      btn.addEventListener('click', retry);
+      $msg.appendChild(document.createElement('br'));
+      $msg.appendChild(btn);
+    }
+
+    function setBotError($msg, message, retry) {
+      $msg.textContent = message;
+      if (typeof retry === 'function') {
+        renderRetry($msg, merged.retryButtonLabel, retry);
+      }
+    }
+
     // 8) 질문/응답
     async function ask(textOverride) {
       if (isSending) return;
@@ -693,7 +777,9 @@
 
       $input.value = '';
       appendMessage($body, 'user', q);
+      emit(hooks, 'message', { role: 'user', text: q });
       const bot = appendMessage($body, 'bot', '...');
+      const retry = () => ask(q);
 
       isSending = true;
       $send.disabled = true;
@@ -701,8 +787,14 @@
       let t = null; // ✅ finally에서 접근 가능하게 바깥에 선언
 
       try {
+        if (isOffline()) {
+          setBotError(bot, merged.offlineMessage, retry);
+          emitError(hooks, 'OFFLINE', merged.offlineMessage);
+          return;
+        }
+
         const controller = new AbortController();
-        const timeoutMs = 15000;
+        const timeoutMs = Number(cfg.completeTimeoutMs || opt.completeTimeoutMs || 15000);
         t = setTimeout(() => controller.abort(), timeoutMs);
 
         const res = await fetch(cfg.apiBase + '/ai/complete4', {
@@ -721,24 +813,43 @@
           else if (res.status === 403)
             msg = '이 사이트키는 비활성/삭제/도메인 불일치 또는 사용 제한 상태입니다.';
           else if (res.status === 429)
-            msg = '쿼타/레이트리밋 도달. 관리자에게 문의 바랍니다.';
-          else if (res.status >= 500) msg = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+            msg = merged.quotaExceededMessage;
+          else if (res.status >= 500) msg = merged.serverErrorMessage;
           try {
             const j = await res.json();
             if (j?.message) msg += ` (${j.message})`;
           } catch {}
-          bot.textContent = msg;
+          setBotError(bot, msg, retry);
           log('error response', res.status, msg);
+
+          const errorPayload = emitError(hooks, res.status === 429 ? 'QUOTA_EXCEEDED' : 'CHAT_HTTP_ERROR', msg, {
+            status: res.status,
+            response: res,
+          });
+
+          if (res.status === 429) {
+            emit(hooks, 'quotaExceeded', {
+              message: msg,
+              status: res.status,
+              remaining: res.headers.get('X-DailyReq-Remaining'),
+              siteKeyRemaining: res.headers.get('X-SiteKey-Daily-Remaining'),
+              ipRemaining: res.headers.get('X-IP-Daily-Remaining'),
+              error: errorPayload,
+            });
+          }
           return;
         }
 
         const data = await res.json();
         bot.textContent = data?.text ?? '(응답이 없습니다)';
+        emit(hooks, 'message', { role: 'assistant', text: bot.textContent, raw: data });
       } catch (e) {
         if (e && (e.name === 'AbortError' || String(e).includes('AbortError'))) {
-          bot.textContent = '응답이 지연되어 요청을 취소했습니다. 잠시 후 다시 시도해주세요.';
+          setBotError(bot, merged.timeoutMessage, retry);
+          emitError(hooks, 'CHAT_TIMEOUT', merged.timeoutMessage, { error: e });
         } else {
-          bot.textContent = '네트워크 오류가 발생했습니다';
+          setBotError(bot, merged.networkErrorMessage, retry);
+          emitError(hooks, 'CHAT_NETWORK_ERROR', merged.networkErrorMessage, { error: e });
         }
         log('network error', e);
       } finally {
@@ -755,6 +866,16 @@
       if (e.key === 'Enter') ask();
     });
 
+    const instance = {
+      open: openPanel,
+      close: closePanel,
+      destroy: teardown,
+      send: ask,
+      root: $root,
+      panel: $panel,
+      bubble: $bubble,
+    };
+
     // 현재 위젯 상태 저장 (재 init / destroy용)
     widgetState = {
       root: $root,
@@ -762,7 +883,17 @@
       panel: $panel,
       escHandler,
       outsideHandler,
+      hooks,
+      instance,
     };
+
+    emit(hooks, 'ready', {
+      siteKey: cfg.siteKey,
+      config: merged,
+      instance,
+    });
+
+    return instance;
   }
 
   // 공개 API
