@@ -6,7 +6,10 @@ export type HSBSErrorCode =
   | "PING_ERROR"
   | "OFFLINE"
   | "WIDGET_CONFIG_LOAD_FAILED"
+  | "CHAT_UNAUTHORIZED"
+  | "CHAT_FORBIDDEN"
   | "CHAT_HTTP_ERROR"
+  | "CHAT_SERVER_ERROR"
   | "CHAT_TIMEOUT"
   | "CHAT_NETWORK_ERROR"
   | "QUOTA_EXCEEDED";
@@ -73,6 +76,16 @@ export interface HSBSInitOptions {
     desktopPanelWidthPx?: number;
     desktopPanelHeightPx?: number | null;
     mobileFullscreen?: boolean;
+    retryMaxAttempts?: number;
+    retryBaseDelayMs?: number;
+    retryMaxDelayMs?: number;
+    retryOnStatusCodes?: number[] | string;
+    offlineMessage?: string;
+    timeoutMessage?: string;
+    networkErrorMessage?: string;
+    quotaExceededMessage?: string;
+    serverErrorMessage?: string;
+    retryButtonLabel?: string;
     [key: string]: unknown;
   };
   pingTimeoutMs?: number;

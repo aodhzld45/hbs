@@ -13,6 +13,12 @@
     return value === 'true' || value === 'Y' || value === '1';
   }
 
+  function parseNumber(value) {
+    if (value == null || value === '') return null;
+    var n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
   function loadStylesheet() {
     if (document.getElementById('hsbs-widget-css')) return;
     var link = document.createElement('link');
@@ -32,6 +38,16 @@
     if (dataset.debug != null) options.debug = parseBoolean(dataset.debug);
     if (dataset.autoOpen != null) options.autoOpen = parseBoolean(dataset.autoOpen);
     if (dataset.position) options.position = dataset.position;
+
+    var widgetOptions = {};
+    var retryMaxAttempts = parseNumber(dataset.retryMaxAttempts);
+    var retryBaseDelayMs = parseNumber(dataset.retryBaseDelayMs);
+    var retryMaxDelayMs = parseNumber(dataset.retryMaxDelayMs);
+    if (retryMaxAttempts != null) widgetOptions.retryMaxAttempts = retryMaxAttempts;
+    if (retryBaseDelayMs != null) widgetOptions.retryBaseDelayMs = retryBaseDelayMs;
+    if (retryMaxDelayMs != null) widgetOptions.retryMaxDelayMs = retryMaxDelayMs;
+    if (dataset.retryOnStatusCodes) widgetOptions.retryOnStatusCodes = dataset.retryOnStatusCodes;
+    if (Object.keys(widgetOptions).length) options.options = widgetOptions;
 
     return options;
   }

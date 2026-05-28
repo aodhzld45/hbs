@@ -321,6 +321,10 @@
       .finally(() => clearTimeout(timer));
   }
 
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   function isOffline() {
     return typeof navigator !== 'undefined' && navigator.onLine === false;
   }
@@ -332,6 +336,59 @@
 
   function toBoolean(value) {
     return value === true || value === 'true' || value === 'Y' || value === '1';
+  }
+
+  function clampNumber(value, fallback, min, max) {
+    const n = toNumber(value, fallback);
+    return Math.min(Math.max(n, min), max);
+  }
+
+  function normalizeStatusList(value, fallback) {
+    const source = Array.isArray(value)
+      ? value
+      : typeof value === 'string'
+        ? value.split(',')
+        : fallback;
+    return source
+      .map((v) => Number(v))
+      .filter((v) => Number.isFinite(v) && v >= 400 && v <= 599);
+  }
+
+  function normalizeRetryPolicy(opt) {
+    const retryMaxAttempts = clampNumber(opt.retryMaxAttempts, 2, 1, 5);
+    return {
+      retryMaxAttempts,
+      retryBaseDelayMs: clampNumber(opt.retryBaseDelayMs, 500, 100, 10000),
+      retryMaxDelayMs: clampNumber(opt.retryMaxDelayMs, 4000, 500, 30000),
+      retryOnStatusCodes: normalizeStatusList(opt.retryOnStatusCodes, [408, 502, 503, 504]),
+    };
+  }
+
+  function retryDelay(policy, attemptIndex, retryAfterHeader) {
+    const retryAfter = Number(retryAfterHeader || 0);
+    if (Number.isFinite(retryAfter) && retryAfter > 0) {
+      return Math.min(retryAfter * 1000, policy.retryMaxDelayMs);
+    }
+    const jitter = Math.floor(Math.random() * 120);
+    const exponential = policy.retryBaseDelayMs * Math.pow(2, Math.max(attemptIndex - 1, 0));
+    return Math.min(exponential + jitter, policy.retryMaxDelayMs);
+  }
+
+  function isRetryableStatus(status, policy) {
+    return policy.retryOnStatusCodes.includes(Number(status));
+  }
+
+  function isAbortError(error) {
+    return error && (error.name === 'AbortError' || String(error).includes('AbortError'));
+  }
+
+  function getHttpErrorCode(status) {
+    if (status === 401) return 'CHAT_UNAUTHORIZED';
+    if (status === 403) return 'CHAT_FORBIDDEN';
+    if (status === 408) return 'CHAT_TIMEOUT';
+    if (status === 429) return 'QUOTA_EXCEEDED';
+    if (status >= 500) return 'CHAT_SERVER_ERROR';
+    return 'CHAT_HTTP_ERROR';
   }
 
   function getSizePresetOptions(name) {
@@ -526,6 +583,7 @@
       quotaExceededMessage: opt.quotaExceededMessage || '쿼타/레이트리밋 도달. 관리자에게 문의 바랍니다.',
       serverErrorMessage: opt.serverErrorMessage || '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
       retryButtonLabel: opt.retryButtonLabel || '다시 시도',
+      retryPolicy: normalizeRetryPolicy(opt),
 
       // 표시/브랜딩
       brandName: wc.brandName || 'HSBS',
@@ -859,19 +917,46 @@
           return;
         }
 
-        const controller = new AbortController();
         const timeoutMs = Number(cfg.completeTimeoutMs || opt.completeTimeoutMs || 15000);
-        t = setTimeout(() => controller.abort(), timeoutMs);
+        const policy = merged.retryPolicy;
+        let res = null;
+        let lastError = null;
 
-        const res = await fetch(cfg.apiBase + '/ai/complete4', {
-          method: 'POST',
-          signal: controller.signal,
-          headers: {
-            'Content-Type': 'application/json',
-            'X-HSBS-Site-Key': cfg.siteKey,
-          },
-          body: JSON.stringify({ prompt: q }),
-        });
+        for (let attempt = 1; attempt <= policy.retryMaxAttempts; attempt += 1) {
+          const controller = new AbortController();
+          t = setTimeout(() => controller.abort(), timeoutMs);
+
+          try {
+            lastError = null;
+            res = await fetch(cfg.apiBase + '/ai/complete4', {
+              method: 'POST',
+              signal: controller.signal,
+              headers: {
+                'Content-Type': 'application/json',
+                'X-HSBS-Site-Key': cfg.siteKey,
+              },
+              body: JSON.stringify({ prompt: q }),
+            });
+          } catch (e) {
+            lastError = e;
+            res = null;
+          } finally {
+            if (t) clearTimeout(t);
+            t = null;
+          }
+
+          const canRetryError = lastError && (isAbortError(lastError) || !isOffline());
+          const canRetryStatus = res && !res.ok && isRetryableStatus(res.status, policy);
+          if (attempt < policy.retryMaxAttempts && (canRetryError || canRetryStatus)) {
+            const delayMs = retryDelay(policy, attempt, res?.headers?.get('Retry-After'));
+            log('retry scheduled', { attempt, nextAttempt: attempt + 1, delayMs, status: res?.status, error: lastError?.name });
+            await sleep(delayMs);
+            continue;
+          }
+
+          if (lastError && !res) throw lastError;
+          break;
+        }
 
         if (!res.ok) {
           let msg = '오류가 발생했습니다';
@@ -888,7 +973,7 @@
           setBotError(bot, msg, retry);
           log('error response', res.status, msg);
 
-          const errorPayload = emitError(hooks, res.status === 429 ? 'QUOTA_EXCEEDED' : 'CHAT_HTTP_ERROR', msg, {
+          const errorPayload = emitError(hooks, getHttpErrorCode(res.status), msg, {
             status: res.status,
             response: res,
           });
@@ -910,7 +995,7 @@
         bot.textContent = data?.text ?? '(응답이 없습니다)';
         emit(hooks, 'message', { role: 'assistant', text: bot.textContent, raw: data });
       } catch (e) {
-        if (e && (e.name === 'AbortError' || String(e).includes('AbortError'))) {
+        if (isAbortError(e)) {
           setBotError(bot, merged.timeoutMessage, retry);
           emitError(hooks, 'CHAT_TIMEOUT', merged.timeoutMessage, { error: e });
         } else {
