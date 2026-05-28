@@ -216,5 +216,14 @@ All public calls send or include the SiteKey. Chat requests use the `X-HSBS-Site
 
 ## Test pages
 
-- `/sdk-test-local.html`: uses `/sdk/v1/hsbs-loader.js` with `http://localhost:8080/api`.
-- `/sdk-test-prod.html`: uses `/sdk/v1/hsbs-loader.js` with same-origin `/api`.
+- `/sdk/v1/sdk-test-local.html`: local Phase 2 test console using `http://localhost:8080/api`.
+- `/sdk/v1/sdk-test-prod.html`: production Phase 2 test console using same-origin `/api`.
+
+Both test pages expose the same cases:
+
+- normal flow: `ping -> widget-config -> prompt-profile -> complete4`
+- bad API: unavailable API base / ping failure
+- timeout: forced short `completeTimeoutMs`
+- retry: bounded automatic retry using `408,502,503,504`
+- quota: use with a low SiteKey `dailyCallLimit` to verify `hsbs:quotaExceeded`
+- forbidden: remove the current domain from the SiteKey allowlist to verify 403 handling
