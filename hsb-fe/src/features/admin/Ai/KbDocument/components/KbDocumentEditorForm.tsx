@@ -39,6 +39,10 @@ function formatBytes(bytes?: number) {
 }
 
 type ProgressStep = 0 | 1 | 2 | 3 | 99;
+const POLL_INITIAL_DELAY_MS = 2000;
+const POLL_MAX_DELAY_MS = 15000;
+const POLL_BACKOFF_MULTIPLIER = 1.6;
+const POLL_MAX_DURATION_MS = 10 * 60 * 1000;
 // 0: idle, 1: 업로드/attach 중, 2: 해독/요약 생성 중, 3: 완료, 99: 실패
 
 function stepLabel(step: ProgressStep) {
@@ -75,6 +79,8 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
 
   const pollTimerRef = useRef<number | null>(null);
   const pollStartRef = useRef<number>(0);
+  const pollActiveRef = useRef(false);
+  const pollDelayMsRef = useRef(POLL_INITIAL_DELAY_MS);
 
   const detail = liveDetail ?? value ?? null;
 
@@ -198,47 +204,69 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
 
   const stopPolling = () => {
     if (pollTimerRef.current) {
-      window.clearInterval(pollTimerRef.current);
+      window.clearTimeout(pollTimerRef.current);
       pollTimerRef.current = null;
     }
+    pollActiveRef.current = false;
     setPolling(false);
+  };
+
+  const scheduleNextPoll = (documentId: number) => {
+    if (!pollActiveRef.current) return;
+
+    pollTimerRef.current = window.setTimeout(() => {
+      void pollDocumentOnce(documentId);
+    }, pollDelayMsRef.current);
+  };
+
+  const increasePollDelay = () => {
+    pollDelayMsRef.current = Math.min(
+      POLL_MAX_DELAY_MS,
+      Math.round(pollDelayMsRef.current * POLL_BACKOFF_MULTIPLIER)
+    );
+  };
+
+  const pollDocumentOnce = async (documentId: number) => {
+    if (!pollActiveRef.current) return;
+
+    const elapsed = Date.now() - pollStartRef.current;
+    if (elapsed > POLL_MAX_DURATION_MS) {
+      stopPolling();
+      setProgressText("처리가 오래 걸리고 있습니다. 잠시 후 '새로고침'을 눌러 확인해주세요.");
+      return;
+    }
+
+    try {
+      const fresh = await fetchKbDocumentDetail(documentId);
+      setLiveDetail(fresh);
+
+      const step = computeStepFromDetail(fresh);
+      setProgressStep(step);
+      setProgressText(stepLabel(step));
+
+      if (step === 3 || step === 99) {
+        stopPolling();
+        return;
+      }
+    } catch (e) {
+      // 일시적인 네트워크 오류는 다음 tick에서 다시 확인한다.
+    }
+
+    increasePollDelay();
+    scheduleNextPoll(documentId);
   };
 
   const startPolling = () => {
     if (!detail?.id) return;
+    const documentId = detail.id;
 
     stopPolling();
+    pollActiveRef.current = true;
+    pollDelayMsRef.current = POLL_INITIAL_DELAY_MS;
     setPolling(true);
     pollStartRef.current = Date.now();
 
-    // 처음 1회 바로
-    refreshDetailOnce().catch(() => {});
-
-    pollTimerRef.current = window.setInterval(async () => {
-      try {
-        // 10분 타임아웃(원하면 조정)
-        const elapsed = Date.now() - pollStartRef.current;
-        if (elapsed > 10 * 60 * 1000) {
-          stopPolling();
-          setProgressText("처리가 오래 걸리고 있습니다. 잠시 후 '새로고침'을 눌러 확인해주세요.");
-          return;
-        }
-
-        const fresh = await fetchKbDocumentDetail(detail.id!);
-        setLiveDetail(fresh);
-
-        const step = computeStepFromDetail(fresh);
-        setProgressStep(step);
-        setProgressText(stepLabel(step));
-
-        // 완료/실패면 폴링 중지
-        if (step === 3 || step === 99) {
-          stopPolling();
-        }
-      } catch (e) {
-        // 네트워크 순간 오류는 조용히 유지
-      }
-    }, 2000);
+    void pollDocumentOnce(documentId);
   };
 
   // 편의: edit 모드에서, 문서가 아직 완료가 아니면 자동 폴링
