@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -21,8 +23,9 @@ public class KbJobScheduler {
     private volatile long currentDelayMs;
     private int idleStreak = 0;
     private int errorStreak = 0;
-    // 중복 스케줄 방지: "현재 tick 예약이 이미 걸려있는가?"
     private final AtomicBoolean scheduled = new AtomicBoolean(false);
+    private final Object scheduleLock = new Object();
+    private ScheduledFuture<?> scheduledFuture;
 
     @PostConstruct
     public void start() {
@@ -37,31 +40,45 @@ public class KbJobScheduler {
 
     public void wakeUpNow() {
         if (!props.isEnabled()) return;
+        idleStreak = 0;
+        errorStreak = 0;
         currentDelayMs = props.getMinDelayMs();
-        scheduleNext(props.getWakeUpDelayMs());
+        scheduleNext(props.getWakeUpDelayMs(), true);
     }
 
     private void scheduleNext(long delayMs) {
+        scheduleNext(delayMs, false);
+    }
+
+    private void scheduleNext(long delayMs, boolean replaceExisting) {
         if (!props.isEnabled()) return;
 
-        // 이미 예약이 걸려 있으면 스킵 (tick의 finally에서 항상 scheduleNext를 부르기 때문에 중복 방지)
-        if (!scheduled.compareAndSet(false, true)) {
-            return;
-        }
+        synchronized (scheduleLock) {
+            if (scheduledFuture != null && !scheduledFuture.isDone()) {
+                if (!replaceExisting) {
+                    return;
+                }
+                scheduledFuture.cancel(false);
+                scheduled.set(false);
+            }
 
-        taskScheduler.schedule(this::tick, java.time.Instant.now().plusMillis(delayMs));
+            if (!scheduled.compareAndSet(false, true)) {
+                return;
+            }
+
+            scheduledFuture = taskScheduler.schedule(this::tick, Instant.now().plusMillis(delayMs));
+        }
     }
 
     private void tick() {
         if (!props.isEnabled()) {
-            scheduled.set(false);
+            clearScheduledMarker();
             return;
         }
 
-        scheduled.set(false);
+        clearScheduledMarker();
 
         try {
-            // WorkerResult를 별도 enum으로 썼다는 가정
             WorkerResult r = kbJobWorker.runOnce();
 
             boolean idle = (r == WorkerResult.NO_JOB || r == WorkerResult.LOCK_LOST);
@@ -73,7 +90,13 @@ public class KbJobScheduler {
                     log.info("[KbJobScheduler] idle... idleStreak={}, currentDelayMs={}", idleStreak, currentDelayMs);
                 }
 
-                if (idleStreak >= props.getIdleThreshold()) {
+                if (isSleepModeReady()) {
+                    currentDelayMs = Math.max(props.getMinDelayMs(), props.getSafetyScanDelayMs());
+                    if (props.getIdleLogEvery() > 0) {
+                        log.info("[KbJobScheduler] sleep mode. idleStreak={}, safetyScanDelayMs={}",
+                                idleStreak, currentDelayMs);
+                    }
+                } else if (idleStreak >= props.getIdleThreshold()) {
                     long next = (long) (currentDelayMs * props.getIdleBackoffMultiplier());
                     currentDelayMs = Math.min(props.getMaxDelayMs(), Math.max(props.getMinDelayMs(), next));
                 }
@@ -97,8 +120,20 @@ public class KbJobScheduler {
             long next = currentDelayMs * 2;
             currentDelayMs = Math.min(props.getMaxDelayMs(), Math.max(props.getMinDelayMs(), next));
         } finally {
-            // 다음 tick 예약
             scheduleNext(currentDelayMs);
         }
+    }
+
+    private void clearScheduledMarker() {
+        synchronized (scheduleLock) {
+            scheduled.set(false);
+            scheduledFuture = null;
+        }
+    }
+
+    private boolean isSleepModeReady() {
+        return props.isSleepModeEnabled()
+                && idleStreak >= props.getSleepAfterIdleStreak()
+                && props.getSafetyScanDelayMs() > 0;
     }
 }
