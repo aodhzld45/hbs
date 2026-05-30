@@ -46,6 +46,11 @@ public class KbDocumentController {
         return ResponseEntity.ok(kbDocumentService.get(id));
     }
 
+    @GetMapping("/{id}/job-status")
+    public ResponseEntity<KbDocumentResponse> jobStatus(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(kbDocumentService.get(id));
+    }
+
     // 등록 (multipart: body + file)
     @AdminActionLog(action = "KB 문서 등록", detail = "id={id}")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -91,5 +96,15 @@ public class KbDocumentController {
     ) {
         Long deletedId = kbDocumentService.logicalDelete(id, actor);
         return ResponseEntity.ok(deletedId);
+    }
+
+    @AdminActionLog(action = "KB 문서 재분석", detail = "id={id}")
+    @PostMapping("/{id}/reindex")
+    public ResponseEntity<KbDocumentResponse> reindex(
+            @PathVariable("id") Long id,
+            @RequestParam(value = "actor") String actor
+    ) {
+        Long updatedId = kbDocumentService.reindex(id, actor);
+        return ResponseEntity.ok(kbDocumentService.get(updatedId));
     }
 }

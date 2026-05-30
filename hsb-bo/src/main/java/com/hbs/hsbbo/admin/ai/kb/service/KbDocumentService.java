@@ -26,6 +26,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -70,7 +71,7 @@ public class KbDocumentService {
         );
 
         List<KbDocumentResponse> items = result.getContent().stream()
-                .map(KbDocumentResponse::from)
+                .map(this::toResponseWithLatestJob)
                 .toList();
 
         return KbDocumentListResponse.of(
@@ -85,7 +86,7 @@ public class KbDocumentService {
     public KbDocumentResponse get(Long id) {
         KbDocument e = kbDocumentRepository.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("지식 문서를 찾을 수 없습니다. id=%d", id));
-        return KbDocumentResponse.from(e);
+        return toResponseWithLatestJob(e);
     }
 
     // 등록(create)
@@ -275,6 +276,19 @@ public class KbDocumentService {
         return e.getId();
     }
 
+    public Long reindex(Long id, String actor) {
+        KbDocument e = kbDocumentRepository.findActiveById(id)
+                .orElseThrow(() -> new NotFoundException("KB Document를 찾을 수 없습니다. id=%d", id));
+
+        resetIndexFields(e);
+        e.setDocStatus("INDEXING");
+        e.setUpAdm(actor);
+        kbDocumentRepository.save(e);
+
+        enqueueIngestJob(e, actor);
+        return e.getId();
+    }
+
     // 사용여부 토글
     public Long toggleUse(Long id, String actor) {
         KbDocument e = kbDocumentRepository.findActiveById(id)
@@ -389,6 +403,118 @@ public class KbDocumentService {
 
         // kbSource 이동/정책에 따라 초기화
         e.setVectorStoreId(null);
+    }
+
+    private KbDocumentResponse toResponseWithLatestJob(KbDocument document) {
+        KbJob latestJob = kbJobRepository.findTopByKbDocumentIdOrderByIdDesc(document.getId())
+                .orElse(null);
+        KbDocumentResponse response = KbDocumentResponse.from(document, latestJob);
+        enrichJobTiming(response, document, latestJob);
+        return response;
+    }
+
+    private void enrichJobTiming(KbDocumentResponse response, KbDocument document, KbJob latestJob) {
+        if (response == null) return;
+
+        Long averageSeconds = roundedAverageSeconds(normalize(document.getDocType()));
+        response.setAverageJobDurationSeconds(averageSeconds);
+
+        DurationRange range = estimateDurationRange(document, averageSeconds);
+        response.setEstimatedDurationMinSeconds(range.minSeconds());
+        response.setEstimatedDurationMaxSeconds(range.maxSeconds());
+
+        if (latestJob == null) {
+            response.setLatestJobProgressStage("작업 없음");
+            response.setLatestJobProgressPercent(0);
+            return;
+        }
+
+        Long elapsedSeconds = calculateElapsedSeconds(latestJob);
+        Long durationSeconds = calculateDurationSeconds(latestJob);
+        response.setLatestJobElapsedSeconds(elapsedSeconds);
+        response.setLatestJobDurationSeconds(durationSeconds);
+        response.setLatestJobProgressStage(resolveProgressStage(latestJob));
+        response.setLatestJobProgressPercent(resolveProgressPercent(latestJob, elapsedSeconds, averageSeconds));
+    }
+
+    private Long roundedAverageSeconds(String docType) {
+        Double avg = kbJobRepository.findAverageSuccessDurationSecondsByDocType(docType);
+        if (avg == null || avg <= 0) return null;
+        return Math.max(1L, Math.round(avg));
+    }
+
+    private Long calculateElapsedSeconds(KbJob job) {
+        LocalDateTime start = job.getStartedAt() != null ? job.getStartedAt() : job.getScheduledAt();
+        if (start == null) return null;
+
+        LocalDateTime end = job.getFinishedAt() != null ? job.getFinishedAt() : LocalDateTime.now();
+        long seconds = Duration.between(start, end).getSeconds();
+        return Math.max(0L, seconds);
+    }
+
+    private Long calculateDurationSeconds(KbJob job) {
+        if (job.getStartedAt() == null || job.getFinishedAt() == null) return null;
+        long seconds = Duration.between(job.getStartedAt(), job.getFinishedAt()).getSeconds();
+        return Math.max(0L, seconds);
+    }
+
+    private String resolveProgressStage(KbJob job) {
+        if (job.getJobStatus() == null) return "상태 확인 중";
+        return switch (job.getJobStatus()) {
+            case READY -> "대기 중";
+            case RUNNING -> "분석/청킹/임베딩 처리 중";
+            case SUCCESS -> "완료";
+            case FAILED -> "실패";
+            case CANCELLED -> "취소됨";
+        };
+    }
+
+    private Integer resolveProgressPercent(KbJob job, Long elapsedSeconds, Long averageSeconds) {
+        if (job.getJobStatus() == null) return 0;
+        return switch (job.getJobStatus()) {
+            case READY -> 5;
+            case RUNNING -> {
+                if (elapsedSeconds == null || averageSeconds == null || averageSeconds <= 0) {
+                    yield 35;
+                }
+                int percent = 10 + (int) Math.round(Math.min(85.0, (elapsedSeconds * 85.0) / averageSeconds));
+                yield Math.max(10, Math.min(95, percent));
+            }
+            case SUCCESS -> 100;
+            case FAILED, CANCELLED -> 100;
+        };
+    }
+
+    private DurationRange estimateDurationRange(KbDocument document, Long averageSeconds) {
+        if (averageSeconds != null && averageSeconds > 0) {
+            long min = Math.max(30L, Math.round(averageSeconds * 0.7));
+            long max = Math.max(min + 30L, Math.round(averageSeconds * 1.4));
+            return new DurationRange(min, max);
+        }
+
+        String docType = normalize(document.getDocType());
+        long size = document.getFileSize() == null ? 0L : Math.max(0L, document.getFileSize());
+        long mb = (long) Math.ceil(size / (1024.0 * 1024.0));
+
+        if ("IMAGE".equalsIgnoreCase(docType)) {
+            return new DurationRange(120, 300);
+        }
+        if ("URL".equalsIgnoreCase(docType)) {
+            return new DurationRange(60, 240);
+        }
+        if (mb <= 1) {
+            return new DurationRange(60, 180);
+        }
+        if (mb <= 5) {
+            return new DurationRange(120, 300);
+        }
+        if (mb <= 20) {
+            return new DurationRange(240, 600);
+        }
+        return new DurationRange(600, 1200);
+    }
+
+    private record DurationRange(long minSeconds, long maxSeconds) {
     }
 
     private void enqueueDeleteIndexJob(KbDocument doc, String actor) {

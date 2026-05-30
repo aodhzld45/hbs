@@ -54,4 +54,18 @@ public interface KbJobRepository extends JpaRepository<KbJob, Long> {
             Pageable pageable
     );
 
+    @Query(value = """
+        select avg(timestampdiff(second, j.started_at, j.finished_at))
+          from kb_job j
+          join kb_document d on d.id = j.kb_document_id
+         where j.job_type = 'INGEST'
+           and j.job_status = 'SUCCESS'
+           and j.started_at is not null
+           and j.finished_at is not null
+           and j.del_tf = 'N'
+           and d.del_tf = 'N'
+           and (:docType is null or d.doc_type = :docType)
+    """, nativeQuery = true)
+    Double findAverageSuccessDurationSecondsByDocType(@Param("docType") String docType);
+
 }
