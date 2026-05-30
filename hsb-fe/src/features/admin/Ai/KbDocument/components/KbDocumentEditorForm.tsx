@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type { KbDocumentRequest, KbDocumentResponse } from "../types/KbDocumentConfig";
-import { fetchKbDocumentDetail } from "../services/KbDocumentApi";
 
 type Props = {
   value?: KbDocumentResponse | null; // 수정이면 값 주입
@@ -39,10 +38,6 @@ function formatBytes(bytes?: number) {
 }
 
 type ProgressStep = 0 | 1 | 2 | 3 | 99;
-const POLL_INITIAL_DELAY_MS = 2000;
-const POLL_MAX_DELAY_MS = 15000;
-const POLL_BACKOFF_MULTIPLIER = 1.6;
-const POLL_MAX_DURATION_MS = 10 * 60 * 1000;
 // 0: idle, 1: 업로드/attach 중, 2: 해독/요약 생성 중, 3: 완료, 99: 실패
 
 function stepLabel(step: ProgressStep) {
@@ -74,13 +69,7 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
   const [progressStep, setProgressStep] = useState<ProgressStep>(0);
   const [progressText, setProgressText] = useState<string>("");
   const [liveDetail, setLiveDetail] = useState<KbDocumentResponse | null>(null);
-  const [polling, setPolling] = useState(false);
   const [lockedAfterDone, setLockedAfterDone] = useState(false);
-
-  const pollTimerRef = useRef<number | null>(null);
-  const pollStartRef = useRef<number>(0);
-  const pollActiveRef = useRef(false);
-  const pollDelayMsRef = useRef(POLL_INITIAL_DELAY_MS);
 
   const detail = liveDetail ?? value ?? null;
 
@@ -90,8 +79,7 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
     return true;
   }, [form.kbSourceId, form.title]);
 
-  const isIndexing = progressStep === 1 || progressStep === 2;
-  const isProcessing = saving || polling || isIndexing;
+  const isProcessing = saving;
 
   // 수정일 때 기존 파일 정보 표시용
   const existingFileInfo = useMemo(() => {
@@ -143,15 +131,13 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
     setErr(null);
     setProgressStep(0);
     setProgressText("");
-    stopPolling();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value?.id]); // id 기준으로 바뀔 때만
+  }, [value]);
 
   useEffect(() => {
     if (!value) return;
     const step = computeStepFromDetail(value);
     if (step === 3) setLockedAfterDone(true); // 기존에 이미 완료된 문서면 잠금
-  }, [value?.id]);
+  }, [value]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -192,100 +178,14 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
     return 1;
   };
 
-  const refreshDetailOnce = async () => {
-    if (!detail?.id) return;
-    const fresh = await fetchKbDocumentDetail(detail.id);
-    setLiveDetail(fresh);
-
-    const step = computeStepFromDetail(fresh);
-    setProgressStep(step);
-    setProgressText(stepLabel(step));
-  };
-
-  const stopPolling = () => {
-    if (pollTimerRef.current) {
-      window.clearTimeout(pollTimerRef.current);
-      pollTimerRef.current = null;
-    }
-    pollActiveRef.current = false;
-    setPolling(false);
-  };
-
-  const scheduleNextPoll = (documentId: number) => {
-    if (!pollActiveRef.current) return;
-
-    pollTimerRef.current = window.setTimeout(() => {
-      void pollDocumentOnce(documentId);
-    }, pollDelayMsRef.current);
-  };
-
-  const increasePollDelay = () => {
-    pollDelayMsRef.current = Math.min(
-      POLL_MAX_DELAY_MS,
-      Math.round(pollDelayMsRef.current * POLL_BACKOFF_MULTIPLIER)
-    );
-  };
-
-  const pollDocumentOnce = async (documentId: number) => {
-    if (!pollActiveRef.current) return;
-
-    const elapsed = Date.now() - pollStartRef.current;
-    if (elapsed > POLL_MAX_DURATION_MS) {
-      stopPolling();
-      setProgressText("처리가 오래 걸리고 있습니다. 잠시 후 '새로고침'을 눌러 확인해주세요.");
-      return;
-    }
-
-    try {
-      const fresh = await fetchKbDocumentDetail(documentId);
-      setLiveDetail(fresh);
-
-      const step = computeStepFromDetail(fresh);
-      setProgressStep(step);
-      setProgressText(stepLabel(step));
-
-      if (step === 3 || step === 99) {
-        stopPolling();
-        return;
-      }
-    } catch (e) {
-      // 일시적인 네트워크 오류는 다음 tick에서 다시 확인한다.
-    }
-
-    increasePollDelay();
-    scheduleNextPoll(documentId);
-  };
-
-  const startPolling = () => {
-    if (!detail?.id) return;
-    const documentId = detail.id;
-
-    stopPolling();
-    pollActiveRef.current = true;
-    pollDelayMsRef.current = POLL_INITIAL_DELAY_MS;
-    setPolling(true);
-    pollStartRef.current = Date.now();
-
-    void pollDocumentOnce(documentId);
-  };
-
-  // 편의: edit 모드에서, 문서가 아직 완료가 아니면 자동 폴링
+  // 편의: edit 모드에서 현재 상세 상태만 계산한다. 상태 추적은 목록에서 수행한다.
   useEffect(() => {
     if (!detail?.id) return;
 
     const step = computeStepFromDetail(detail);
     setProgressStep(step);
     setProgressText(stepLabel(step));
-
-    // 이미 완료/실패면 폴링 불필요
-    // step 0(진행아님)도 자동 폴링 금지
-    if (step === 0 || step === 3 || step === 99) return;
-      // 자동 시작
-      startPolling();
-
-    return () => stopPolling();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail?.id]);
+  }, [detail]);
 
   useEffect(() => {
     if (progressStep === 3 && detail) {
@@ -294,7 +194,7 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
         tagsJson: detail.tagsJson?.trim() ? detail.tagsJson : "[]",
       }));
     }
-  }, [progressStep, detail?.tagsJson]);
+  }, [progressStep, detail]);
 
   useEffect(() => {
     if (progressStep === 3) {
@@ -335,10 +235,6 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
     try {
       setSaving(true);
       await onSubmit(form, file);
- 
-      if (detail?.id) {
-        startPolling();
-      }
     } catch (e: any) {
       setErr(e?.message ?? "저장 중 오류가 발생했습니다.");
     } finally {
@@ -429,34 +325,14 @@ export default function KbDocumentEditorForm({ value, onSubmit, onCancel }: Prop
               )}
 
               <div className="mt-1 text-[11px] text-gray-500">
-                {polling ? "상태를 자동으로 확인 중입니다." : "상태 확인이 멈췄습니다."}
+                저장 후 분석 작업은 목록에서 자동으로 확인합니다.
               </div>
             </div>
 
             <div className="flex shrink-0 flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => startPolling()}
-                className="text-xs px-2 py-1 rounded border bg-white hover:bg-gray-50"
-                disabled={!detail?.id}
-              >
-                자동 확인
-              </button>
-              <button
-                type="button"
-                onClick={() => refreshDetailOnce()}
-                className="text-xs px-2 py-1 rounded border bg-white hover:bg-gray-50"
-                disabled={!detail?.id}
-              >
-                새로고침
-              </button>
-              <button
-                type="button"
-                onClick={() => stopPolling()}
-                className="text-xs px-2 py-1 rounded border bg-white hover:bg-gray-50"
-              >
-                중지
-              </button>
+              <span className="text-[11px] text-gray-400">
+                목록에서 상태 확인
+              </span>
             </div>
           </div>
 

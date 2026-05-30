@@ -14,6 +14,22 @@ export interface KbDocumentResponse {
     welcomeQuestionsJson?: string;
     welcomeKeywordsJson?: string;
 
+    latestJobId?: number | null;
+    latestJobType?: string | null;
+    latestJobStatus?: string | null;
+    latestJobTryCount?: number | null;
+    latestJobLastError?: string | null;
+    latestJobScheduledAt?: string | null;
+    latestJobStartedAt?: string | null;
+    latestJobFinishedAt?: string | null;
+    latestJobElapsedSeconds?: number | null;
+    latestJobDurationSeconds?: number | null;
+    averageJobDurationSeconds?: number | null;
+    estimatedDurationMinSeconds?: number | null;
+    estimatedDurationMaxSeconds?: number | null;
+    latestJobProgressPercent?: number | null;
+    latestJobProgressStage?: string | null;
+
     docType: string;
     docStatus: string;
     version: number;

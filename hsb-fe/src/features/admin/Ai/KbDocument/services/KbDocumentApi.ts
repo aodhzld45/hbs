@@ -43,6 +43,12 @@ export async function fetchKbDocumentDetail(id: number): Promise<KbDocumentRespo
     );
 }
 
+export async function fetchKbDocumentJobStatus(id: number): Promise<KbDocumentResponse> {
+    return okOrThrow(
+        api.get(`${BASE}/${id}/job-status`)
+    );
+}
+
 // 등록 (multipart: body + file)
 export async function createKbDocument(
     body: KbDocumentRequest,
@@ -101,6 +107,14 @@ export const deleteKbDocumentSoft = (id: number, actorId: string | number) => {
         })
     )
     };
+
+export const reindexKbDocument = (id: number, actorId: string | number) => {
+  return okOrThrow<KbDocumentResponse>(
+    api.post(`${BASE}/${id}/reindex`, null, {
+      params: { actor: String(actorId) },
+    })
+  );
+};
 
 
 /* 

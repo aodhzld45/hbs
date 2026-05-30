@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AdminLayout from "../../../../components/Layout/AdminLayout";
 import Pagination from "../../../../components/Common/Pagination";
 
@@ -18,17 +18,28 @@ import type {
 import {
   createKbDocument,
   fetchKbDocumentDetail,
+  fetchKbDocumentJobStatus,
   updateKbDocument,
   toggleKbDocumentUseTf,
   deleteKbDocumentSoft,
+  reindexKbDocument,
 } from "./services/KbDocumentApi";
+
+const ACTIVE_DOC_STATUSES = new Set(["READY", "UPLOADED", "INDEXING", "DELETE_PENDING"]);
+const ACTIVE_JOB_STATUSES = new Set(["READY", "RUNNING"]);
+
+function hasActiveKbJob(row: KbDocumentResponse) {
+  const docStatus = (row.docStatus ?? "").toUpperCase();
+  const jobStatus = (row.latestJobStatus ?? "").toUpperCase();
+  return ACTIVE_DOC_STATUSES.has(docStatus) || ACTIVE_JOB_STATUSES.has(jobStatus);
+}
 
 export default function AdminKbDocument() {
   /* 공통 헤더/메뉴 처리 */
   const { currentMenuTitle, actorId, menuError } = useAdminPageHeader();
 
   /* 목록 훅 */
-  const { params, setParams, data, loading, error, refetch } = useKbDocumentList({
+  const { params, setParams, data, loading, initialLoading, error, refetch, patchDocuments } = useKbDocumentList({
     page: 0,
     size: 20,
     sort: "regDate,desc",
@@ -41,18 +52,46 @@ export default function AdminKbDocument() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<KbDocumentResponse | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const statusPollingRef = useRef(false);
 
-  /**
-   * 파일 업로드를 위한 상태
-   * - 신규/수정에서 선택한 파일을 index에서 관리하면
-   *   EditorForm은 "file 선택 콜백"만 호출하도록 분리도 가능
-   * - 여기서는 "EditorForm이 file을 submit과 함께 넘긴다" 전제로 처리
-   */
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const activeJobRows = useMemo(
+    () => (data?.items ?? []).filter(hasActiveKbJob),
+    [data?.items]
+  );
+  const hasActiveJobs = activeJobRows.length > 0;
+
+  useEffect(() => {
+    if (!hasActiveJobs) return;
+
+    const timer = window.setInterval(() => {
+      if (statusPollingRef.current) return;
+
+      statusPollingRef.current = true;
+      Promise.allSettled(activeJobRows.map((row) => fetchKbDocumentJobStatus(row.id)))
+        .then((results) => {
+          const updates = results
+            .filter((result): result is PromiseFulfilledResult<KbDocumentResponse> => result.status === "fulfilled")
+            .map((result) => result.value);
+
+          patchDocuments(updates);
+        })
+        .finally(() => {
+          statusPollingRef.current = false;
+        });
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, [activeJobRows, hasActiveJobs, patchDocuments]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), 3500);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
 
   const openCreate = () => {
     setEditing(null);
-    setUploadFile(null);
     setEditorOpen(true);
   };
 
@@ -61,7 +100,6 @@ export default function AdminKbDocument() {
       setDetailLoading(true);
       const detail = await fetchKbDocumentDetail(row.id);
       setEditing(detail);
-      setUploadFile(null);
       setEditorOpen(true);
     } catch (e: any) {
       console.error(e);
@@ -74,8 +112,6 @@ export default function AdminKbDocument() {
   const closeEditor = () => {
     setEditorOpen(false);
     setEditing(null);
-    setUploadFile(null);
-    refetch(); // 닫을 때 목록 갱신 → 인덱싱 완료 등 최신 상태가 바로 반영되도록
   };
 
   /**
@@ -87,24 +123,34 @@ export default function AdminKbDocument() {
     try {
       if (editing) {
         await updateKbDocument(editing.id, req, String(actorId), file ?? null);
-
-        const detail = await fetchKbDocumentDetail(editing.id);
-        setEditing(detail);
+        setEditorOpen(false);
+        setEditing(null);
         refetch();
-
-        alert("문서가 수정되었습니다. 인덱싱 상태를 확인합니다.");
+        setNotice("문서가 저장되었습니다. 분석 작업은 백그라운드에서 계속 처리됩니다.");
         return;
       }  
 
       const created = await createKbDocument(req, String(actorId), file ?? null); // id 반환
-      const detail = await fetchKbDocumentDetail(created.id);
-      setEditing(detail);
+      setEditorOpen(false);
+      setEditing(null);
       refetch(); // 목록 갱신
-      alert("문서가 등록되었습니다. 인덱싱을 시작합니다.");
+      setNotice(`문서 #${created.id} 분석 작업이 백그라운드에서 시작되었습니다.`);
       
     } catch (e: any) {
       console.error(e);
       alert(e?.message ?? "문서 저장 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleReindex = async (row: KbDocumentResponse) => {
+    if (!window.confirm(`"${row.title}" 문서를 다시 분석하시겠습니까?`)) return;
+    try {
+      await reindexKbDocument(row.id, actorId);
+      refetch();
+      setNotice("재분석 작업이 백그라운드에서 시작되었습니다.");
+    } catch (e: any) {
+      console.error(e);
+      alert(e?.message ?? "재분석 요청 중 오류가 발생했습니다.");
     }
   };
 
@@ -148,7 +194,13 @@ export default function AdminKbDocument() {
           </div>
         )}
 
-        {loading ? (
+        {notice && (
+          <div className="px-4 py-2 mb-3 text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded">
+            {notice}
+          </div>
+        )}
+
+        {initialLoading ? (
           <PageLoader />
         ) : (
           <KbDocumentList
@@ -161,6 +213,9 @@ export default function AdminKbDocument() {
             onOpenEdit={openEdit}
             onClickDelete={handleDelete}
             onToggleUse={handleToggleUse}
+            onReindex={handleReindex}
+            onRefresh={refetch}
+            backgroundPolling={hasActiveJobs}
           />
         )}
         

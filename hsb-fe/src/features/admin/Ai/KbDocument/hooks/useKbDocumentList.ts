@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import type { KbDocumentListResponse } from "../types/KbDocumentConfig";
+import { useCallback, useEffect, useState } from "react";
+import type { KbDocumentListResponse, KbDocumentResponse } from "../types/KbDocumentConfig";
 import { fetchKbDocumentList } from "../services/KbDocumentApi";
 
 type Params = {
@@ -48,6 +48,7 @@ export function useKbDocumentList(initial?: Params) {
       });
 
     const [loading, setLoading] = useState(false);
+    const [loadedOnce, setLoadedOnce] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // params 변경될 때마다 조회
@@ -58,8 +59,10 @@ export function useKbDocumentList(initial?: Params) {
         try {
         const res = await fetchKbDocumentList(cleanParams(params));
         setData(res);
+        setLoadedOnce(true);
         } catch (e: any) {
         setError(e?.message || "목록 조회 실패");
+        setLoadedOnce(true);
         } finally {
         setLoading(false);
         }
@@ -68,14 +71,36 @@ export function useKbDocumentList(initial?: Params) {
     }, [params]);
 
     // 수동 재조회 필요하면 이 함수 호출(동일 params로 set 해서 트리거)
-    const refetch = () => setParams((p) => ({ ...p }));
+    const refetch = useCallback(() => setParams((p) => ({ ...p })), []);
+
+    const patchDocuments = useCallback((updates: KbDocumentResponse[]) => {
+        if (updates.length === 0) return;
+
+        setData((prev) => {
+            const updateMap = new Map(updates.map((item) => [item.id, item]));
+            let changed = false;
+
+            const nextItems = prev.items.map((item) => {
+                const updated = updateMap.get(item.id);
+                if (!updated) return item;
+                changed = true;
+                return { ...item, ...updated };
+            });
+
+            if (!changed) return prev;
+            return { ...prev, items: nextItems };
+        });
+    }, []);
 
     return {
         params,
         setParams, // 예: setParams(p => ({...p, keyword: v, page: 0}))
         data,      // data.items / data.totalCount / data.totalPages
         loading,
+        initialLoading: loading && !loadedOnce,
+        refreshing: loading && loadedOnce,
         error,
         refetch,
+        patchDocuments,
       };
 }

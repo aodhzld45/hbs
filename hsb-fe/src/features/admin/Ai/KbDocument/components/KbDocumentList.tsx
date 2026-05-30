@@ -31,6 +31,9 @@ type Props = {
   onOpenEdit: (row: KbDocumentResponse) => void;
   onToggleUse: (row: KbDocumentResponse) => void;
   onClickDelete: (row: KbDocumentResponse) => void;
+  onReindex: (row: KbDocumentResponse) => void;
+  onRefresh: () => void;
+  backgroundPolling: boolean;
 
   // 옵션은 상위에서 주입(권장) 또는 기본값 사용
   docTypeOptions?: Option[];
@@ -57,6 +60,82 @@ const DEFAULT_DOC_STATUS_OPTIONS: Option[] = [
   { value: "FAILED", label: "실패" },
 ];
 
+const ACTIVE_DOC_STATUSES = new Set(["READY", "UPLOADED", "INDEXING", "DELETE_PENDING"]);
+const ACTIVE_JOB_STATUSES = new Set(["READY", "RUNNING"]);
+
+function getStatusTone(row: KbDocumentResponse) {
+  const docStatus = (row.docStatus ?? "").toUpperCase();
+  const jobStatus = (row.latestJobStatus ?? "").toUpperCase();
+
+  if (docStatus === "FAILED" || jobStatus === "FAILED") {
+    return "bg-red-50 border-red-200 text-red-700";
+  }
+  if (docStatus === "INDEXED" || jobStatus === "SUCCESS") {
+    return "bg-emerald-50 border-emerald-200 text-emerald-700";
+  }
+  if (ACTIVE_DOC_STATUSES.has(docStatus) || ACTIVE_JOB_STATUSES.has(jobStatus)) {
+    return "bg-blue-50 border-blue-200 text-blue-700";
+  }
+  return "bg-white border-gray-200 text-gray-700";
+}
+
+function isActiveJob(row: KbDocumentResponse) {
+  const docStatus = (row.docStatus ?? "").toUpperCase();
+  const jobStatus = (row.latestJobStatus ?? "").toUpperCase();
+  return ACTIVE_DOC_STATUSES.has(docStatus) || ACTIVE_JOB_STATUSES.has(jobStatus);
+}
+
+function getJobStatusLabel(row: KbDocumentResponse) {
+  const jobStatus = row.latestJobStatus;
+  if (!jobStatus) return null;
+  const jobType = row.latestJobType ? `${row.latestJobType} ` : "";
+  return `${jobType}${jobStatus}`;
+}
+
+function formatDuration(seconds?: number | null) {
+  if (seconds == null || Number.isNaN(seconds)) return null;
+  const safe = Math.max(0, Math.floor(seconds));
+  if (safe < 60) return `${safe}초`;
+
+  const minutes = Math.floor(safe / 60);
+  const remainSeconds = safe % 60;
+  if (minutes < 60) {
+    return remainSeconds > 0 ? `${minutes}분 ${remainSeconds}초` : `${minutes}분`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainMinutes = minutes % 60;
+  return remainMinutes > 0 ? `${hours}시간 ${remainMinutes}분` : `${hours}시간`;
+}
+
+function getElapsedLabel(row: KbDocumentResponse) {
+  const status = (row.latestJobStatus ?? "").toUpperCase();
+  const elapsed = formatDuration(row.latestJobElapsedSeconds);
+  const duration = formatDuration(row.latestJobDurationSeconds);
+
+  if (status === "READY" && elapsed) return `대기 ${elapsed}`;
+  if (status === "RUNNING" && elapsed) return `처리 ${elapsed}`;
+  if (status === "SUCCESS" && duration) return `완료 소요 ${duration}`;
+  if (status === "FAILED" && elapsed) return `실패 전 ${elapsed}`;
+  return null;
+}
+
+function getEstimateLabel(row: KbDocumentResponse) {
+  const min = formatDuration(row.estimatedDurationMinSeconds);
+  const max = formatDuration(row.estimatedDurationMaxSeconds);
+  if (!min || !max) return null;
+
+  const hasAverage = !!row.averageJobDurationSeconds;
+  const prefix = hasAverage ? "평균 기준" : "파일 기준";
+  return `${prefix} 보통 ${min}~${max}`;
+}
+
+function getProgressPercent(row: KbDocumentResponse) {
+  const raw = row.latestJobProgressPercent;
+  if (raw == null || Number.isNaN(raw)) return null;
+  return Math.max(0, Math.min(100, Math.round(raw)));
+}
+
 export default function KbDocumentList({
   params,
   setParams,
@@ -67,12 +146,16 @@ export default function KbDocumentList({
   onOpenEdit,
   onToggleUse,
   onClickDelete,
+  onReindex,
+  onRefresh,
+  backgroundPolling,
   docTypeOptions = DEFAULT_DOC_TYPE_OPTIONS,
   docStatusOptions = DEFAULT_DOC_STATUS_OPTIONS,
   categoryOptions = [{ value: "", label: "전체" }],
 }: Props) {
   const items = data?.items ?? [];
   const totalCount = data?.totalCount ?? 0;
+  const activeCount = items.filter(isActiveJob).length;
 
   const docTypeLabel = useMemo(() => {
     const m = new Map<string, string>();
@@ -105,7 +188,30 @@ export default function KbDocumentList({
   return (
     <div className="space-y-4">
       {/* 헤더: 신규등록 우측 */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-xs text-gray-500">
+          {activeCount > 0 ? (
+            <span className="inline-flex items-center gap-2 rounded border border-blue-100 bg-blue-50 px-3 py-2 text-blue-700">
+              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-blue-300 border-t-transparent" />
+              백그라운드 분석 {activeCount}건 진행 중
+            </span>
+          ) : (
+            <span className="inline-flex rounded border border-gray-100 bg-gray-50 px-3 py-2 text-gray-500">
+              진행 중인 분석 작업 없음
+            </span>
+          )}
+          {backgroundPolling && (
+            <span className="ml-2 text-[11px] text-gray-400">상태 자동 갱신 중</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            className="h-10 px-3 text-sm rounded border bg-white hover:bg-gray-50"
+            onClick={onRefresh}
+            type="button"
+          >
+            새로고침
+          </button>
         <button
           className="h-10 px-3 text-sm rounded bg-indigo-600 text-white hover:bg-indigo-700"
           onClick={onOpenCreate}
@@ -113,6 +219,7 @@ export default function KbDocumentList({
         >
           신규 등록
         </button>
+        </div>
       </div>
 
       {/* 필터바 */}
@@ -301,9 +408,49 @@ export default function KbDocumentList({
                   </td>
 
                   <td className="px-3 py-2">
-                    <span className="inline-flex px-2 py-1 rounded text-xs border bg-white text-gray-700">
-                      {docStatusLabel.get(row.docStatus) ?? row.docStatus ?? "-"}
-                    </span>
+                    <div className="space-y-1">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs border ${getStatusTone(row)}`}>
+                        {isActiveJob(row) && (
+                          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent opacity-70" />
+                        )}
+                        {docStatusLabel.get(row.docStatus) ?? row.docStatus ?? "-"}
+                      </span>
+                      {getJobStatusLabel(row) && (
+                        <div className="text-[11px] text-gray-500">
+                          Job: {getJobStatusLabel(row)}
+                        </div>
+                      )}
+                      {row.latestJobProgressStage && (
+                        <div className="text-[11px] text-gray-500">
+                          {row.latestJobProgressStage}
+                        </div>
+                      )}
+                      {getProgressPercent(row) != null && (
+                        <div className="h-1.5 w-[150px] overflow-hidden rounded-full bg-gray-100">
+                          <div
+                            className={`h-full rounded-full ${
+                              row.latestJobStatus === "FAILED" ? "bg-red-400" : "bg-blue-500"
+                            }`}
+                            style={{ width: `${getProgressPercent(row)}%` }}
+                          />
+                        </div>
+                      )}
+                      {getElapsedLabel(row) && (
+                        <div className="text-[11px] text-gray-600">
+                          {getElapsedLabel(row)}
+                        </div>
+                      )}
+                      {isActiveJob(row) && getEstimateLabel(row) && (
+                        <div className="text-[11px] text-gray-400">
+                          {getEstimateLabel(row)}
+                        </div>
+                      )}
+                      {row.latestJobLastError && (
+                        <div className="max-w-[180px] truncate text-[11px] text-red-600" title={row.latestJobLastError}>
+                          {row.latestJobLastError}
+                        </div>
+                      )}
+                    </div>
                   </td>
 
                   <td className="px-3 py-2 text-center">
@@ -334,6 +481,15 @@ export default function KbDocumentList({
                       >
                         수정
                       </button>
+                      {(row.docStatus === "FAILED" || row.latestJobStatus === "FAILED") && (
+                        <button
+                          className="px-2 py-1 text-xs rounded border text-blue-600 hover:bg-blue-50"
+                          onClick={() => onReindex(row)}
+                          type="button"
+                        >
+                          재분석
+                        </button>
+                      )}
                       <button
                         className="px-2 py-1 text-xs rounded border text-red-600 hover:bg-red-50"
                         onClick={() => onClickDelete(row)}
