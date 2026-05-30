@@ -16,6 +16,7 @@ public class KbJobSchedulerProperties {
     private long minDelayMs = 5000;
     private long maxDelayMs = 60000;
     private long initialDelayMs = 3000;
+    private long wakeUpDelayMs = 100;
 
     private int idleThreshold = 3;
     private double idleBackoffMultiplier = 2.0;

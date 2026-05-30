@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -38,7 +37,8 @@ public class KbJobScheduler {
 
     public void wakeUpNow() {
         if (!props.isEnabled()) return;
-        taskScheduler.schedule(this::tick, Instant.now().plusMillis(100));
+        currentDelayMs = props.getMinDelayMs();
+        scheduleNext(props.getWakeUpDelayMs());
     }
 
     private void scheduleNext(long delayMs) {
@@ -49,7 +49,7 @@ public class KbJobScheduler {
             return;
         }
 
-        taskScheduler.schedule(this::tick, Instant.now().plusMillis(delayMs));
+        taskScheduler.schedule(this::tick, java.time.Instant.now().plusMillis(delayMs));
     }
 
     private void tick() {
