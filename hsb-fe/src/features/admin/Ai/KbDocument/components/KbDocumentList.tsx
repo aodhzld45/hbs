@@ -62,6 +62,29 @@ const DEFAULT_DOC_STATUS_OPTIONS: Option[] = [
 
 const ACTIVE_DOC_STATUSES = new Set(["READY", "UPLOADED", "INDEXING", "DELETE_PENDING"]);
 const ACTIVE_JOB_STATUSES = new Set(["READY", "RUNNING"]);
+const LONG_READY_SECONDS = 5 * 60;
+const LONG_RUNNING_SECONDS = 30 * 60;
+
+function getLongRunningWarning(row: KbDocumentResponse) {
+  const jobStatus = (row.latestJobStatus ?? "").toUpperCase();
+  const elapsedSeconds = row.latestJobElapsedSeconds ?? 0;
+
+  if (jobStatus === "READY" && elapsedSeconds >= LONG_READY_SECONDS) {
+    return {
+      label: "장시간 대기",
+      message: "worker가 아직 작업을 집지 못했습니다. 새로고침 후 계속 유지되면 worker 상태를 확인하세요.",
+    };
+  }
+
+  if (jobStatus === "RUNNING" && elapsedSeconds >= LONG_RUNNING_SECONDS) {
+    return {
+      label: "장시간 처리 중",
+      message: "분석 작업이 오래 실행 중입니다. Brain/FastAPI 또는 외부 API 응답 지연 가능성이 있습니다.",
+    };
+  }
+
+  return null;
+}
 
 function getStatusTone(row: KbDocumentResponse) {
   const docStatus = (row.docStatus ?? "").toUpperCase();
@@ -72,6 +95,9 @@ function getStatusTone(row: KbDocumentResponse) {
   }
   if (docStatus === "INDEXED" || jobStatus === "SUCCESS") {
     return "bg-emerald-50 border-emerald-200 text-emerald-700";
+  }
+  if (getLongRunningWarning(row)) {
+    return "bg-amber-50 border-amber-200 text-amber-700";
   }
   if (ACTIVE_DOC_STATUSES.has(docStatus) || ACTIVE_JOB_STATUSES.has(jobStatus)) {
     return "bg-blue-50 border-blue-200 text-blue-700";
@@ -156,6 +182,7 @@ export default function KbDocumentList({
   const items = data?.items ?? [];
   const totalCount = data?.totalCount ?? 0;
   const activeCount = items.filter(isActiveJob).length;
+  const longRunningCount = items.filter((item) => !!getLongRunningWarning(item)).length;
 
   const docTypeLabel = useMemo(() => {
     const m = new Map<string, string>();
@@ -202,6 +229,11 @@ export default function KbDocumentList({
           )}
           {backgroundPolling && (
             <span className="ml-2 text-[11px] text-gray-400">상태 자동 갱신 중</span>
+          )}
+          {longRunningCount > 0 && (
+            <span className="ml-2 inline-flex rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-700">
+              장시간 작업 {longRunningCount}건
+            </span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -438,6 +470,14 @@ export default function KbDocumentList({
                       {getElapsedLabel(row) && (
                         <div className="text-[11px] text-gray-600">
                           {getElapsedLabel(row)}
+                        </div>
+                      )}
+                      {getLongRunningWarning(row) && (
+                        <div
+                          className="max-w-[190px] rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-700"
+                          title={getLongRunningWarning(row)?.message}
+                        >
+                          {getLongRunningWarning(row)?.label}
                         </div>
                       )}
                       {isActiveJob(row) && getEstimateLabel(row) && (
