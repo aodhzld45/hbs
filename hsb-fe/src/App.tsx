@@ -29,7 +29,7 @@ import KisPage from './features/user/Kis';
 import PrivateRoute from './components/Admin/PrivateRoute';
 import { PermissionProvider, usePermission } from './context/PermissionContext';
 import { useAuthStore } from './store/useAuthStore';
-import { SESSION_EXPIRED_EVENT } from './services/api';
+import { ACCESS_DENIED_EVENT, SESSION_EXPIRED_EVENT } from './services/api';
 
 import { useAdminDynamicRoutes } from './routes/admin/useAdminDynamicRoutes';
 import AdminIndex from './pages/Admin';
@@ -80,6 +80,34 @@ function SessionExpiredHandler() {
   return null;
 }
 
+function AccessDeniedHandler() {
+  const lastAlertedAtRef = useRef(0);
+
+  useEffect(() => {
+    const handleAccessDenied = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        message?: string;
+        path?: string;
+      }>).detail;
+      const message = detail?.message || '접근 권한이 없습니다.';
+      const now = Date.now();
+
+      if (now - lastAlertedAtRef.current > 1000) {
+        lastAlertedAtRef.current = now;
+        alert(message);
+      }
+    };
+
+    window.addEventListener(ACCESS_DENIED_EVENT, handleAccessDenied);
+
+    return () => {
+      window.removeEventListener(ACCESS_DENIED_EVENT, handleAccessDenied);
+    };
+  }, []);
+
+  return null;
+}
+
 function App() {
   useEffect(() => {
     useAuthStore.getState().checkSession();
@@ -95,6 +123,7 @@ function App() {
       <Router>
         <UserMenuProvider>
           <SessionExpiredHandler />
+          <AccessDeniedHandler />
           <Routes>
             <Route element={<MaintenanceRouteGuard />}>
               <Route element={<UserRouteGuard />}>
