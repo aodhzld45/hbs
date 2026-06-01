@@ -57,13 +57,130 @@
     document.head.appendChild(link);
   }
   
-  function appendMessage($body, role, text) {
-    const div = document.createElement('div');
-    div.className = 'hsbs-msg ' + (role === 'user' ? 'hsbs-user' : 'hsbs-bot');
-    div.textContent = text;
-    $body.appendChild(div);
+  const MESSAGE_STATUS = {
+    SENDING: 'sending',
+    RETRYING: 'retrying',
+    SUCCESS: 'success',
+    ERROR: 'error',
+    QUOTA_EXCEEDED: 'quota_exceeded',
+    OFFLINE: 'offline',
+    TIMEOUT: 'timeout',
+  };
+
+  let messageSeq = 0;
+
+  function nextMessageId() {
+    messageSeq += 1;
+    return `hsbs-msg-${Date.now()}-${messageSeq}`;
+  }
+
+  function scrollToBottom($body) {
     $body.scrollTop = $body.scrollHeight;
-    return div;
+  }
+
+  function createMessage({ id, role, text, status, errorCode, retryable, createdAt }) {
+    return {
+      id: id || nextMessageId(),
+      role: role === 'user' ? 'user' : 'assistant',
+      text: text || '',
+      status: status || MESSAGE_STATUS.SUCCESS,
+      errorCode: errorCode || null,
+      retryable: retryable === true,
+      createdAt: createdAt || new Date().toISOString(),
+    };
+  }
+
+  function isPendingMessage(message) {
+    return message.status === MESSAGE_STATUS.SENDING || message.status === MESSAGE_STATUS.RETRYING;
+  }
+
+  function pendingLabel(status) {
+    return status === MESSAGE_STATUS.RETRYING ? '다시 시도 중입니다' : '답변을 작성 중입니다';
+  }
+
+  function messageClassName(message) {
+    return 'hsbs-msg ' + (message.role === 'user' ? 'hsbs-user' : 'hsbs-bot');
+  }
+
+  function renderMessageContent($msg, message, actions) {
+    $msg.className = messageClassName(message);
+    $msg.dataset.messageId = message.id;
+    $msg.dataset.role = message.role;
+    $msg.dataset.status = message.status;
+    $msg.dataset.retryable = message.retryable ? 'true' : 'false';
+    if (message.errorCode) $msg.dataset.errorCode = message.errorCode;
+    else delete $msg.dataset.errorCode;
+    $msg.innerHTML = '';
+
+    const $text = document.createElement('div');
+    $text.className = 'hsbs-msg-text';
+
+    if (isPendingMessage(message)) {
+      const $typing = document.createElement('span');
+      $typing.className = 'hsbs-typing';
+      $typing.setAttribute('aria-live', 'polite');
+
+      const $label = document.createElement('span');
+      $label.className = 'hsbs-typing-label';
+      $label.textContent = pendingLabel(message.status);
+
+      const $dots = document.createElement('span');
+      $dots.className = 'hsbs-typing-dots';
+      $dots.setAttribute('aria-hidden', 'true');
+      for (let i = 0; i < 3; i += 1) {
+        $dots.appendChild(document.createElement('span'));
+      }
+
+      $typing.appendChild($label);
+      $typing.appendChild($dots);
+      $text.appendChild($typing);
+    } else {
+      $text.textContent = message.text;
+    }
+
+    $msg.appendChild($text);
+
+    if (message.errorCode) {
+      const $code = document.createElement('div');
+      $code.className = 'hsbs-msg-error-code';
+      $code.textContent = message.errorCode;
+      $msg.appendChild($code);
+    }
+
+    if (message.retryable && typeof actions?.retry === 'function') {
+      const $actions = document.createElement('div');
+      $actions.className = 'hsbs-msg-actions';
+
+      const $retry = document.createElement('button');
+      $retry.type = 'button';
+      $retry.className = 'hsbs-retry-btn';
+      $retry.textContent = actions.retryLabel || '다시 시도';
+      $retry.addEventListener('click', actions.retry);
+      $actions.appendChild($retry);
+
+      $msg.appendChild($actions);
+    }
+  }
+
+  function appendMessage($body, message, actions) {
+    const $msg = document.createElement('div');
+    const normalized = createMessage(message || {});
+    $msg.__hsbsMessage = normalized;
+    renderMessageContent($msg, normalized, actions);
+    $body.appendChild($msg);
+    scrollToBottom($body);
+    return normalized;
+  }
+
+  function updateMessage($body, messageId, patch, actions) {
+    const $msg = $body.querySelector(`[data-message-id="${messageId}"]`);
+    if (!$msg) return null;
+    const prev = $msg.__hsbsMessage || createMessage({ id: messageId, role: 'assistant' });
+    const next = Object.assign({}, prev, patch || {});
+    $msg.__hsbsMessage = next;
+    renderMessageContent($msg, next, actions);
+    scrollToBottom($body);
+    return next;
   }
 
   function resolveAssetUrl(resourceUrl, cfg) {
@@ -870,49 +987,34 @@
 
     let isSending = false;
 
-    function renderRetry($msg, label, retry) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'hsbs-retry-btn';
-      btn.textContent = label;
-      btn.addEventListener('click', retry);
-      $msg.appendChild(document.createElement('br'));
-      $msg.appendChild(btn);
+    function retryableByStatus(status) {
+      if (status === 401 || status === 403 || status === 429) return false;
+      return true;
     }
 
-    function setBotError($msg, message, retry) {
-      $msg.textContent = message;
-      if (typeof retry === 'function') {
-        renderRetry($msg, merged.retryButtonLabel, retry);
-      }
+    function updateAssistantError(messageId, message, status, errorCode, retry) {
+      updateMessage($body, messageId, {
+        text: message,
+        status,
+        errorCode,
+        retryable: typeof retry === 'function' && status !== MESSAGE_STATUS.QUOTA_EXCEEDED,
+      }, {
+        retry,
+        retryLabel: merged.retryButtonLabel,
+      });
     }
 
-    // 8) 질문/응답
-    async function ask(textOverride) {
+    async function requestAnswer(q, assistantMessageId, retry) {
       if (isSending) return;
-
-      const raw =
-        textOverride != null && String(textOverride).trim() !== ''
-          ? String(textOverride)
-          : $input.value || '';
-
-      const q = raw.trim();
-      if (!q) return;
-
-      $input.value = '';
-      appendMessage($body, 'user', q);
-      emit(hooks, 'message', { role: 'user', text: q });
-      const bot = appendMessage($body, 'bot', '...');
-      const retry = () => ask(q);
 
       isSending = true;
       $send.disabled = true;
 
-      let t = null; // ✅ finally에서 접근 가능하게 바깥에 선언
+      let t = null; // finally에서 접근 가능하게 바깥에 선언
 
       try {
         if (isOffline()) {
-          setBotError(bot, merged.offlineMessage, retry);
+          updateAssistantError(assistantMessageId, merged.offlineMessage, MESSAGE_STATUS.OFFLINE, 'OFFLINE', retry);
           emitError(hooks, 'OFFLINE', merged.offlineMessage);
           return;
         }
@@ -949,6 +1051,12 @@
           const canRetryStatus = res && !res.ok && isRetryableStatus(res.status, policy);
           if (attempt < policy.retryMaxAttempts && (canRetryError || canRetryStatus)) {
             const delayMs = retryDelay(policy, attempt, res?.headers?.get('Retry-After'));
+            updateMessage($body, assistantMessageId, {
+              status: MESSAGE_STATUS.RETRYING,
+              text: '',
+              errorCode: null,
+              retryable: false,
+            });
             log('retry scheduled', { attempt, nextAttempt: attempt + 1, delayMs, status: res?.status, error: lastError?.name });
             await sleep(delayMs);
             continue;
@@ -970,10 +1078,18 @@
             const j = await res.json();
             if (j?.message) msg += ` (${j.message})`;
           } catch {}
-          setBotError(bot, msg, retry);
+
+          const errorCode = getHttpErrorCode(res.status);
+          const status = res.status === 429
+            ? MESSAGE_STATUS.QUOTA_EXCEEDED
+            : res.status === 408
+              ? MESSAGE_STATUS.TIMEOUT
+              : MESSAGE_STATUS.ERROR;
+          const retryAction = retryableByStatus(res.status) ? retry : null;
+          updateAssistantError(assistantMessageId, msg, status, errorCode, retryAction);
           log('error response', res.status, msg);
 
-          const errorPayload = emitError(hooks, getHttpErrorCode(res.status), msg, {
+          const errorPayload = emitError(hooks, errorCode, msg, {
             status: res.status,
             response: res,
           });
@@ -992,23 +1108,70 @@
         }
 
         const data = await res.json();
-        bot.textContent = data?.text ?? '(응답이 없습니다)';
-        emit(hooks, 'message', { role: 'assistant', text: bot.textContent, raw: data });
+        const text = data?.text ?? '(응답이 없습니다)';
+        const message = updateMessage($body, assistantMessageId, {
+          text,
+          status: MESSAGE_STATUS.SUCCESS,
+          errorCode: null,
+          retryable: false,
+        });
+        emit(hooks, 'message', Object.assign({ raw: data }, message || { role: 'assistant', text }));
       } catch (e) {
         if (isAbortError(e)) {
-          setBotError(bot, merged.timeoutMessage, retry);
+          updateAssistantError(assistantMessageId, merged.timeoutMessage, MESSAGE_STATUS.TIMEOUT, 'CHAT_TIMEOUT', retry);
           emitError(hooks, 'CHAT_TIMEOUT', merged.timeoutMessage, { error: e });
         } else {
-          setBotError(bot, merged.networkErrorMessage, retry);
+          updateAssistantError(assistantMessageId, merged.networkErrorMessage, MESSAGE_STATUS.ERROR, 'CHAT_NETWORK_ERROR', retry);
           emitError(hooks, 'CHAT_NETWORK_ERROR', merged.networkErrorMessage, { error: e });
         }
         log('network error', e);
       } finally {
-        if (t) clearTimeout(t); // ✅ 안전
+        if (t) clearTimeout(t);
         isSending = false;
         $send.disabled = false;
-        $body.scrollTop = $body.scrollHeight;
+        scrollToBottom($body);
       }
+    }
+
+    // 8) 질문/응답
+    async function ask(textOverride) {
+      if (isSending) return;
+
+      const raw =
+        textOverride != null && String(textOverride).trim() !== ''
+          ? String(textOverride)
+          : $input.value || '';
+
+      const q = raw.trim();
+      if (!q) return;
+
+      $input.value = '';
+      const userMessage = appendMessage($body, {
+        role: 'user',
+        text: q,
+        status: MESSAGE_STATUS.SUCCESS,
+      });
+      emit(hooks, 'message', userMessage);
+
+      const assistantMessage = appendMessage($body, {
+        role: 'assistant',
+        text: '',
+        status: MESSAGE_STATUS.SENDING,
+      });
+
+      let retry = null;
+      retry = () => {
+        if (isSending) return;
+        updateMessage($body, assistantMessage.id, {
+          text: '',
+          status: MESSAGE_STATUS.RETRYING,
+          errorCode: null,
+          retryable: false,
+        });
+        requestAnswer(q, assistantMessage.id, retry);
+      };
+
+      await requestAnswer(q, assistantMessage.id, retry);
     }
 
 

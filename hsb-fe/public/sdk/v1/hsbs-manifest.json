@@ -1,18 +1,18 @@
 {
   "name": "hsbs-chat-sdk",
   "version": "v1",
-  "generatedAt": "2026-05-28T00:00:00+09:00",
+  "generatedAt": "2026-06-01T00:00:00+09:00",
   "algorithm": "sha384",
   "files": {
     "hsbs-chat.js": {
-      "bytes": 38581,
-      "integrity": "sha384-GB0GK4aYkz7JDVfOGafEr/l5pJk87DuW3aAm7+9IUS7I3Ee1h3+ogM9UrgST7j4g",
-      "sha256": "sha256-Wqvyxw0FL7gp+nR25Cav0+Hb1LKdK07o5uOeNv7Ry6Q="
+      "bytes": 43812,
+      "integrity": "sha384-pFAl2BWu68d2oK2kWFTCMGbyRfdJ3FF5RM9wjNrr8W72AZ0nhNRYU4dLdO97q2Dh",
+      "sha256": "sha256-liEUzLmsXCBnQlyTtUe2M6AZI2Dtrb/G/oSSpPiISJs="
     },
     "hsbs-chat.css": {
-      "bytes": 8319,
-      "integrity": "sha384-52g+GWXN9ysvK9hhHNrN/VZVLjWSAMs7uxvcIeWVy68yPULWH2Ds+iAPKzGwhoHm",
-      "sha256": "sha256-U9MVq+7zf0dP+/RbSGIVIyhgO3AaViof+4WpzmmNgjI="
+      "bytes": 9606,
+      "integrity": "sha384-05qkFnkUdh4sWj4ic1uPmkO5EJDKpBQAw/MiFGzqU1n9jDgHluigQqNlFHHdJoVH",
+      "sha256": "sha256-w9pxiXx/f0vdTqEZZF9F9hdzvyA7qJiTJ1SfVcc5EJQ="
     },
     "hsbs-loader.js": {
       "bytes": 2853,
@@ -25,9 +25,9 @@
       "sha256": "sha256-aBWJjbvX2IFkklXy3Yd5XgGJOxHls96s3zTgr5YYIms="
     },
     "hsbs-chat.d.ts": {
-      "bytes": 3185,
-      "integrity": "sha384-0uke4vIzlFuP7dJO+ZPNaEeFFoz6qoS81g+eq92FxDchpJLO0npBay3tQZPBEMvz",
-      "sha256": "sha256-ek0J4AIPjceuXFJe5/i0L8QKNjl1NnWmBmj620orE9s="
+      "bytes": 3458,
+      "integrity": "sha384-BDT+yebVtYFoCXh0cRqGDoxHt/CVONIOSE5TRgcHvKuLVxpmv3h21GjtVg8kUf1x",
+      "sha256": "sha256-Tb5tjAqldMi00sYDum6uk7jENH6xtiNd3fDbpoVdfQg="
     }
   }
 }

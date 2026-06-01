@@ -1,5 +1,14 @@
 export type HSBSMessageRole = "user" | "assistant";
 
+export type HSBSMessageStatus =
+  | "sending"
+  | "retrying"
+  | "success"
+  | "error"
+  | "quota_exceeded"
+  | "offline"
+  | "timeout";
+
 export type HSBSErrorCode =
   | "SITE_KEY_MISSING"
   | "PING_FAILED"
@@ -30,8 +39,13 @@ export interface HSBSCloseEvent {
 }
 
 export interface HSBSMessageEvent {
+  id?: string;
   role: HSBSMessageRole;
   text: string;
+  status?: HSBSMessageStatus;
+  errorCode?: HSBSErrorCode | string | null;
+  retryable?: boolean;
+  createdAt?: string;
   raw?: unknown;
 }
 
