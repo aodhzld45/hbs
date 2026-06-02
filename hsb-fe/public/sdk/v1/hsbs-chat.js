@@ -78,6 +78,43 @@
     $body.scrollTop = $body.scrollHeight;
   }
 
+  async function copyTextToClipboard(text) {
+    const value = String(text || '');
+    if (!value) return false;
+
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', 'readonly');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    try {
+      return document.execCommand('copy');
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  }
+
+  function temporarilySetButtonLabel($button, label, restoreLabel, delayMs) {
+    if (!$button) return;
+    $button.textContent = label;
+    $button.disabled = true;
+    setTimeout(() => {
+      if ($button.isConnected) {
+        $button.textContent = restoreLabel;
+        $button.disabled = false;
+      }
+    }, delayMs || 1200);
+  }
+
   function createMessage({ id, role, text, status, errorCode, retryable, createdAt }) {
     return {
       id: id || nextMessageId(),
@@ -147,16 +184,44 @@
       $msg.appendChild($code);
     }
 
-    if (message.retryable && typeof actions?.retry === 'function') {
+    const canCopy =
+      message.role === 'assistant' &&
+      message.status === MESSAGE_STATUS.SUCCESS &&
+      String(message.text || '').trim() &&
+      typeof actions?.copy === 'function';
+    const canRetry = message.retryable && typeof actions?.retry === 'function';
+
+    if (canCopy || canRetry) {
       const $actions = document.createElement('div');
       $actions.className = 'hsbs-msg-actions';
 
-      const $retry = document.createElement('button');
-      $retry.type = 'button';
-      $retry.className = 'hsbs-retry-btn';
-      $retry.textContent = actions.retryLabel || '다시 시도';
-      $retry.addEventListener('click', actions.retry);
-      $actions.appendChild($retry);
+      if (canCopy) {
+        const $copy = document.createElement('button');
+        $copy.type = 'button';
+        $copy.className = 'hsbs-msg-action-btn hsbs-copy-btn';
+        $copy.textContent = actions.copyLabel || '복사';
+        $copy.setAttribute('aria-label', actions.copyLabel || '복사');
+        $copy.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          actions.copy(message, $copy);
+        });
+        $actions.appendChild($copy);
+      }
+
+      if (canRetry) {
+        const $retry = document.createElement('button');
+        $retry.type = 'button';
+        $retry.className = 'hsbs-msg-action-btn hsbs-retry-btn';
+        $retry.textContent = actions.retryLabel || '다시 시도';
+        $retry.setAttribute('aria-label', actions.retryLabel || '다시 시도');
+        $retry.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          actions.retry();
+        });
+        $actions.appendChild($retry);
+      }
 
       $msg.appendChild($actions);
     }
@@ -700,6 +765,9 @@
       quotaExceededMessage: opt.quotaExceededMessage || '쿼타/레이트리밋 도달. 관리자에게 문의 바랍니다.',
       serverErrorMessage: opt.serverErrorMessage || '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
       retryButtonLabel: opt.retryButtonLabel || '다시 시도',
+      copyButtonLabel: opt.copyButtonLabel || '복사',
+      copiedButtonLabel: opt.copiedButtonLabel || '복사됨',
+      copyFailedButtonLabel: opt.copyFailedButtonLabel || '복사 실패',
       retryPolicy: normalizeRetryPolicy(opt),
 
       // 표시/브랜딩
@@ -1004,6 +1072,17 @@
       });
     }
 
+    function handleCopyMessage(message, $button) {
+      copyTextToClipboard(message?.text)
+        .then(() => {
+          temporarilySetButtonLabel($button, merged.copiedButtonLabel, merged.copyButtonLabel, 1200);
+        })
+        .catch((e) => {
+          log('copy failed', e);
+          temporarilySetButtonLabel($button, merged.copyFailedButtonLabel, merged.copyButtonLabel, 1400);
+        });
+    }
+
     async function requestAnswer(q, assistantMessageId, retry) {
       if (isSending) return;
 
@@ -1114,6 +1193,9 @@
           status: MESSAGE_STATUS.SUCCESS,
           errorCode: null,
           retryable: false,
+        }, {
+          copy: handleCopyMessage,
+          copyLabel: merged.copyButtonLabel,
         });
         emit(hooks, 'message', Object.assign({ raw: data }, message || { role: 'assistant', text }));
       } catch (e) {

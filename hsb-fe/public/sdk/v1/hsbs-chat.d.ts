@@ -100,6 +100,9 @@ export interface HSBSInitOptions {
     quotaExceededMessage?: string;
     serverErrorMessage?: string;
     retryButtonLabel?: string;
+    copyButtonLabel?: string;
+    copiedButtonLabel?: string;
+    copyFailedButtonLabel?: string;
     [key: string]: unknown;
   };
   pingTimeoutMs?: number;
