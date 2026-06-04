@@ -1,5 +1,7 @@
 export type HSBSMessageRole = "user" | "assistant";
 
+export type HSBSFeedbackType = "LIKE" | "DISLIKE";
+
 export type HSBSMessageStatus =
   | "sending"
   | "retrying"
@@ -45,6 +47,11 @@ export interface HSBSMessageEvent {
   status?: HSBSMessageStatus;
   errorCode?: HSBSErrorCode | string | null;
   retryable?: boolean;
+  questionText?: string | null;
+  feedbackType?: HSBSFeedbackType | null;
+  feedbackSubmitting?: boolean;
+  feedbackSubmitted?: boolean;
+  feedbackError?: string | null;
   createdAt?: string;
   raw?: unknown;
 }
@@ -103,6 +110,10 @@ export interface HSBSInitOptions {
     copyButtonLabel?: string;
     copiedButtonLabel?: string;
     copyFailedButtonLabel?: string;
+    feedbackLikeLabel?: string;
+    feedbackDislikeLabel?: string;
+    feedbackSavedLabel?: string;
+    feedbackFailedMessage?: string;
     [key: string]: unknown;
   };
   pingTimeoutMs?: number;

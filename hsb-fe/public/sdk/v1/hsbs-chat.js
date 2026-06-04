@@ -115,7 +115,20 @@
     }, delayMs || 1200);
   }
 
-  function createMessage({ id, role, text, status, errorCode, retryable, createdAt }) {
+  function createMessage({
+    id,
+    role,
+    text,
+    status,
+    errorCode,
+    retryable,
+    createdAt,
+    questionText,
+    feedbackType,
+    feedbackSubmitting,
+    feedbackSubmitted,
+    feedbackError,
+  }) {
     return {
       id: id || nextMessageId(),
       role: role === 'user' ? 'user' : 'assistant',
@@ -124,6 +137,11 @@
       errorCode: errorCode || null,
       retryable: retryable === true,
       createdAt: createdAt || new Date().toISOString(),
+      questionText: questionText || null,
+      feedbackType: feedbackType || null,
+      feedbackSubmitting: feedbackSubmitting === true,
+      feedbackSubmitted: feedbackSubmitted === true,
+      feedbackError: feedbackError || null,
     };
   }
 
@@ -145,6 +163,10 @@
     $msg.dataset.role = message.role;
     $msg.dataset.status = message.status;
     $msg.dataset.retryable = message.retryable ? 'true' : 'false';
+    if (message.feedbackType) $msg.dataset.feedbackType = message.feedbackType;
+    else delete $msg.dataset.feedbackType;
+    $msg.dataset.feedbackSubmitting = message.feedbackSubmitting ? 'true' : 'false';
+    $msg.dataset.feedbackSubmitted = message.feedbackSubmitted ? 'true' : 'false';
     if (message.errorCode) $msg.dataset.errorCode = message.errorCode;
     else delete $msg.dataset.errorCode;
     $msg.innerHTML = '';
@@ -189,9 +211,14 @@
       message.status === MESSAGE_STATUS.SUCCESS &&
       String(message.text || '').trim() &&
       typeof actions?.copy === 'function';
+    const canFeedback =
+      message.role === 'assistant' &&
+      message.status === MESSAGE_STATUS.SUCCESS &&
+      String(message.text || '').trim() &&
+      typeof actions?.feedback === 'function';
     const canRetry = message.retryable && typeof actions?.retry === 'function';
 
-    if (canCopy || canRetry) {
+    if (canCopy || canFeedback || canRetry) {
       const $actions = document.createElement('div');
       $actions.className = 'hsbs-msg-actions';
 
@@ -209,6 +236,33 @@
         $actions.appendChild($copy);
       }
 
+      if (canFeedback) {
+        const feedbackButtons = [
+          { type: 'LIKE', label: actions.likeLabel || '좋아요', className: 'hsbs-like-btn' },
+          { type: 'DISLIKE', label: actions.dislikeLabel || '싫어요', className: 'hsbs-dislike-btn' },
+        ];
+
+        feedbackButtons.forEach((item) => {
+          const selected = message.feedbackType === item.type;
+          const $feedback = document.createElement('button');
+          $feedback.type = 'button';
+          $feedback.className = `hsbs-msg-action-btn hsbs-feedback-btn ${item.className}`;
+          if (selected) $feedback.classList.add('is-selected');
+          $feedback.textContent = selected && message.feedbackSubmitted
+            ? (actions.feedbackSavedLabel || '반영됨')
+            : item.label;
+          $feedback.setAttribute('aria-label', item.label);
+          $feedback.setAttribute('aria-pressed', selected ? 'true' : 'false');
+          $feedback.disabled = message.feedbackSubmitting === true;
+          $feedback.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            actions.feedback(message, item.type);
+          });
+          $actions.appendChild($feedback);
+        });
+      }
+
       if (canRetry) {
         const $retry = document.createElement('button');
         $retry.type = 'button';
@@ -224,6 +278,13 @@
       }
 
       $msg.appendChild($actions);
+    }
+
+    if (message.feedbackError) {
+      const $feedbackError = document.createElement('div');
+      $feedbackError.className = 'hsbs-msg-feedback-error';
+      $feedbackError.textContent = message.feedbackError;
+      $msg.appendChild($feedbackError);
     }
   }
 
@@ -768,6 +829,10 @@
       copyButtonLabel: opt.copyButtonLabel || '복사',
       copiedButtonLabel: opt.copiedButtonLabel || '복사됨',
       copyFailedButtonLabel: opt.copyFailedButtonLabel || '복사 실패',
+      feedbackLikeLabel: opt.feedbackLikeLabel || '좋아요',
+      feedbackDislikeLabel: opt.feedbackDislikeLabel || '싫어요',
+      feedbackSavedLabel: opt.feedbackSavedLabel || '반영됨',
+      feedbackFailedMessage: opt.feedbackFailedMessage || '피드백 저장 실패',
       retryPolicy: normalizeRetryPolicy(opt),
 
       // 표시/브랜딩
@@ -1083,6 +1148,67 @@
         });
     }
 
+    function successMessageActions() {
+      return {
+        copy: handleCopyMessage,
+        copyLabel: merged.copyButtonLabel,
+        feedback: handleFeedbackMessage,
+        likeLabel: merged.feedbackLikeLabel,
+        dislikeLabel: merged.feedbackDislikeLabel,
+        feedbackSavedLabel: merged.feedbackSavedLabel,
+      };
+    }
+
+    async function handleFeedbackMessage(message, feedbackType) {
+      if (!message || message.feedbackSubmitting || message.feedbackType === feedbackType) return;
+
+      const prevType = message.feedbackType || null;
+      const prevSubmitted = message.feedbackSubmitted === true;
+
+      updateMessage($body, message.id, {
+        feedbackType,
+        feedbackSubmitting: true,
+        feedbackSubmitted: false,
+        feedbackError: null,
+      }, successMessageActions());
+
+      try {
+        const res = await fetch(`${cfg.apiBase}/ai/public/message-feedback`, {
+          method: 'POST',
+          cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-HSBS-Site-Key': cfg.siteKey,
+          },
+          body: JSON.stringify({
+            messageId: message.id,
+            questionText: message.questionText || '',
+            answerText: message.text || '',
+            feedbackType,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`message-feedback ${res.status}`);
+        }
+
+        updateMessage($body, message.id, {
+          feedbackType,
+          feedbackSubmitting: false,
+          feedbackSubmitted: true,
+          feedbackError: null,
+        }, successMessageActions());
+      } catch (e) {
+        log('feedback failed', e);
+        updateMessage($body, message.id, {
+          feedbackType: prevType,
+          feedbackSubmitting: false,
+          feedbackSubmitted: prevSubmitted,
+          feedbackError: merged.feedbackFailedMessage,
+        }, successMessageActions());
+      }
+    }
+
     async function requestAnswer(q, assistantMessageId, retry) {
       if (isSending) return;
 
@@ -1193,10 +1319,8 @@
           status: MESSAGE_STATUS.SUCCESS,
           errorCode: null,
           retryable: false,
-        }, {
-          copy: handleCopyMessage,
-          copyLabel: merged.copyButtonLabel,
-        });
+          questionText: q,
+        }, successMessageActions());
         emit(hooks, 'message', Object.assign({ raw: data }, message || { role: 'assistant', text }));
       } catch (e) {
         if (isAbortError(e)) {
