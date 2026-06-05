@@ -22,6 +22,8 @@ public class MessageFeedbackResponse {
     private MessageFeedbackType feedbackType;
     private String feedbackReason;
     private String clientHost;
+    private String userIp;
+    private String userAgent;
     private LocalDateTime regDate;
     private LocalDateTime upDate;
 
@@ -39,6 +41,8 @@ public class MessageFeedbackResponse {
                 .feedbackType(e.getFeedbackType())
                 .feedbackReason(e.getFeedbackReason())
                 .clientHost(e.getClientHost())
+                .userIp(e.getUserIp())
+                .userAgent(e.getUserAgent())
                 .regDate(e.getRegDate())
                 .upDate(e.getUpDate())
                 .build();
