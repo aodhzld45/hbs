@@ -20,6 +20,7 @@ import AdminSiteKeys from '../../features/admin/Ai/AdminSiteKeys';
 import AdminWidgetConfig from '../../features/admin/Ai/AdminWidgetConfig';
 import AdminPromptProfile from '../../features/admin/Ai/PromptProfile';
 import AdminUsageStats from '../../features/admin/Ai/AdminUsageStats';
+import AdminMessageFeedback from '../../features/admin/Ai/MessageFeedback';
 import AdminKbSourse from '../../features/admin/Ai/KbSource';
 import AdminKbDocument from '../../features/admin/Ai/KbDocument';
 import BoardManager from '../../pages/Admin/Board/BoardManager';
@@ -87,6 +88,13 @@ const ADMIN_ROUTE_COMPONENTS: AdminRouteComponentDefinition[] = [
     component: AdminUsageStats,
     aliases: ['usage-stats'],
     legacyPaths: ['/admin/ai/usage-stats'],
+  },
+  {
+    key: 'AdminMessageFeedback',
+    label: 'AI 피드백 분석',
+    component: AdminMessageFeedback,
+    aliases: ['message-feedback'],
+    legacyPaths: ['/admin/ai/message-feedback'],
   },
   {
     key: 'AdminKbSource',
