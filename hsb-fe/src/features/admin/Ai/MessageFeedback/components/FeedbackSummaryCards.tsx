@@ -6,13 +6,20 @@ type Props = {
   loading?: boolean;
 };
 
-const cards = [
+type SummaryCardConfig = {
+  key: keyof MessageFeedbackSummaryResponse;
+  label: string;
+  tone: string;
+  suffix?: string;
+};
+
+const cards: SummaryCardConfig[] = [
   { key: "totalCount", label: "전체 피드백", tone: "text-gray-900" },
   { key: "likeCount", label: "좋아요", tone: "text-emerald-700" },
   { key: "dislikeCount", label: "싫어요", tone: "text-red-700" },
   { key: "dislikeRate", label: "싫어요 비율", tone: "text-orange-700", suffix: "%" },
   { key: "recent24hDislikeCount", label: "최근 24시간 싫어요", tone: "text-purple-700" },
-] as const;
+];
 
 const FeedbackSummaryCards: React.FC<Props> = ({ summary, loading = false }) => {
   const formatValue = (key: keyof MessageFeedbackSummaryResponse, suffix?: string) => {
