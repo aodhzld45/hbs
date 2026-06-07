@@ -1,201 +1,210 @@
-import { WelcomeBlock, WelcomeBlockType } from "../types/welcomeBlockConfig";
+import type {
+  WelcomeActionItem,
+  WelcomeBlock,
+  WelcomeBlockType,
+} from "../types/welcomeBlockConfig";
 
 type AnyObj = Record<string, any>;
 
-const safeStr = (v: any, d = "") => (typeof v === "string" ? v : d);
-const safeNum = (v: any, d = 0) => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : d;
+const safeStr = (value: any, fallback = "") => (typeof value === "string" ? value : fallback);
+const safeNum = (value: any, fallback = 0) => {
+  const next = Number(value);
+  return Number.isFinite(next) ? next : fallback;
 };
 
 const uuid = () => {
   try {
-    // eslint-disable-next-line no-undef
-    return crypto?.randomUUID ? crypto.randomUUID() : `id_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    return globalThis.crypto?.randomUUID?.() ?? `id_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   } catch {
     return `id_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   }
 };
 
-const normalizeKey = (s: string) => (s ?? "").trim().toLowerCase().replace(/\s+/g, "-");
+const normalizeKey = (value: string) => value.trim().toLowerCase().replace(/\s+/g, "-");
 
 const extractKeyFromImageRef = (ref?: string) => {
-  const r = (ref ?? "").trim();
-  if (!r) return "";
-  // file:hero 형태
-  if (r.startsWith("file:")) return normalizeKey(r.slice("file:".length));
-  return "";
+  const value = (ref ?? "").trim();
+  if (!value) return "";
+  return value.startsWith("file:") ? normalizeKey(value.slice("file:".length)) : "";
 };
 
-/**
- * blocks -> welcomeBlocksJson(JSON string)
- * - image/card: file + uploadKey 있으면 imageRef(file:key)로 저장
- * - file이 없으면 기존 imagePath 유지
- */
+const normalizeActionItems = (raw: any): WelcomeActionItem[] => {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => ({
+      label: safeStr(item?.label),
+      payload: safeStr(item?.payload) || safeStr(item?.action?.value) || safeStr(item?.action?.text),
+      description: safeStr(item?.description) || safeStr(item?.desc) || undefined,
+      icon: safeStr(item?.icon) || undefined,
+    }))
+    .filter((item) => item.label || item.payload);
+};
+
+const blockData = (block: AnyObj) => {
+  const data = block?.data;
+  if (data && typeof data === "object") {
+    return data;
+  }
+  return block ?? {};
+};
+
 export function blocksToWelcomeJson(blocks: WelcomeBlock[]) {
   const items = [...blocks]
     .sort((a, b) => a.order - b.order)
-    .map((b: any) => {
+    .map((block: any) => {
       const base = {
-        id: b.id ?? uuid(),
-        order: safeNum(b.order, 1),
-        type: b.type,
+        id: block.id ?? uuid(),
+        order: safeNum(block.order, 1),
+        type: block.type,
         data: {} as AnyObj,
       };
 
-      if (b.type === "text") {
-        base.type = "text";
+      if (block.type === "intro") {
         base.data = {
-          title: safeStr(b.title),
-          body: safeStr(b.body),
+          title: safeStr(block.title),
+          body: safeStr(block.body),
         };
         return base;
       }
 
-      if (b.type === "image") {
-        base.type = "image";
-        const key = normalizeKey(safeStr(b.uploadKey));
+      if (block.type === "notice") {
         base.data = {
-          alt: safeStr(b.alt),
-          caption: safeStr(b.caption),
-          ...(b.file && key ? { imageRef: `file:${key}` } : {}),
-          ...(!b.file && b.imagePath ? { imagePath: b.imagePath } : {}),
+          tone: safeStr(block.tone, "info"),
+          title: safeStr(block.title),
+          body: safeStr(block.body),
         };
         return base;
       }
 
-      // card
-      base.type = "card";
-      const key = normalizeKey(safeStr(b.uploadKey));
+      if (block.type === "categoryGrid" || block.type === "faqList" || block.type === "quickReplies") {
+        base.data = {
+          title: safeStr(block.title),
+          subtitle: safeStr(block.subtitle),
+          items: normalizeActionItems(block.items),
+        };
+        return base;
+      }
 
-      const buttons = Array.isArray(b.buttons)
-        ? b.buttons.map((x: any) => ({
-            label: safeStr(x.label),
-            payload: safeStr(x.payload),
-          }))
-        : [];
+      if (block.type === "image") {
+        const key = normalizeKey(safeStr(block.uploadKey));
+        base.data = {
+          alt: safeStr(block.alt),
+          caption: safeStr(block.caption),
+          ...(block.file && key ? { imageRef: `file:${key}` } : {}),
+          ...(!block.file && block.imagePath ? { imagePath: block.imagePath } : {}),
+        };
+        return base;
+      }
 
+      if (block.type === "text") {
+        base.type = "intro";
+        base.data = {
+          title: safeStr(block.title),
+          body: safeStr(block.body),
+        };
+        return base;
+      }
+
+      const buttons = normalizeActionItems(block.buttons);
+      base.type = "categoryGrid";
       base.data = {
-        title: safeStr(b.title),
-        desc: safeStr(b.desc),
-        buttons,
-        ...(b.file && key ? { imageRef: `file:${key}` } : {}),
-        ...(!b.file && b.imagePath ? { imagePath: b.imagePath } : {}),
+        title: safeStr(block.title),
+        subtitle: safeStr(block.desc),
+        items: buttons,
       };
       return base;
     });
 
-  return JSON.stringify({ version: 1, items }, null, 2);
+  return JSON.stringify({ version: 2, items }, null, 2);
 }
 
-/**
- * welcomeBlocksJson -> blocks
- * - type "cards"도 허용: data.items 배열을 여러 "card" 블록으로 펼침
- * - 버튼도 payload 방식 / action.value 방식 둘 다 지원
- */
 export function welcomeJsonToBlocks(json?: string | null): WelcomeBlock[] {
   if (!json?.trim()) return [];
 
   try {
     const root = JSON.parse(json);
     const items = Array.isArray(root) ? root : Array.isArray(root?.items) ? root.items : [];
-
     const out: WelcomeBlock[] = [];
 
-    items.forEach((it: any, idx: number) => {
-      const typeRaw = safeStr(it?.type) as WelcomeBlockType | "cards";
-      const data = (it?.data ?? {}) as AnyObj;
+    items.forEach((item: any, index: number) => {
+      const type = safeStr(item?.type) as WelcomeBlockType | "cards";
+      const data = blockData(item);
+      const id = safeStr(item?.id) || uuid();
+      const order = safeNum(item?.order, index + 1);
 
-      const baseId = safeStr(it?.id) || uuid();
-      const baseOrder = safeNum(it?.order, idx + 1);
-
-      // legacy/예시: type="cards" (carousel 형태) -> 여러 card 블록으로 펼침
-      if (typeRaw === "cards") {
-        const cardItems = Array.isArray(data?.items) ? data.items : [];
-        cardItems.forEach((c: any, j: number) => {
-          const cid = c?.id ? String(c.id) : `${baseId}_${j + 1}`;
-          const cButtonsRaw = Array.isArray(c?.buttons) ? c.buttons : [];
-
-          const buttons = cButtonsRaw.map((b: any) => {
-            const label = safeStr(b?.label);
-            // payload 우선, 없으면 action.value
-            const payload =
-              safeStr(b?.payload) ||
-              safeStr(b?.action?.value) ||
-              safeStr(b?.action?.text) ||
-              "";
-            return { label, payload };
-          });
-
-          const imageRef = safeStr(c?.imageRef);
-          const uploadKeyFromRef = extractKeyFromImageRef(imageRef);
-
-          out.push({
-            id: cid,
-            order: baseOrder + j, // 펼칠 때 순서 유지
-            type: "card",
-            title: safeStr(c?.title),
-            desc: safeStr(c?.desc),
-            imagePath: safeStr(c?.imagePath) || undefined,
-            uploadKey: uploadKeyFromRef || "",
-            buttons,
-          } as any);
+      if (type === "intro" || type === "text") {
+        out.push({
+          id,
+          order,
+          type: "intro",
+          title: safeStr(data?.title),
+          body: safeStr(data?.body),
         });
         return;
       }
 
-      if (typeRaw === "text") {
+      if (type === "notice") {
+        const tone = safeStr(data?.tone, "info");
         out.push({
-          id: baseId,
-          order: baseOrder,
-          type: "text",
+          id,
+          order,
+          type: "notice",
+          tone: ["info", "warning", "success", "danger"].includes(tone) ? tone as any : "info",
           title: safeStr(data?.title),
           body: safeStr(data?.body),
-        } as any);
+        });
         return;
       }
 
-      if (typeRaw === "image") {
-        const imageRef = safeStr(data?.imageRef);
-        const uploadKeyFromRef = extractKeyFromImageRef(imageRef);
-
+      if (type === "categoryGrid" || type === "faqList" || type === "quickReplies") {
         out.push({
-          id: baseId,
-          order: baseOrder,
+          id,
+          order,
+          type,
+          title: safeStr(data?.title),
+          subtitle: safeStr(data?.subtitle),
+          items: normalizeActionItems(data?.items),
+        } as WelcomeBlock);
+        return;
+      }
+
+      if (type === "image") {
+        const imageRef = safeStr(data?.imageRef);
+        out.push({
+          id,
+          order,
           type: "image",
           alt: safeStr(data?.alt),
           caption: safeStr(data?.caption),
           imagePath: safeStr(data?.imagePath) || undefined,
-          uploadKey: uploadKeyFromRef || "",
-        } as any);
+          uploadKey: extractKeyFromImageRef(imageRef),
+        });
         return;
       }
 
-      // card
-      const buttonsRaw = Array.isArray(data?.buttons) ? data.buttons : [];
-      const buttons = buttonsRaw.map((b: any) => {
-        const label = safeStr(b?.label);
-        const payload =
-          safeStr(b?.payload) ||
-          safeStr(b?.action?.value) ||
-          safeStr(b?.action?.text) ||
-          "";
-        return { label, payload };
-      });
-
-      const imageRef = safeStr(data?.imageRef);
-      const uploadKeyFromRef = extractKeyFromImageRef(imageRef);
+      if (type === "cards") {
+        const cardItems = Array.isArray(data?.items) ? data.items : [];
+        cardItems.forEach((card: any, cardIndex: number) => {
+          out.push({
+            id: safeStr(card?.id) || `${id}_${cardIndex + 1}`,
+            order: order + cardIndex,
+            type: "categoryGrid",
+            title: safeStr(card?.title),
+            subtitle: safeStr(card?.desc),
+            items: normalizeActionItems(card?.buttons),
+          });
+        });
+        return;
+      }
 
       out.push({
-        id: baseId,
-        order: baseOrder,
-        type: "card",
+        id,
+        order,
+        type: "categoryGrid",
         title: safeStr(data?.title),
-        desc: safeStr(data?.desc),
-        imagePath: safeStr(data?.imagePath) || undefined,
-        uploadKey: uploadKeyFromRef || "",
-        buttons,
-      } as any);
+        subtitle: safeStr(data?.desc),
+        items: normalizeActionItems(data?.buttons),
+      });
     });
 
     return out.sort((a, b) => a.order - b.order);
@@ -204,7 +213,6 @@ export function welcomeJsonToBlocks(json?: string | null): WelcomeBlock[] {
   }
 }
 
-/** 파일명을 key.ext로 리네임(File 재생성) */
 const renameFileAsKey = (file: File, key: string) => {
   const safe = normalizeKey(key);
   const dot = file.name.lastIndexOf(".");
@@ -212,28 +220,20 @@ const renameFileAsKey = (file: File, key: string) => {
   return new File([file], `${safe}${ext}`, { type: file.type });
 };
 
-/**
- * blocks에서 업로드 파일 수집 (A안: fileName=key.ext)
- * - uploadKey가 없으면 imageRef(file:key)에서 key 추출 시도
- * - key 중복은 마지막이 wins(서버 saved map도 마지막으로 덮일 가능성)
- */
 export function collectFilesFromBlocks(blocks: WelcomeBlock[]): File[] {
   const out: File[] = [];
   const used = new Set<string>();
 
-  for (const b of blocks as any[]) {
-    if ((b.type === "image" || b.type === "card") && b.file) {
-      const key = normalizeKey(safeStr(b.uploadKey));
+  for (const block of blocks as any[]) {
+    if ((block.type === "image" || block.type === "card") && block.file) {
+      const key = normalizeKey(safeStr(block.uploadKey));
       if (!key) {
-        throw new Error(`업로드 key가 비어 있습니다. (blockId=${b.id})`);
+        throw new Error(`업로드 key가 비어 있습니다. (blockId=${block.id})`);
       }
 
-      const renamed = renameFileAsKey(b.file, key);
-
-      // 같은 key가 여러 개면 마지막 것을 사용(중복 방지)
+      const renamed = renameFileAsKey(block.file, key);
       if (used.has(key)) {
-        // 기존 out에서 같은 key 파일 제거
-        for (let i = out.length - 1; i >= 0; i--) {
+        for (let i = out.length - 1; i >= 0; i -= 1) {
           if (out[i].name.startsWith(`${key}.`) || out[i].name === renamed.name) {
             out.splice(i, 1);
           }
@@ -244,5 +244,6 @@ export function collectFilesFromBlocks(blocks: WelcomeBlock[]): File[] {
       out.push(renamed);
     }
   }
+
   return out;
 }

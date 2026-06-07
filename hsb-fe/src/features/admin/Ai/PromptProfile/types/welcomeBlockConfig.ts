@@ -1,9 +1,66 @@
-export type WelcomeBlockType = "text" | "image" | "card";
+export type WelcomeBlockType =
+  | "intro"
+  | "notice"
+  | "categoryGrid"
+  | "faqList"
+  | "quickReplies"
+  | "image"
+  | "text"
+  | "card";
 
 export type WelcomeBlockBase = {
-  id: string;       // uuid
-  order: number;    // 정렬용
+  id: string;
+  order: number;
   type: WelcomeBlockType;
+};
+
+export type WelcomeActionItem = {
+  label: string;
+  payload: string;
+  description?: string;
+  icon?: string;
+};
+
+export type WelcomeIntroBlock = WelcomeBlockBase & {
+  type: "intro";
+  title: string;
+  body: string;
+};
+
+export type WelcomeNoticeBlock = WelcomeBlockBase & {
+  type: "notice";
+  tone: "info" | "warning" | "success" | "danger";
+  title?: string;
+  body: string;
+};
+
+export type WelcomeCategoryGridBlock = WelcomeBlockBase & {
+  type: "categoryGrid";
+  title: string;
+  subtitle?: string;
+  items: WelcomeActionItem[];
+};
+
+export type WelcomeFaqListBlock = WelcomeBlockBase & {
+  type: "faqList";
+  title: string;
+  subtitle?: string;
+  items: WelcomeActionItem[];
+};
+
+export type WelcomeQuickRepliesBlock = WelcomeBlockBase & {
+  type: "quickReplies";
+  title?: string;
+  items: WelcomeActionItem[];
+};
+
+export type WelcomeImageBlock = WelcomeBlockBase & {
+  type: "image";
+  alt?: string;
+  caption?: string;
+  imagePath?: string;
+  uploadKey?: string;
+  file?: File;
 };
 
 export type WelcomeTextBlock = WelcomeBlockBase & {
@@ -12,32 +69,25 @@ export type WelcomeTextBlock = WelcomeBlockBase & {
   body: string;
 };
 
-export type WelcomeImageBlock = WelcomeBlockBase & {
-  type: "image";
-  alt?: string;
-  caption?: string;
-
-  // 저장된 상태(이미 DB에 반영된 값)
-  imagePath?: string;
-
-  // 신규 업로드/교체용(서버 패치용)
-  uploadKey?: string;   // hero, card1...
-  file?: File;          // 선택된 파일(저장 시 files로 전송)
-};
-
 export type WelcomeCardBlock = WelcomeBlockBase & {
   type: "card";
   title: string;
   desc?: string;
-
-  imagePath?: string;   // 기존 저장된 이미지
-  uploadKey?: string;   // 새로 교체할 때만
+  imagePath?: string;
+  uploadKey?: string;
   file?: File;
-
   buttons: Array<{
     label: string;
-    payload: string; // 클릭시 전송 텍스트
+    payload: string;
   }>;
 };
 
-export type WelcomeBlock = WelcomeTextBlock | WelcomeImageBlock | WelcomeCardBlock;
+export type WelcomeBlock =
+  | WelcomeIntroBlock
+  | WelcomeNoticeBlock
+  | WelcomeCategoryGridBlock
+  | WelcomeFaqListBlock
+  | WelcomeQuickRepliesBlock
+  | WelcomeImageBlock
+  | WelcomeTextBlock
+  | WelcomeCardBlock;

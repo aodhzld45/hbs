@@ -1,5 +1,5 @@
 import React from "react";
-import type { WelcomeBlock } from "../../PromptProfile/types/welcomeBlockConfig";
+import type { WelcomeActionItem, WelcomeBlock } from "../../PromptProfile/types/welcomeBlockConfig";
 
 export default function WelcomeBlocksPreview({
   blocks,
@@ -13,8 +13,7 @@ export default function WelcomeBlocksPreview({
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   const Wrap: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="w-full flex justify-center">
-      {/* 가운데 정렬 + 최대폭 제한으로 좌우 균형 */}
+    <div className="flex w-full justify-center">
       <div className="w-full max-w-[560px]">{children}</div>
     </div>
   );
@@ -25,13 +24,7 @@ export default function WelcomeBlocksPreview({
   }) => (
     <div
       className={[
-        "w-full",
-        "rounded-2xl",
-        "bg-white/95",
-        "shadow-sm",
-        "ring-1 ring-black/5",
-        "backdrop-blur",
-        "overflow-hidden",
+        "w-full overflow-hidden rounded-2xl bg-white/95 shadow-sm ring-1 ring-black/5 backdrop-blur",
         className ?? "",
       ].join(" ")}
     >
@@ -39,22 +32,35 @@ export default function WelcomeBlocksPreview({
     </div>
   );
 
+  const ActionButton: React.FC<{ item: WelcomeActionItem; compact?: boolean }> = ({
+    item,
+    compact = false,
+  }) => (
+    <button
+      type="button"
+      className={[
+        "rounded-xl border border-black/10 bg-gray-50 text-gray-900 transition hover:bg-gray-100 active:bg-gray-200",
+        compact ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm",
+      ].join(" ")}
+      onClick={() => onClickPayload?.(item.payload)}
+    >
+      {item.label || item.payload}
+    </button>
+  );
+
   return (
     <div className="w-full space-y-4">
-      {sorted.map((b) => {
-        // ===== TEXT =====
-        if (b.type === "text") {
+      {sorted.map((block) => {
+        if (block.type === "intro" || block.type === "text") {
+          const title = block.type === "intro" ? block.title : block.title;
+          const body = block.type === "intro" ? block.body : block.body;
           return (
-            <Wrap key={b.id}>
+            <Wrap key={block.id}>
               <Surface>
                 <div className="px-5 py-4">
-                  {b.title ? (
-                    <div className="text-xs font-semibold text-gray-700 mb-1">
-                      {b.title}
-                    </div>
-                  ) : null}
-                  <div className="text-sm text-gray-900 whitespace-pre-wrap break-words leading-relaxed">
-                    {b.body}
+                  {title ? <div className="mb-1 text-xs font-semibold text-gray-700">{title}</div> : null}
+                  <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-900">
+                    {body}
                   </div>
                 </div>
               </Surface>
@@ -62,29 +68,45 @@ export default function WelcomeBlocksPreview({
           );
         }
 
-        // ===== IMAGE =====
-        if (b.type === "image") {
+        if (block.type === "notice") {
+          const toneClass =
+            block.tone === "warning"
+              ? "border-amber-200 bg-amber-50 text-amber-900"
+              : block.tone === "danger"
+                ? "border-red-200 bg-red-50 text-red-900"
+                : block.tone === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                  : "border-blue-200 bg-blue-50 text-blue-900";
           return (
-            <Wrap key={b.id}>
+            <Wrap key={block.id}>
+              <div className={`rounded-2xl border px-5 py-4 ${toneClass}`}>
+                {block.title ? <div className="mb-1 text-xs font-semibold">{block.title}</div> : null}
+                <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{block.body}</div>
+              </div>
+            </Wrap>
+          );
+        }
+
+        if (block.type === "image") {
+          return (
+            <Wrap key={block.id}>
               <Surface>
                 <div className="p-4">
-                  {b.imagePath ? (
+                  {block.imagePath ? (
                     <img
-                      src={b.imagePath}
-                      alt={b.alt ?? ""}
-                      className="w-full max-h-72 object-contain rounded-xl bg-black/5"
+                      src={block.imagePath}
+                      alt={block.alt ?? ""}
+                      className="max-h-72 w-full rounded-xl bg-black/5 object-contain"
                       loading="lazy"
                       draggable={false}
                     />
                   ) : (
-                    <div className="text-xs text-gray-500 py-10 text-center">
-                      이미지 없음
-                    </div>
+                    <div className="py-10 text-center text-xs text-gray-500">이미지 없음</div>
                   )}
 
-                  {b.caption ? (
-                    <div className="mt-3 text-xs text-gray-600 whitespace-pre-wrap break-words">
-                      {b.caption}
+                  {block.caption ? (
+                    <div className="mt-3 whitespace-pre-wrap break-words text-xs text-gray-600">
+                      {block.caption}
                     </div>
                   ) : null}
                 </div>
@@ -93,62 +115,84 @@ export default function WelcomeBlocksPreview({
           );
         }
 
-        // ===== CARD =====
-        return (
-          <Wrap key={b.id}>
-            <Surface>
-              <div className="p-4">
-                {/* 상단: 이미지 + 텍스트를 안정적인 2컬럼 */}
-                <div className="grid grid-cols-[96px_1fr] gap-4 items-start">
-                  {/* 이미지 */}
-                  <div className="w-24 h-24 rounded-2xl bg-black/5 overflow-hidden flex items-center justify-center">
-                    {b.imagePath ? (
-                      <img
-                        src={b.imagePath}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        draggable={false}
-                      />
-                    ) : (
-                      <span className="text-[11px] text-gray-500">no image</span>
-                    )}
+        if (block.type === "categoryGrid") {
+          return (
+            <Wrap key={block.id}>
+              <Surface>
+                <div className="p-4">
+                  <div className="mb-3">
+                    <div className="text-base font-semibold text-gray-900">{block.title || "카테고리"}</div>
+                    {block.subtitle ? <div className="mt-1 text-xs text-gray-500">{block.subtitle}</div> : null}
                   </div>
-
-                  {/* 텍스트 */}
-                  <div className="min-w-0">
-                    <div className="text-base font-semibold text-gray-900 leading-snug">
-                      {b.title || "제목 없음"}
-                    </div>
-                    {b.desc ? (
-                      <div className="mt-1 text-sm text-gray-600 whitespace-pre-wrap break-words leading-relaxed">
-                        {b.desc}
-                      </div>
-                    ) : null}
+                  <div className="grid grid-cols-2 gap-2">
+                    {block.items.map((item, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className="rounded-xl border border-black/10 bg-gray-50 px-3 py-3 text-left transition hover:bg-gray-100"
+                        onClick={() => onClickPayload?.(item.payload)}
+                      >
+                        <div className="text-sm font-semibold text-gray-900">{item.label || item.payload}</div>
+                        {item.description ? (
+                          <div className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">{item.description}</div>
+                        ) : null}
+                      </button>
+                    ))}
                   </div>
                 </div>
+              </Surface>
+            </Wrap>
+          );
+        }
 
-                {/* 버튼 영역: 아래쪽에 정돈 */}
-                {(b.buttons ?? []).length > 0 ? (
-                  <div className="mt-4 flex flex-wrap justify-end gap-2">
-                    {(b.buttons ?? []).map((btn, idx) => (
+        if (block.type === "faqList") {
+          return (
+            <Wrap key={block.id}>
+              <Surface>
+                <div className="p-4">
+                  <div className="mb-3 text-base font-semibold text-gray-900">{block.title || "자주 묻는 질문"}</div>
+                  <div className="divide-y divide-gray-100">
+                    {block.items.map((item, index) => (
                       <button
-                        key={idx}
+                        key={index}
                         type="button"
-                        className={[
-                          "px-4 py-2",
-                          "text-sm",
-                          "rounded-xl",
-                          "bg-gray-50",
-                          "hover:bg-gray-100 active:bg-gray-200",
-                          "border border-black/10",
-                          "text-gray-900",
-                          "transition",
-                        ].join(" ")}
-                        onClick={() => onClickPayload?.(btn.payload)}
+                        className="flex w-full items-center justify-between gap-3 py-2 text-left text-sm text-gray-800 hover:text-blue-700"
+                        onClick={() => onClickPayload?.(item.payload)}
                       >
-                        {btn.label}
+                        <span>{item.label || item.payload}</span>
+                        <span className="text-xs text-gray-400">질문</span>
                       </button>
+                    ))}
+                  </div>
+                </div>
+              </Surface>
+            </Wrap>
+          );
+        }
+
+        if (block.type === "quickReplies") {
+          return (
+            <Wrap key={block.id}>
+              <div className="flex flex-wrap gap-2">
+                {block.title ? <div className="basis-full text-xs font-medium text-gray-500">{block.title}</div> : null}
+                {block.items.map((item, index) => (
+                  <ActionButton key={index} item={item} compact />
+                ))}
+              </div>
+            </Wrap>
+          );
+        }
+
+        return (
+          <Wrap key={block.id}>
+            <Surface>
+              <div className="p-4">
+                <div className="text-base font-semibold text-gray-900">{block.title || "카드"}</div>
+                {block.desc ? <div className="mt-1 whitespace-pre-wrap text-sm text-gray-600">{block.desc}</div> : null}
+                {(block.buttons ?? []).length > 0 ? (
+                  <div className="mt-4 flex flex-wrap justify-end gap-2">
+                    {(block.buttons ?? []).map((button, index) => (
+                      <ActionButton key={index} item={button} />
                     ))}
                   </div>
                 ) : null}
