@@ -508,6 +508,273 @@
     return $wrap;
   }
 
+  function getWelcomeBlockDataV2(block) {
+    if (!block || typeof block !== 'object') return {};
+    return block.data && typeof block.data === 'object' ? block.data : block;
+  }
+
+  function normalizeWelcomeItemsV2(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((item) => ({
+        label: String(item?.label || '').trim(),
+        payload: String(item?.payload || item?.action?.value || item?.action?.text || '').trim(),
+        description: String(item?.description || item?.desc || '').trim(),
+        icon: String(item?.icon || '').trim(),
+      }))
+      .filter((item) => item.label || item.payload);
+  }
+
+  function createWelcomeActionButtonV2(item, className, onClickPayload) {
+    const $btn = document.createElement('button');
+    $btn.type = 'button';
+    $btn.className = className;
+    $btn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const payload = item.payload || item.label;
+      if (payload && onClickPayload) onClickPayload(payload);
+    });
+    return $btn;
+  }
+
+  function appendWelcomeToggleV2($body, $wrap) {
+    const $toggle = document.createElement('button');
+    $toggle.type = 'button';
+    $toggle.className = 'hsbs-wb-toggle';
+    $toggle.textContent = '처음 안내 다시 보기';
+    $toggle.hidden = true;
+    $toggle.addEventListener('click', () => {
+      $wrap.hidden = false;
+      $toggle.hidden = true;
+      scrollToBottom($body);
+    });
+    $body.appendChild($toggle);
+    $wrap.__hsbsToggle = $toggle;
+  }
+
+  function collapseWelcome($body) {
+    const $wrap = $body.querySelector('.hsbs-wb-wrap');
+    if (!$wrap || $wrap.hidden) return;
+    $wrap.hidden = true;
+    if ($wrap.__hsbsToggle) $wrap.__hsbsToggle.hidden = false;
+  }
+
+  function renderWelcomeBlocksV2($body, welcomeBlocksJson, cfg, onClickPayload) {
+    const prev = $body.querySelector('.hsbs-wb-wrap');
+    if (prev) prev.remove();
+    const prevToggle = $body.querySelector('.hsbs-wb-toggle');
+    if (prevToggle) prevToggle.remove();
+
+    const root = safeJsonParse(welcomeBlocksJson);
+    const items = Array.isArray(root) ? root : Array.isArray(root?.items) ? root.items : [];
+    if (!items.length) return null;
+
+    const $wrap = document.createElement('div');
+    $wrap.className = 'hsbs-wb-wrap hsbs-wb-v2';
+
+    items
+      .slice()
+      .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
+      .forEach((it) => {
+        if (!it || typeof it !== 'object') return;
+
+        const type = String(it.type || '').trim();
+        const d = getWelcomeBlockDataV2(it);
+
+        if (type === 'intro' || type === 'text') {
+          const $card = document.createElement('div');
+          $card.className = 'hsbs-wb-card hsbs-wb-intro';
+          if (d.title) {
+            const $title = document.createElement('div');
+            $title.className = 'hsbs-wb-title';
+            $title.textContent = d.title;
+            $card.appendChild($title);
+          }
+          const $text = document.createElement('div');
+          $text.className = 'hsbs-wb-text';
+          $text.textContent = d.body || d.text || '';
+          $card.appendChild($text);
+          $wrap.appendChild($card);
+          return;
+        }
+
+        if (type === 'notice') {
+          const tone = String(d.tone || 'info').toLowerCase();
+          const $notice = document.createElement('div');
+          $notice.className = `hsbs-wb-notice hsbs-wb-notice-${tone}`;
+          if (d.title) {
+            const $title = document.createElement('div');
+            $title.className = 'hsbs-wb-title';
+            $title.textContent = d.title;
+            $notice.appendChild($title);
+          }
+          const $text = document.createElement('div');
+          $text.className = 'hsbs-wb-text';
+          $text.textContent = d.body || d.text || '';
+          $notice.appendChild($text);
+          $wrap.appendChild($notice);
+          return;
+        }
+
+        if (type === 'image') {
+          const $card = document.createElement('div');
+          $card.className = 'hsbs-wb-card hsbs-wb-image-card';
+          const imgPath = d.imagePath || d.url || '';
+          if (imgPath) {
+            const $img = document.createElement('img');
+            $img.className = 'hsbs-wb-img';
+            $img.alt = d.alt || '';
+            $img.src = resolveAssetUrl(imgPath, cfg) || imgPath;
+            $card.appendChild($img);
+          }
+          if (d.caption) {
+            const $caption = document.createElement('div');
+            $caption.className = 'hsbs-wb-caption';
+            $caption.textContent = d.caption;
+            $card.appendChild($caption);
+          }
+          $wrap.appendChild($card);
+          return;
+        }
+
+        if (type === 'categoryGrid') {
+          const $card = document.createElement('div');
+          $card.className = 'hsbs-wb-card hsbs-wb-category';
+          if (d.title || d.subtitle) {
+            const $head = document.createElement('div');
+            $head.className = 'hsbs-wb-head';
+            if (d.title) {
+              const $title = document.createElement('div');
+              $title.className = 'hsbs-wb-title';
+              $title.textContent = d.title;
+              $head.appendChild($title);
+            }
+            if (d.subtitle) {
+              const $desc = document.createElement('div');
+              $desc.className = 'hsbs-wb-desc';
+              $desc.textContent = d.subtitle;
+              $head.appendChild($desc);
+            }
+            $card.appendChild($head);
+          }
+          const $grid = document.createElement('div');
+          $grid.className = 'hsbs-wb-category-grid';
+          normalizeWelcomeItemsV2(d.items).forEach((item) => {
+            const $item = createWelcomeActionButtonV2(item, 'hsbs-wb-category-item', onClickPayload);
+            if (item.icon) {
+              const $icon = document.createElement('span');
+              $icon.className = 'hsbs-wb-item-icon';
+              $icon.textContent = item.icon;
+              $item.appendChild($icon);
+            }
+            const $label = document.createElement('span');
+            $label.className = 'hsbs-wb-item-label';
+            $label.textContent = item.label || item.payload;
+            $item.appendChild($label);
+            if (item.description) {
+              const $desc = document.createElement('span');
+              $desc.className = 'hsbs-wb-item-desc';
+              $desc.textContent = item.description;
+              $item.appendChild($desc);
+            }
+            $grid.appendChild($item);
+          });
+          $card.appendChild($grid);
+          $wrap.appendChild($card);
+          return;
+        }
+
+        if (type === 'faqList') {
+          const $card = document.createElement('div');
+          $card.className = 'hsbs-wb-card hsbs-wb-faq';
+          if (d.title) {
+            const $title = document.createElement('div');
+            $title.className = 'hsbs-wb-title';
+            $title.textContent = d.title;
+            $card.appendChild($title);
+          }
+          if (d.subtitle) {
+            const $desc = document.createElement('div');
+            $desc.className = 'hsbs-wb-desc';
+            $desc.textContent = d.subtitle;
+            $card.appendChild($desc);
+          }
+          const $list = document.createElement('div');
+          $list.className = 'hsbs-wb-faq-list';
+          normalizeWelcomeItemsV2(d.items).forEach((item, idx) => {
+            const $item = createWelcomeActionButtonV2(item, 'hsbs-wb-faq-item', onClickPayload);
+            const $num = document.createElement('span');
+            $num.className = 'hsbs-wb-faq-num';
+            $num.textContent = String(idx + 1);
+            const $label = document.createElement('span');
+            $label.textContent = item.label || item.payload;
+            $item.appendChild($num);
+            $item.appendChild($label);
+            $list.appendChild($item);
+          });
+          $card.appendChild($list);
+          $wrap.appendChild($card);
+          return;
+        }
+
+        if (type === 'quickReplies') {
+          const $quick = document.createElement('div');
+          $quick.className = 'hsbs-wb-quick';
+          if (d.title) {
+            const $title = document.createElement('div');
+            $title.className = 'hsbs-wb-quick-title';
+            $title.textContent = d.title;
+            $quick.appendChild($title);
+          }
+          const $buttons = document.createElement('div');
+          $buttons.className = 'hsbs-wb-quick-buttons';
+          normalizeWelcomeItemsV2(d.items).forEach((item) => {
+            const $btn = createWelcomeActionButtonV2(item, 'hsbs-wb-quick-btn', onClickPayload);
+            $btn.textContent = item.label || item.payload;
+            $buttons.appendChild($btn);
+          });
+          $quick.appendChild($buttons);
+          $wrap.appendChild($quick);
+          return;
+        }
+
+        if (type === 'card') {
+          const $card = document.createElement('div');
+          $card.className = 'hsbs-wb-card hsbs-wb-category';
+          if (d.title) {
+            const $title = document.createElement('div');
+            $title.className = 'hsbs-wb-title';
+            $title.textContent = d.title;
+            $card.appendChild($title);
+          }
+          if (d.desc) {
+            const $desc = document.createElement('div');
+            $desc.className = 'hsbs-wb-desc';
+            $desc.textContent = d.desc;
+            $card.appendChild($desc);
+          }
+          const legacyItems = normalizeWelcomeItemsV2(d.buttons);
+          if (legacyItems.length) {
+            const $btnWrap = document.createElement('div');
+            $btnWrap.className = 'hsbs-wb-btn-wrap';
+            legacyItems.forEach((item) => {
+              const $btn = createWelcomeActionButtonV2(item, 'hsbs-wb-btn', onClickPayload);
+              $btn.textContent = item.label || item.payload;
+              $btnWrap.appendChild($btn);
+            });
+            $card.appendChild($btnWrap);
+          }
+          $wrap.appendChild($card);
+        }
+      });
+
+    $body.appendChild($wrap);
+    appendWelcomeToggleV2($body, $wrap);
+    scrollToBottom($body);
+    return $wrap;
+  }
+
   function renderWelcomeTextOnce($body, text) {
     let el = $body.querySelector('.hsbs-welcome-text');
     if (!el) {
@@ -1055,7 +1322,9 @@
       
         // 2) 그 다음 blocks
         if (merged.welcomeBlocksJson) {
-          renderWelcomeBlocks($body, merged.welcomeBlocksJson, cfg, (payload) => ask(payload));
+          renderWelcomeBlocksV2($body, merged.welcomeBlocksJson, cfg, (payload) => ask(payload));
+          const fallbackText = $body.querySelector('.hsbs-welcome-text');
+          if (fallbackText) fallbackText.remove();
           rendered = true;
         }
       
@@ -1072,7 +1341,7 @@
       }
 
       // 퀵리플라이 버튼 표시 (한 번만 붙이기)
-      if ($quickWrap && !$quickWrap.isConnected) {
+      if (!merged.welcomeBlocksJson && $quickWrap && !$quickWrap.isConnected) {
         $body.appendChild($quickWrap);
       }
 
@@ -1351,6 +1620,7 @@
       const q = raw.trim();
       if (!q) return;
 
+      collapseWelcome($body);
       $input.value = '';
       const userMessage = appendMessage($body, {
         role: 'user',
